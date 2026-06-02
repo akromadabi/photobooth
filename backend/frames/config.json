@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "frames": [
+    {
+      "id": "classic_strip_black",
+      "name": "Classic Black Strip",
+      "type": "strip",
+      "width": 600,
+      "height": 2000,
+      "background_color": "#121212",
+      "image_url": "frames/classic_strip_black.png",
+      "slots": [
+        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
+        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
+        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
+        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
+      ]
+    },
+    {
+      "id": "creative_strip_red",
+      "name": "Creative Red Strip",
+      "type": "strip",
+      "width": 600,
+      "height": 2000,
+      "background_color": "#e63946",
+      "image_url": "frames/creative_strip_red.png",
+      "slots": [
+        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
+        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
+        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
+        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
+      ]
+    }
+  ]
+}
