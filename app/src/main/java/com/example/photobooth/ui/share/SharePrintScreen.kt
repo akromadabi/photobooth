@@ -41,7 +41,8 @@ fun SharePrintScreen(
     finalPhotoPath: String,
     shouldPrint: Boolean,
     onFinishClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    frameId: String = ""
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -56,6 +57,14 @@ fun SharePrintScreen(
     var isUploading by remember { mutableStateOf(true) }
     var isPrinting by remember { mutableStateOf(shouldPrint) }
 
+    if (isPrinting) {
+        PrintStatusDialog(
+            photoPath = finalPhotoPath,
+            onDismissRequest = { /* keep showing */ },
+            statusText = printStatus
+        )
+    }
+
     // Upload & Print tasks execution
     LaunchedEffect(Unit) {
         // Task 1: Upload to aaPanel
@@ -66,7 +75,10 @@ fun SharePrintScreen(
                 val photoPart = MultipartBody.Part.createFormData("photo", file.name, requestFile)
                 
                 val api = NetworkClient.getApi(configManager.backendUrl)
-                val response = api.uploadPhotos(photoPart)
+                val response = api.uploadPhotos(
+                    photo = photoPart,
+                    frameId = if (frameId.isNotEmpty()) frameId else null
+                )
                 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null && response.body()!!.success) {

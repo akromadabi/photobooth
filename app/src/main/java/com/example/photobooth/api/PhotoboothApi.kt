@@ -36,7 +36,8 @@ interface PhotoboothApi {
     @POST("upload.php")
     suspend fun uploadPhotos(
         @Part photo: MultipartBody.Part,
-        @Part timelapse: MultipartBody.Part? = null
+        @Part timelapse: MultipartBody.Part? = null,
+        @retrofit2.http.Query("frame_id") frameId: String? = null
     ): Response<UploadResponse>
 
     @GET("history.php")

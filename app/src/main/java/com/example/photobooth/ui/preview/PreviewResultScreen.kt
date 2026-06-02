@@ -10,17 +10,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,11 +67,25 @@ fun PreviewResultScreen(
     var stitchedPhotoPath by remember { mutableStateOf("") }
     var isStitching by remember { mutableStateOf(true) }
     
+    // Doodle drawing states
+    val doodleLines = remember { mutableStateListOf<DoodleLine>() }
+    val penColors = listOf(
+        Color.White,
+        Color.Black,
+        Color(0xFFFFB703), // Radiant Neon Yellow
+        Color(0xFFE63946), // Radiant Red
+        Color(0xFF52B788), // Glowing Green
+        Color(0xFF2196F3)  // Electric Blue
+    )
+    var activePenColor by remember { mutableStateOf(penColors[0]) }
+    var activeStrokeWidth by remember { mutableFloatStateOf(5f) }
+    var isProcessingConfirm by remember { mutableStateOf(false) }
+
     // Re-stitch when filter changes
     LaunchedEffect(selectedFilter) {
         isStitching = true
         withContext(Dispatchers.Default) {
-            val outputPath = stitchPhotos(context, photoPaths, frame, selectedFilter)
+            val outputPath = stitchPhotos(context, photoPaths, frame, selectedFilter, emptyList())
             withContext(Dispatchers.Main) {
                 stitchedPhotoPath = outputPath
                 isStitching = false
@@ -78,7 +96,7 @@ fun PreviewResultScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("PRATINJAU FOTO", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
+                title = { Text("PRATINJAU & CORAT-CORET", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color(0xFF0F0F12),
                     titleContentColor = Color.White
@@ -113,39 +131,151 @@ fun PreviewResultScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 
-                // Photo Strip scrollable preview
-                Box(
+                // Photo Strip & Doodle canvas split row
+                Row(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
+                    // Left: The Photo Strip scrollable preview with Doodle Overlay
+                    Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .width(180.dp)
-                            .verticalScroll(rememberScrollState())
-                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(12.dp))
+                            .border(2.dp, Color(0xFFE63946), RoundedCornerShape(12.dp))
                             .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Black)
                     ) {
                         AsyncImage(
                             model = File(stitchedPhotoPath),
                             contentDescription = "Preview Strip",
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxSize()
                         )
+                        
+                        // Hand drawings layer
+                        DoodleCanvas(
+                            lines = doodleLines,
+                            onLinesChanged = { newList ->
+                                doodleLines.clear()
+                                doodleLines.addAll(newList)
+                            },
+                            activeColor = activePenColor,
+                            activeStrokeWidth = activeStrokeWidth,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // Right: Floating Doodle Controls Card
+                    Card(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .fillMaxHeight()
+                            .padding(vertical = 8.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                        border = BorderStroke(1.dp, Color(0xFF2A2A35))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Undo button
+                            IconButton(
+                                onClick = {
+                                    if (doodleLines.isNotEmpty()) {
+                                        doodleLines.removeAt(doodleLines.size - 1)
+                                    }
+                                },
+                                enabled = doodleLines.isNotEmpty()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Undo,
+                                    contentDescription = "Undo",
+                                    tint = if (doodleLines.isNotEmpty()) Color.White else Color.DarkGray
+                                )
+                            }
+
+                            // Delete/Clear button
+                            IconButton(
+                                onClick = { doodleLines.clear() },
+                                enabled = doodleLines.isNotEmpty()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Clear All",
+                                    tint = if (doodleLines.isNotEmpty()) Color(0xFFE63946) else Color.DarkGray
+                                )
+                            }
+
+                            HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(horizontal = 8.dp))
+
+                            // Stroke weight selector
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("PENA", color = Color.Gray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                listOf(3f, 6f, 10f).forEach { size ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .background(if (activeStrokeWidth == size) Color(0xFFE63946).copy(alpha = 0.3f) else Color.Transparent)
+                                            .clickable { activeStrokeWidth = size },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size((size * 1.2f).dp)
+                                                .clip(CircleShape)
+                                                .background(Color.White)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            }
+
+                            HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(horizontal = 8.dp))
+
+                            // Color palettes
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                penColors.forEach { color ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                            .border(
+                                                width = if (activePenColor == color) 2.dp else 1.dp,
+                                                color = if (activePenColor == color) Color.White else Color(0xFF2A2A35),
+                                                shape = CircleShape
+                                            )
+                                            .clickable { activePenColor = color }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
                 // Filter Selector Section
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
                         text = "Pilih Filter Estetik:",
                         color = Color.White,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 4.dp)
                     )
@@ -164,7 +294,7 @@ fun PreviewResultScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Bottom Action buttons
                 Row(
@@ -179,29 +309,42 @@ fun PreviewResultScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                         modifier = Modifier
                             .weight(1f)
-                            .height(56.dp)
+                            .height(56.dp),
+                        enabled = !isProcessingConfirm
                     ) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Retake")
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Retake")
                     }
 
-                    // Confirm and print/share Button
+                    // Confirm and print/share Button with overlay baking
                     Button(
                         onClick = {
-                            // By default, if printer type is configured, let's print.
-                            val shouldPrint = configManager.printerType != "NONE"
-                            onConfirmClick(stitchedPhotoPath, shouldPrint)
+                            isProcessingConfirm = true
+                            scope.launch {
+                                // Bake drawings into the high-res bitmap
+                                val finalPath = withContext(Dispatchers.Default) {
+                                    stitchPhotos(context, photoPaths, frame, selectedFilter, doodleLines.toList())
+                                }
+                                isProcessingConfirm = false
+                                val shouldPrint = configManager.printerType != "NONE"
+                                onConfirmClick(finalPath, shouldPrint)
+                            }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .weight(1.5f)
-                            .height(56.dp)
+                            .height(56.dp),
+                        enabled = !isProcessingConfirm
                     ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = "Confirm")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cetak & Download", fontWeight = FontWeight.Bold)
+                        if (isProcessingConfirm) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Icon(imageVector = Icons.Default.Check, contentDescription = "Confirm")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Cetak & Download", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -246,7 +389,13 @@ fun FilterItem(
 }
 
 // Custom stitching logic running on Background Thread
-private fun stitchPhotos(context: Context, photoPaths: List<String>, frame: Frame, filter: PhotoFilter): String {
+private fun stitchPhotos(
+    context: Context,
+    photoPaths: List<String>,
+    frame: Frame,
+    filter: PhotoFilter,
+    doodleLines: List<DoodleLine>
+): String {
     // Create base template Bitmap
     val template = Bitmap.createBitmap(frame.width, frame.height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(template)
@@ -303,7 +452,7 @@ private fun stitchPhotos(context: Context, photoPaths: List<String>, frame: Fram
         if (srcBmp != null) {
             val cropped = getCenterCroppedBitmap(srcBmp, slot.width, slot.height)
             
-            // Draw dithered/filtered photo to canvas
+            // Draw photo to canvas
             val rectDest = Rect(slot.x, slot.y, slot.x + slot.width, slot.y + slot.height)
             canvas.drawBitmap(cropped, null, rectDest, paint)
             
@@ -341,6 +490,39 @@ private fun stitchPhotos(context: Context, photoPaths: List<String>, frame: Fram
         paint.textSize = 36f
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         canvas.drawText("CREATIVE STUDIO", 150f, 1720f, paint)
+    }
+
+    // Bake relative doodles directly onto final high-resolution Canvas
+    if (doodleLines.isNotEmpty()) {
+        val doodlePaint = Paint().apply {
+            isAntiAlias = true
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        
+        doodleLines.forEach { line ->
+            if (line.points.size > 1) {
+                val path = android.graphics.Path()
+                val startX = line.points[0].first * frame.width
+                val startY = line.points[0].second * frame.height
+                path.moveTo(startX, startY)
+                
+                for (j in 1 until line.points.size) {
+                    val x = line.points[j].first * frame.width
+                    val y = line.points[j].second * frame.height
+                    path.lineTo(x, y)
+                }
+                
+                doodlePaint.color = line.color.toArgb()
+                
+                // Scale thickness relative to final canvas width!
+                val scaleFactor = frame.width.toFloat() / 180f
+                doodlePaint.strokeWidth = line.strokeWidth * scaleFactor
+                
+                canvas.drawPath(path, doodlePaint)
+            }
+        }
     }
 
     // Save final composite strip

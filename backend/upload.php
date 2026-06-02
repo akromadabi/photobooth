@@ -21,6 +21,18 @@ if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0755, true);
 }
 
+// Auto-cleanup: Delete uploads older than 14 days to preserve server memory
+$retentionSeconds = 14 * 86400; // 14 days
+$now = time();
+$files = glob($uploadDir . '*');
+if ($files) {
+    foreach ($files as $file) {
+        if (is_file($file) && ($now - filemtime($file)) > $retentionSeconds) {
+            unlink($file);
+        }
+    }
+}
+
 // Generate unique session ID
 $sessionId = bin2hex(random_bytes(8));
 $response = [
@@ -71,6 +83,15 @@ if (isset($_FILES['timelapse']) && $_FILES['timelapse']['error'] === UPLOAD_ERR_
 }
 
 if ($response['success']) {
+    $frameId = isset($_GET['frame_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['frame_id']) : '';
+    if ($frameId) {
+        $metaData = [
+            'frame_id' => $frameId,
+            'timestamp' => time()
+        ];
+        file_put_contents($uploadDir . $sessionId . '_meta.json', json_encode($metaData));
+    }
+
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
     $host = $_SERVER['HTTP_HOST'];
     $baseDir = dirname($_SERVER['SCRIPT_NAME']);

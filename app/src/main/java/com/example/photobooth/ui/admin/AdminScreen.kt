@@ -76,6 +76,15 @@ fun AdminScreen(
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
 
+    val syncedFramesCount = remember(configManager.syncedFramesJson) {
+        try {
+            val config = com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+            config?.frames?.size ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
+
     // Tab Selection
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("Pengaturan", "Printer", "Riwayat Foto")
@@ -87,9 +96,23 @@ fun AdminScreen(
     var totalShots by remember { mutableStateOf(configManager.totalShots.toString()) }
     var printerType by remember { mutableStateOf(configManager.printerType) }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
+    var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
     
     var isSyncing by remember { mutableStateOf(false) }
     var isTestingPrint by remember { mutableStateOf(false) }
+
+    // Live Server Connectivity Status
+    var serverOnline by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(backendUrl) {
+        serverOnline = null
+        try {
+            val api = NetworkClient.getApi(backendUrl)
+            val response = api.getPhotoHistory()
+            serverOnline = response.isSuccessful
+        } catch (e: Exception) {
+            serverOnline = false
+        }
+    }
 
     // Scan lists
     val usbDevices = remember { mutableStateListOf<UsbDevice>() }
@@ -219,6 +242,98 @@ fun AdminScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // Quick Stats Dashboard Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Stat 1: Server Status
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(90.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF18181F))
+                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                                    Text("SERVER STATUS", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(RoundedCornerShape(50.dp))
+                                                .background(
+                                                    when (serverOnline) {
+                                                        true -> Color(0xFF52B788)
+                                                        false -> Color(0xFFE63946)
+                                                        else -> Color(0xFFF7B801)
+                                                    }
+                                                )
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = when (serverOnline) {
+                                                true -> "ONLINE"
+                                                false -> "OFFLINE"
+                                                else -> "CHECKING"
+                                            },
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Stat 2: Frames Sync
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(90.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF18181F))
+                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                                    Text("SYNCED FRAMES", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "$syncedFramesCount Bingkai",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            // Stat 3: Printer Driver
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(90.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF18181F))
+                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                                    Text("ACTIVE PRINTER", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = when (printerType) {
+                                            "THERMAL" -> "XP-420B"
+                                            "COLOR" -> "COLOR PDF"
+                                            else -> "NONE"
+                                        },
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
                         // Section 1: Server Config
                         AdminCard(title = "Koneksi Backend aaPanel") {
                             OutlinedTextField(
@@ -246,10 +361,35 @@ fun AdminScreen(
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // Biometric Auth Gate Toggle
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Gunakan Sensor Sidik Jari (Biometrik)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text("Otentikasi biometrik cepat untuk masuk menu admin tanpa PIN", color = Color.Gray, fontSize = 12.sp)
+                                }
+                                Switch(
+                                    checked = useBiometric,
+                                    onCheckedChange = { useBiometric = it },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFFE63946),
+                                        uncheckedThumbColor = Color.Gray,
+                                        uncheckedTrackColor = Color(0xFF2A2A35)
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+
                             Button(
                                 onClick = {
                                     configManager.backendUrl = backendUrl
                                     configManager.adminPin = adminPin
+                                    configManager.useBiometric = useBiometric
                                     Toast.makeText(context, "Setelan server disimpan!", Toast.LENGTH_SHORT).show()
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
@@ -352,35 +492,79 @@ fun AdminScreen(
                         AdminCard(title = "Konfigurasi Printer") {
                             Text("Tipe Driver Printer Terhubung:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(
-                                        selected = printerType == "NONE",
-                                        onClick = { printerType = "NONE"; configManager.printerType = "NONE" },
-                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                    )
-                                    Text("NONE", color = Color.White)
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(
-                                        selected = printerType == "THERMAL",
-                                        onClick = { printerType = "THERMAL"; configManager.printerType = "THERMAL" },
-                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                    )
-                                    Text("THERMAL (XP-420B)", color = Color.White)
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(
-                                        selected = printerType == "COLOR",
-                                        onClick = { printerType = "COLOR"; configManager.printerType = "COLOR" },
-                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                    )
-                                    Text("COLOR (PDF)", color = Color.White)
-                                }
-                            }
+                             Column(
+                                 modifier = Modifier.fillMaxWidth(),
+                                 verticalArrangement = Arrangement.spacedBy(10.dp)
+                             ) {
+                                 // Option 1: NONE
+                                 Row(
+                                     modifier = Modifier
+                                         .fillMaxWidth()
+                                         .clip(RoundedCornerShape(12.dp))
+                                         .background(if (printerType == "NONE") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                         .border(1.5.dp, if (printerType == "NONE") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
+                                         .clickable { printerType = "NONE"; configManager.printerType = "NONE" }
+                                         .padding(horizontal = 16.dp, vertical = 12.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     RadioButton(
+                                         selected = printerType == "NONE",
+                                         onClick = { printerType = "NONE"; configManager.printerType = "NONE" },
+                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
+                                     )
+                                     Spacer(modifier = Modifier.width(12.dp))
+                                     Column {
+                                         Text("NONE / TANPA PRINTER", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                         Text("Mode digital saja, printer dinonaktifkan.", color = Color.Gray, fontSize = 11.sp)
+                                     }
+                                 }
+
+                                 // Option 2: THERMAL
+                                 Row(
+                                     modifier = Modifier
+                                         .fillMaxWidth()
+                                         .clip(RoundedCornerShape(12.dp))
+                                         .background(if (printerType == "THERMAL") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                         .border(1.5.dp, if (printerType == "THERMAL") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
+                                         .clickable { printerType = "THERMAL"; configManager.printerType = "THERMAL" }
+                                         .padding(horizontal = 16.dp, vertical = 12.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     RadioButton(
+                                         selected = printerType == "THERMAL",
+                                         onClick = { printerType = "THERMAL"; configManager.printerType = "THERMAL" },
+                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
+                                     )
+                                     Spacer(modifier = Modifier.width(12.dp))
+                                     Column {
+                                         Text("THERMAL PRINTER (XP-420B)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                         Text("Cetak langsung lewat USB/Bluetooth (Dithering Monokrom).", color = Color.Gray, fontSize = 11.sp)
+                                     }
+                                 }
+
+                                 // Option 3: COLOR
+                                 Row(
+                                     modifier = Modifier
+                                         .fillMaxWidth()
+                                         .clip(RoundedCornerShape(12.dp))
+                                         .background(if (printerType == "COLOR") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                         .border(1.5.dp, if (printerType == "COLOR") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
+                                         .clickable { printerType = "COLOR"; configManager.printerType = "COLOR" }
+                                         .padding(horizontal = 16.dp, vertical = 12.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     RadioButton(
+                                         selected = printerType == "COLOR",
+                                         onClick = { printerType = "COLOR"; configManager.printerType = "COLOR" },
+                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
+                                     )
+                                     Spacer(modifier = Modifier.width(12.dp))
+                                     Column {
+                                         Text("COLOR PRINTER (PDF/SYSTEM)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                         Text("Cetak warna penuh menggunakan printer sistem Android.", color = Color.Gray, fontSize = 11.sp)
+                                     }
+                                 }
+                             }
 
                             if (printerType == "THERMAL") {
                                 HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
@@ -631,14 +815,11 @@ fun AdminScreen(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             if (isReprinting) {
-                                Row(
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(24.dp))
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text("Mengunduh & mengirim cetak...", color = Color.Gray, fontSize = 13.sp)
-                                }
+                                com.example.photobooth.ui.share.PrintStatusDialog(
+                                    photoPath = item.photoUrl,
+                                    onDismissRequest = {},
+                                    statusText = "Mengunduh & mengirim cetak ulang..."
+                                )
                             } else {
                                 Button(
                                     onClick = {

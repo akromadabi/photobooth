@@ -5,6 +5,7 @@ $timelapseFile = '';
 
 $uploadDir = __DIR__ . '/uploads/';
 
+$frameId = '';
 if ($sessionId) {
     // Look for photo
     if (file_exists($uploadDir . $sessionId . '_photo.png')) {
@@ -15,6 +16,14 @@ if ($sessionId) {
     $timelapseMatches = glob($uploadDir . $sessionId . '_timelapse.*');
     if (!empty($timelapseMatches)) {
         $timelapseFile = 'uploads/' . basename($timelapseMatches[0]);
+    }
+    
+    // Look for metadata
+    if (file_exists($uploadDir . $sessionId . '_meta.json')) {
+        $meta = json_decode(file_get_contents($uploadDir . $sessionId . '_meta.json'), true);
+        if (isset($meta['frame_id'])) {
+            $frameId = $meta['frame_id'];
+        }
     }
 }
 
@@ -273,6 +282,140 @@ $found = !empty($photoFile);
             }
         }
 
+        /* Animated Effects CSS */
+
+        /* 1. Film Scratches & Moving Dust (Newspaper / Black Strip) */
+        .media-container.effect-classic_strip_black::after,
+        .media-container.effect-newspaper_strip::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 5;
+            animation: grainAnimation 1s steps(10) infinite;
+        }
+
+        @keyframes grainAnimation {
+            0%, 100% { transform:translate(0, 0); }
+            10% { transform:translate(-2%, -4%); }
+            20% { transform:translate(-4%, 2%); }
+            30% { transform:translate(2%, -6%); }
+            40% { transform:translate(-6%, 4%); }
+            50% { transform:translate(-2%, 8%); }
+            60% { transform:translate(4%, -2%); }
+            70% { transform:translate(-4%, 4%); }
+            80% { transform:translate(2%, -2%); }
+            90% { transform:translate(-2%, 2%); }
+        }
+
+        .scratches-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 6;
+            overflow: hidden;
+        }
+
+        .scratch {
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.15);
+            opacity: 0;
+            animation: scratchAnimation 2s infinite linear;
+        }
+
+        .scratch:nth-child(1) { left: 25%; animation-delay: 0.2s; }
+        .scratch:nth-child(2) { left: 65%; animation-delay: 0.8s; }
+        .scratch:nth-child(3) { left: 85%; animation-delay: 1.4s; }
+
+        @keyframes scratchAnimation {
+            0% { transform: translateX(0); opacity: 0; }
+            5% { transform: translateX(5px); opacity: 0.3; }
+            10% { transform: translateX(-3px); opacity: 0.3; }
+            15% { transform: translateX(2px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 0; }
+        }
+
+        /* 2. Vogue Neon Glowing Borders (Magazine) */
+        .media-container.effect-magazine_strip {
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.2);
+            animation: neonGlowAnimation 4s infinite alternate ease-in-out;
+            border: 2px solid transparent !important;
+        }
+
+        @keyframes neonGlowAnimation {
+            0% {
+                box-shadow: 0 0 10px rgba(255, 0, 127, 0.3), inset 0 0 5px rgba(255, 0, 127, 0.2);
+                border-color: rgba(255, 0, 127, 0.3) !important;
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(0, 242, 254, 0.5), inset 0 0 10px rgba(0, 242, 254, 0.3);
+                border-color: rgba(0, 242, 254, 0.5) !important;
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(189, 0, 255, 0.4), inset 0 0 8px rgba(189, 0, 255, 0.2);
+                border-color: rgba(189, 0, 255, 0.4) !important;
+            }
+        }
+
+        /* 3. Shift Light Leaks (Retro Film) */
+        .light-leak-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 6;
+            background: radial-gradient(circle at 10% 20%, rgba(255, 100, 0, 0.25) 0%, rgba(255, 100, 0, 0) 50%),
+                        radial-gradient(circle at 90% 80%, rgba(255, 60, 180, 0.2) 0%, rgba(255, 60, 180, 0) 50%);
+            mix-blend-mode: color-dodge;
+            animation: lightLeaksAnimation 8s infinite alternate ease-in-out;
+        }
+
+        @keyframes lightLeaksAnimation {
+            0% {
+                opacity: 0.6;
+                transform: scale(1) rotate(0deg);
+            }
+            50% {
+                opacity: 0.9;
+                transform: scale(1.15) rotate(5deg) translate(2%, 3%);
+            }
+            100% {
+                opacity: 0.4;
+                transform: scale(0.95) rotate(-3deg) translate(-2%, -1%);
+            }
+        }
+
+        /* Custom Spinner for rendering button */
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes dash {
+            0% {
+                stroke-dasharray: 1, 150;
+                stroke-dashoffset: 0;
+            }
+            50% {
+                stroke-dasharray: 90, 150;
+                stroke-dashoffset: -35;
+            }
+            100% {
+                stroke-dasharray: 90, 150;
+                stroke-dashoffset: -124;
+            }
+        }
+
         .hidden {
             display: none !important;
         }
@@ -295,8 +438,17 @@ $found = !empty($photoFile);
                 </div>
             <?php endif; ?>
 
-            <div class="media-container" id="photo-wrapper">
+            <div class="media-container effect-<?php echo htmlspecialchars($frameId); ?>" id="photo-wrapper">
                 <img src="<?php echo htmlspecialchars($photoFile); ?>" class="photo-img" alt="Your Photo Strip">
+                <?php if ($frameId === 'classic_strip_black' || $frameId === 'newspaper_strip'): ?>
+                    <div class="scratches-overlay">
+                        <div class="scratch"></div>
+                        <div class="scratch"></div>
+                        <div class="scratch"></div>
+                    </div>
+                <?php elseif ($frameId === 'retro_film_strip'): ?>
+                    <div class="light-leak-overlay"></div>
+                <?php endif; ?>
             </div>
 
             <?php if ($timelapseFile): ?>
@@ -317,6 +469,11 @@ $found = !empty($photoFile);
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     Download Photo Strip
                 </a>
+
+                <button onclick="downloadAnimatedStrip()" class="btn btn-secondary" id="btn-download-animated" style="background: linear-gradient(135deg, #ff007f 0%, #bd00ff 100%); border: none; box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3); color: white;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+                    Download Live Animated Strip
+                </button>
 
                 <?php if ($timelapseFile): ?>
                     <a href="<?php echo htmlspecialchars($timelapseFile); ?>" download="CreativeStudio_Timelapse.<?php echo pathinfo($timelapseFile, PATHINFO_EXTENSION); ?>" class="btn btn-secondary hidden" id="btn-download-timelapse">
@@ -341,15 +498,14 @@ $found = !empty($photoFile);
 
     <footer class="footer-text">
         &copy; <?php echo date('Y'); ?> Creative Studio. All Rights Reserved.
-    </footer>
-
-    <script>
+    </footer>    <script>
         function switchTab(type) {
             const photoTab = document.querySelector('.tab-btn:nth-child(1)');
             const timelapseTab = document.querySelector('.tab-btn:nth-child(2)');
             const photoWrapper = document.getElementById('photo-wrapper');
             const timelapseWrapper = document.getElementById('timelapse-wrapper');
             const downloadPhoto = document.getElementById('btn-download-photo');
+            const downloadAnimated = document.getElementById('btn-download-animated');
             const downloadTimelapse = document.getElementById('btn-download-timelapse');
 
             if (type === 'photo') {
@@ -359,6 +515,7 @@ $found = !empty($photoFile);
                 timelapseWrapper.classList.add('hidden');
                 
                 downloadPhoto.classList.remove('hidden');
+                if(downloadAnimated) downloadAnimated.classList.remove('hidden');
                 if(downloadTimelapse) downloadTimelapse.classList.add('hidden');
             } else {
                 photoTab.classList.remove('active');
@@ -367,6 +524,7 @@ $found = !empty($photoFile);
                 timelapseWrapper.classList.remove('hidden');
 
                 downloadPhoto.classList.add('hidden');
+                if(downloadAnimated) downloadAnimated.classList.add('hidden');
                 if(downloadTimelapse) downloadTimelapse.classList.remove('hidden');
                 
                 // If it is a video, try to play it
@@ -374,6 +532,172 @@ $found = !empty($photoFile);
                 if (video) {
                     video.play().catch(e => console.log('Video autoplay interrupted'));
                 }
+            }
+        }
+
+        async function downloadAnimatedStrip() {
+            const btn = document.getElementById('btn-download-animated');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 50 50" style="animation: spin 1s linear infinite; margin-right: 8px;">
+                    <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 90, 150; stroke-dashoffset: 0; stroke: white; animation: dash 1.5s ease-in-out infinite;"></circle>
+                </svg>
+                Rendering... (0%)
+            `;
+
+            try {
+                const img = document.querySelector('.photo-img');
+                const frameId = "<?php echo htmlspecialchars($frameId); ?>";
+                
+                // Wait for image load if not fully cached
+                if (!img.complete) {
+                    await new Promise(resolve => img.onload = resolve);
+                }
+
+                const width = img.naturalWidth || 600;
+                const height = img.naturalHeight || 2000;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                const fps = 30;
+                const durationSec = 4;
+                const totalFrames = fps * durationSec;
+
+                // Collect MediaRecorder chunks
+                const stream = canvas.captureStream(fps);
+                
+                // Select supported MIME type (prefer mp4, fallback to webm)
+                let mimeType = 'video/mp4;codecs=avc1';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm;codecs=vp9';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm;codecs=vp8';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+
+                const recorder = new MediaRecorder(stream, { mimeType: mimeType });
+                const chunks = [];
+                recorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                const downloadPromise = new Promise(resolve => {
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: mimeType });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `LiveStrip_${frameId || 'creative'}_${Date.now()}.` + (mimeType.includes('mp4') ? 'mp4' : 'webm');
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    };
+                });
+
+                recorder.start();
+
+                // Animation Loop
+                for (let f = 0; f < totalFrames; f++) {
+                    // Draw original photo strip
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Draw effects based on frameId
+                    if (frameId === 'classic_strip_black' || frameId === 'newspaper_strip') {
+                        // Draw film grain noise
+                        const noiseData = ctx.createImageData(width, height);
+                        const buffer = new Uint32Array(noiseData.data.buffer);
+                        const noiseOpacity = 0.08;
+                        for (let i = 0; i < buffer.length; i++) {
+                            if (Math.random() < noiseOpacity) {
+                                buffer[i] = (Math.random() > 0.5) ? 0xFFFFFFFF : 0xFF000000;
+                            }
+                        }
+                        ctx.putImageData(noiseData, 0, 0);
+
+                        // Draw random scratches
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                        ctx.lineWidth = 1;
+                        for (let s = 0; s < 2; s++) {
+                            if (Math.random() < 0.4) {
+                                const sx = Math.random() * width;
+                                ctx.beginPath();
+                                ctx.moveTo(sx, 0);
+                                ctx.lineTo(sx + (Math.random() * 4 - 2), height);
+                                ctx.stroke();
+                            }
+                        }
+                    } else if (frameId === 'magazine_strip') {
+                        // Neon glowing borders around slots or strip edge
+                        const pulse = Math.sin((f / totalFrames) * Math.PI * 4) * 0.5 + 0.5; // 0 to 1
+                        const hue = (f / totalFrames) * 360;
+                        
+                        ctx.strokeStyle = `hsla(${hue}, 100%, 50%, ${0.5 + pulse * 0.3})`;
+                        ctx.lineWidth = 12;
+                        ctx.strokeRect(6, 6, width - 12, height - 12);
+                        
+                        ctx.strokeStyle = `hsla(${hue + 120}, 100%, 60%, ${0.3 + pulse * 0.2})`;
+                        ctx.lineWidth = 6;
+                        ctx.strokeRect(12, 12, width - 24, height - 24);
+                    } else if (frameId === 'retro_film_strip') {
+                        // Moving orange/pink warm light leaks
+                        const time = f / totalFrames;
+                        const angle = time * Math.PI * 2;
+                        
+                        // Red-orange warm gradient moving from left-top
+                        const lx = width * (0.2 + Math.cos(angle) * 0.1);
+                        const ly = height * (0.1 + Math.sin(angle) * 0.05);
+                        const lr = width * 0.7;
+                        
+                        const g1 = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr);
+                        g1.addColorStop(0, 'rgba(255, 100, 0, 0.35)');
+                        g1.addColorStop(0.5, 'rgba(255, 100, 0, 0.12)');
+                        g1.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                        
+                        ctx.fillStyle = g1;
+                        ctx.globalCompositeOperation = 'color-dodge';
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // Pink warm gradient moving from right-bottom
+                        const rx = width * (0.8 - Math.cos(angle) * 0.1);
+                        const ry = height * (0.9 - Math.sin(angle) * 0.05);
+                        
+                        const g2 = ctx.createRadialGradient(rx, ry, 0, rx, ry, lr);
+                        g2.addColorStop(0, 'rgba(255, 60, 180, 0.28)');
+                        g2.addColorStop(0.5, 'rgba(255, 60, 180, 0.08)');
+                        g2.addColorStop(1, 'rgba(255, 60, 180, 0)');
+                        
+                        ctx.fillStyle = g2;
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.globalCompositeOperation = 'source-over';
+                    }
+
+                    // Update status percentage
+                    const pct = Math.floor((f / totalFrames) * 100);
+                    btn.innerText = `Rendering... (${pct}%)`;
+                    
+                    // Push frames into Stream recorder
+                    await new Promise(r => setTimeout(r, 1000 / fps));
+                }
+
+                recorder.stop();
+                await downloadPromise;
+
+            } catch (err) {
+                console.error(err);
+                alert("Gagal merender animasi video di browser perangkat Anda.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
     </script>

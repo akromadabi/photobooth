@@ -69,7 +69,7 @@ fun MainNavigation() {
                     photoPaths = key.photoPaths,
                     frameId = key.frameId,
                     onRetakeClick = { backStack.removeLastOrNull() },
-                    onConfirmClick = { path, print -> backStack.add(SharePrint(path, print)) }
+                    onConfirmClick = { path, print -> backStack.add(SharePrint(path, print, key.frameId)) }
                 )
             }
             
@@ -78,6 +78,7 @@ fun MainNavigation() {
                 SharePrintScreen(
                     finalPhotoPath = key.finalPhotoPath,
                     shouldPrint = key.shouldPrint,
+                    frameId = key.frameId,
                     onFinishClick = {
                         // Clear the backstack and return back to Home
                         while (backStack.size > 1) {

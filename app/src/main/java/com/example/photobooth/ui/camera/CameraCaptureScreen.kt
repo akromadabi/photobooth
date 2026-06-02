@@ -7,6 +7,13 @@ import android.content.pm.PackageManager
 import android.media.MediaActionSound
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetectorOptions
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -14,6 +21,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -41,8 +49,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Rect
+import com.google.android.gms.tasks.Tasks
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,10 +146,24 @@ fun CameraCaptureLayout(
     val totalShots = frame.slots.size
     var currentShotIndex by remember { mutableIntStateOf(0) }
     val capturedPaths = remember { mutableStateListOf<String>() }
+
+    // Initialize Indonesian Voice Assistant Manager
+    val voiceManager = remember { VoiceManager(context) }
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceManager.shutdown()
+        }
+    }
     
     // Timer States
     var countdownValue by remember { mutableIntStateOf(configManager.countdownSeconds) }
     var isTimerActive by remember { mutableStateOf(false) }
+    var isWaitingForSmile by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(1500)
+        voiceManager.speak("Silakan tersenyum lebar untuk memulai pemotretan otomatis secara hands-free!")
+    }
     
     // Flash & Capture States
     var showFlashOverlay by remember { mutableStateOf(false) }
@@ -145,13 +172,60 @@ fun CameraCaptureLayout(
     // CameraX elements
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
-    val imageCapture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build() }
+    val imageCapture = remember {
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+            .build()
+    }
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
 
     LaunchedEffect(cameraProviderFuture) {
         val cameraProvider = cameraProviderFuture.get()
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
+        val preview = Preview.Builder()
+            .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+            .build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+
+        val imageAnalysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+
+        val options = FaceDetectorOptions.Builder()
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+            .build()
+        val detector = FaceDetection.getClient(options)
+
+        imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+            @OptIn(ExperimentalGetImage::class)
+            val mediaImage = imageProxy.image
+            if (mediaImage != null) {
+                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                detector.process(image)
+                    .addOnSuccessListener { faces ->
+                        if (isWaitingForSmile) {
+                            for (face in faces) {
+                                val smileProb = face.smilingProbability ?: 0f
+                                if (smileProb > 0.75f) {
+                                    isWaitingForSmile = false
+                                    scope.launch(Dispatchers.Main) {
+                                        voiceManager.speak("Senyuman terdeteksi! Bersiap...")
+                                        delay(800)
+                                        isTimerActive = true
+                                    }
+                                    break
+                                }
+                            }
+                        }
+                        imageProxy.close()
+                    }
+                    .addOnFailureListener {
+                        imageProxy.close()
+                    }
+            } else {
+                imageProxy.close()
+            }
         }
 
         val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA // Front camera for photobooth
@@ -162,10 +236,9 @@ fun CameraCaptureLayout(
                 lifecycleOwner,
                 cameraSelector,
                 preview,
-                imageCapture
+                imageCapture,
+                imageAnalysis
             )
-            // Start the photobooth session timer once camera is loaded
-            isTimerActive = true
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -175,12 +248,32 @@ fun CameraCaptureLayout(
     LaunchedEffect(isTimerActive, currentShotIndex) {
         if (isTimerActive && currentShotIndex < totalShots) {
             countdownValue = configManager.countdownSeconds
+            
+            // Speak friendly studio preparation voice cue
+            val poseIndexStr = when (currentShotIndex) {
+                0 -> "pertama"
+                1 -> "kedua"
+                2 -> "ketiga"
+                else -> "terakhir"
+            }
+            voiceManager.speak("Bersiap untuk pose ke $poseIndexStr!")
+            
             while (countdownValue > 0) {
-                delay(1000)
-                countdownValue--
                 if (countdownValue > 0) {
                     mediaSound.play(MediaActionSound.FOCUS_COMPLETE)
                 }
+                
+                // Friendly audio countdown
+                if (countdownValue in 1..3) {
+                    if (countdownValue == 1) {
+                        voiceManager.speak("Satu... Senyum!")
+                    } else {
+                        voiceManager.speak(countdownValue.toString())
+                    }
+                }
+                
+                delay(1000)
+                countdownValue--
             }
             
             // Trigger Flash & Capture
@@ -195,6 +288,37 @@ fun CameraCaptureLayout(
                 cameraExecutor,
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                        try {
+                            val filePath = tempFile.absolutePath
+                            val opt = BitmapFactory.Options().apply { inMutable = true }
+                            val bitmap = BitmapFactory.decodeFile(filePath, opt)
+                            if (bitmap != null) {
+                                val inputImg = InputImage.fromBitmap(bitmap, 0)
+                                val faceDetectorOptions = FaceDetectorOptions.Builder()
+                                    .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                                    .build()
+                                val detector = FaceDetection.getClient(faceDetectorOptions)
+                                
+                                try {
+                                    val faces = Tasks.await(detector.process(inputImg))
+                                    val rects = faces.map { it.boundingBox }
+                                    val processedBitmap = BeautyFilter.applyBeautyFilter(bitmap, rects)
+                                    
+                                    FileOutputStream(tempFile).use { out ->
+                                        processedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                    }
+                                    processedBitmap.recycle()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                } finally {
+                                    detector.close()
+                                }
+                                bitmap.recycle()
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
                         scope.launch(Dispatchers.Main) {
                             showFlashOverlay = false
                             capturedPaths.add(tempFile.absolutePath)
@@ -305,6 +429,56 @@ fun CameraCaptureLayout(
                     .fillMaxSize()
                     .background(Color.White)
             )
+        }
+
+        // Waiting for Smile overlay
+        if (isWaitingForSmile) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24).copy(alpha = 0.95f)),
+                    border = BorderStroke(2.dp, Color(0xFFE63946)),
+                    modifier = Modifier.padding(32.dp).width(360.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "📸 OTOMATIS AKTIF",
+                            color = Color(0xFFE63946),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            text = "SENYUM LEBAR UNTUK MEMULAI FOTO!",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Kiosk akan mendeteksi senyuman Anda secara otomatis untuk memulai jepretan secara hands-free.",
+                            color = Color.Gray,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 16.sp
+                        )
+                        
+                        CircularProgressIndicator(
+                            color = Color(0xFFE63946),
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                }
+            }
         }
     }
 }

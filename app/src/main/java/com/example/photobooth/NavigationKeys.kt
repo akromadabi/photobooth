@@ -9,4 +9,4 @@ import kotlinx.serialization.Serializable
 @Serializable data class FrameSelect(val layoutType: String) : NavKey
 @Serializable data class CameraCapture(val frameId: String) : NavKey
 @Serializable data class PreviewResult(val photoPaths: List<String>, val frameId: String) : NavKey
-@Serializable data class SharePrint(val finalPhotoPath: String, val shouldPrint: Boolean) : NavKey
+@Serializable data class SharePrint(val finalPhotoPath: String, val shouldPrint: Boolean, val frameId: String = "") : NavKey

@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.photobooth"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
     }
 
     buildTypes {
@@ -52,6 +52,7 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.biometric)
 
   // Arch Components
   implementation(libs.androidx.lifecycle.runtime.compose)
@@ -98,4 +99,7 @@ dependencies {
   // ZXing & Coil
   implementation(libs.zxing.core)
   implementation(libs.coil.compose)
+
+  // Google ML Kit Face Detection (Smile-to-Trigger offline)
+  implementation("com.google.mlkit:face-detection:16.1.7")
 }

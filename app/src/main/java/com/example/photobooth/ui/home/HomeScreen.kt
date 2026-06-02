@@ -1,6 +1,12 @@
 package com.example.photobooth.ui.home
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -9,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -20,15 +25,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import coil.compose.AsyncImage
+import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
 import kotlinx.coroutines.delay
 
@@ -47,6 +58,34 @@ fun HomeScreen(
     var pinInput by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf(false) }
 
+    // Live gallery state
+    var historyList by remember { mutableStateOf<List<String>>(emptyList()) }
+    var currentPhotoIndex by remember { mutableIntStateOf(0) }
+
+    // Fetch history
+    LaunchedEffect(configManager.backendUrl) {
+        try {
+            val api = NetworkClient.getApi(configManager.backendUrl)
+            val response = api.getPhotoHistory()
+            if (response.isSuccessful) {
+                val items = response.body() ?: emptyList()
+                historyList = items.map { it.photoUrl }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Auto-advance history slideshow every 4 seconds
+    LaunchedEffect(historyList) {
+        if (historyList.isNotEmpty()) {
+            while (true) {
+                delay(4000)
+                currentPhotoIndex = (currentPhotoIndex + 1) % historyList.size
+            }
+        }
+    }
+
     // Reset tap count after 3 seconds of inactivity
     LaunchedEffect(logoTapCount) {
         if (logoTapCount > 0) {
@@ -54,6 +93,18 @@ fun HomeScreen(
             logoTapCount = 0
         }
     }
+
+    // Breathing float animation for the slogan text
+    val infiniteTransition = rememberInfiniteTransition(label = "SloganFloating")
+    val dy by infiniteTransition.animateFloat(
+        initialValue = -8f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "FloatingDeltaY"
+    )
 
     Box(
         modifier = modifier
@@ -78,7 +129,19 @@ fun HomeScreen(
                     logoTapCount++
                     if (logoTapCount >= 5) {
                         logoTapCount = 0
-                        showPinDialog = true
+                        if (configManager.useBiometric) {
+                            checkAndShowBiometric(
+                                context = context,
+                                onSuccess = {
+                                    onAdminNavigate()
+                                },
+                                onFallbackPin = {
+                                    showPinDialog = true
+                                }
+                            )
+                        } else {
+                            showPinDialog = true
+                        }
                     }
                 }
             ) {
@@ -115,37 +178,63 @@ fun HomeScreen(
                 .padding(bottom = 60.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "All You need\nis special",
-                color = Color.White,
-                fontSize = 42.sp,
-                fontWeight = FontWeight.ExtraBold,
-                lineHeight = 48.sp,
-                fontFamily = FontFamily.SansSerif,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            // Simple premium layout placeholder representing a hanging Photo Strip
-            Box(
+            Row(
                 modifier = Modifier
-                    .width(140.dp)
-                    .height(300.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .align(Alignment.End)
-                    .padding(8.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize()
+                // Left: Slogan Text
+                Text(
+                    text = "All You need\nis special",
+                    color = Color.White,
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 48.sp,
+                    fontFamily = FontFamily.SansSerif,
+                    modifier = Modifier
+                        .weight(1f)
+                        .offset { IntOffset(0, dy.dp.roundToPx()) }
+                )
+
+                // Right: Hanging Photo Strip Live Gallery
+                Box(
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(320.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    repeat(3) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .background(Color.White.copy(alpha = 0.25f))
-                        )
+                    Crossfade(targetState = currentPhotoIndex, label = "PhotoCrossfade") { index ->
+                        if (historyList.isNotEmpty() && index < historyList.size) {
+                            AsyncImage(
+                                model = historyList[index],
+                                contentDescription = "History Photo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                        } else {
+                            // Fallback: A nice animated gradient background/placeholder
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                repeat(3) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(Color.White.copy(alpha = 0.25f))
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -332,5 +421,69 @@ fun HomeScreen(
                 }
             }
         }
+    }
+}
+
+fun Context.findActivity(): FragmentActivity? {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is FragmentActivity) return context
+        context = context.baseContext
+    }
+    return null
+}
+
+fun checkAndShowBiometric(
+    context: Context,
+    onSuccess: () -> Unit,
+    onFallbackPin: () -> Unit
+) {
+    val activity = context.findActivity()
+    if (activity == null) {
+        onFallbackPin()
+        return
+    }
+
+    val biometricManager = BiometricManager.from(context)
+    val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+    
+    if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
+        val executor = ContextCompat.getMainExecutor(context)
+        val biometricPrompt = BiometricPrompt(
+            activity,
+            executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    // If user cancelled or error occurs, fallback to PIN
+                    onFallbackPin()
+                }
+
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    onSuccess()
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    // Keep scanning
+                }
+            }
+        )
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Admin Access")
+            .setSubtitle("Gunakan sidik jari Anda untuk memverifikasi identitas")
+            .setNegativeButtonText("Gunakan PIN")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .build()
+
+        try {
+            biometricPrompt.authenticate(promptInfo)
+        } catch (e: Exception) {
+            onFallbackPin()
+        }
+    } else {
+        onFallbackPin()
     }
 }

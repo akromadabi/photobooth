@@ -263,6 +263,23 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     slots = gridSlots
                 )
             )
+        } else if (layoutType.equals("postcard", ignoreCase = true)) {
+            // Default 1-shot postcard fallback
+            val postcardSlots = listOf(
+                Slot(0, 50, 50, 1100, 800)
+            )
+            framesList.add(
+                Frame(
+                    id = "postcard_black",
+                    name = "Postcard Classic Black",
+                    type = "postcard",
+                    width = 1200,
+                    height = 900,
+                    backgroundColor = "#121212",
+                    imageUrl = "frames/postcard_black.png",
+                    slots = postcardSlots
+                )
+            )
         }
     }
     

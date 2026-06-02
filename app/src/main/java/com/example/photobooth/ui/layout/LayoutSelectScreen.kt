@@ -61,7 +61,7 @@ fun LayoutSelectScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Layout 1: Vertical Strip (4 Photos)
                 LayoutCard(
@@ -71,7 +71,7 @@ fun LayoutSelectScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier
-                                .width(60.dp)
+                                .width(50.dp)
                                 .fillMaxHeight()
                                 .background(Color.White.copy(alpha = 0.05f))
                                 .padding(4.dp)
@@ -98,8 +98,8 @@ fun LayoutSelectScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier
-                                .width(90.dp)
-                                .height(90.dp)
+                                .width(70.dp)
+                                .height(70.dp)
                                 .background(Color.White.copy(alpha = 0.05f))
                                 .padding(4.dp)
                         ) {
@@ -120,6 +120,32 @@ fun LayoutSelectScreen(
                         }
                     },
                     onClick = { onLayoutSelected("grid") },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Layout 3: Mega Postcard
+                LayoutCard(
+                    title = "Mega Postcard",
+                    description = "1 Foto lanskap besar artistik (Sangat megah & estetik)",
+                    iconContent = {
+                        Box(
+                            modifier = Modifier
+                                .width(90.dp)
+                                .height(65.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.05f))
+                                .padding(4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color.White.copy(alpha = 0.2f))
+                            )
+                        }
+                    },
+                    onClick = { onLayoutSelected("postcard") },
                     modifier = Modifier.weight(1f)
                 )
             }

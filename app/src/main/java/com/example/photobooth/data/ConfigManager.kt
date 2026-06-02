@@ -14,6 +14,7 @@ class ConfigManager(context: Context) {
         private const val KEY_COUNTDOWN_SECONDS = "countdown_seconds"
         private const val KEY_TOTAL_SHOTS = "total_shots"
         private const val KEY_SYNCED_FRAMES_JSON = "synced_frames_json"
+        private const val KEY_USE_BIOMETRIC = "use_biometric"
     }
 
     var adminPin: String
@@ -21,7 +22,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_ADMIN_PIN, value).apply()
 
     var backendUrl: String
-        get() = prefs.getString(KEY_BACKEND_URL, "http://localhost/") ?: "http://localhost/"
+        get() = prefs.getString(KEY_BACKEND_URL, "https://photobooth.siapp.in/") ?: "https://photobooth.siapp.in/"
         set(value) {
             val sanitized = if (value.endsWith("/")) value else "$value/"
             prefs.edit().putString(KEY_BACKEND_URL, sanitized).apply()
@@ -46,4 +47,8 @@ class ConfigManager(context: Context) {
     var syncedFramesJson: String
         get() = prefs.getString(KEY_SYNCED_FRAMES_JSON, "") ?: ""
         set(value) = prefs.edit().putString(KEY_SYNCED_FRAMES_JSON, value).apply()
+
+    var useBiometric: Boolean
+        get() = prefs.getBoolean(KEY_USE_BIOMETRIC, true)
+        set(value) = prefs.edit().putBoolean(KEY_USE_BIOMETRIC, value).apply()
 }
