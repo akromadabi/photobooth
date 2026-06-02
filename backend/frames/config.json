@@ -1,9 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "frames": [
     {
       "id": "classic_strip_black",
-      "name": "Classic Black Strip",
+      "name": "Classic Black",
       "type": "strip",
       "width": 600,
       "height": 2000,
@@ -18,7 +18,7 @@
     },
     {
       "id": "creative_strip_red",
-      "name": "Creative Red Strip",
+      "name": "Creative Red",
       "type": "strip",
       "width": 600,
       "height": 2000,
@@ -29,6 +29,51 @@
         { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
         { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
         { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
+      ]
+    },
+    {
+      "id": "newspaper_strip",
+      "name": "Newspaper Vintage",
+      "type": "strip",
+      "width": 600,
+      "height": 2000,
+      "background_color": "#e8e4db",
+      "image_url": "frames/newspaper_strip.png",
+      "slots": [
+        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
+        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
+        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
+        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
+      ]
+    },
+    {
+      "id": "magazine_strip",
+      "name": "Vogue Magazine",
+      "type": "strip",
+      "width": 600,
+      "height": 2000,
+      "background_color": "#ffffff",
+      "image_url": "frames/magazine_strip.png",
+      "slots": [
+        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
+        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
+        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
+        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
+      ]
+    },
+    {
+      "id": "retro_film_strip",
+      "name": "35mm Analog Film",
+      "type": "strip",
+      "width": 600,
+      "height": 2000,
+      "background_color": "#1c1917",
+      "image_url": "frames/retro_film_strip.png",
+      "slots": [
+        { "index": 0, "x": 80, "y": 80, "width": 440, "height": 330 },
+        { "index": 1, "x": 80, "y": 475, "width": 440, "height": 330 },
+        { "index": 2, "x": 80, "y": 870, "width": 440, "height": 330 },
+        { "index": 3, "x": 80, "y": 1265, "width": 440, "height": 330 }
       ]
     }
   ]

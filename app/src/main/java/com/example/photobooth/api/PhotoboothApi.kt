@@ -1,6 +1,7 @@
 package com.example.photobooth.api
 
 import com.example.photobooth.data.FrameConfig
+import com.google.gson.annotations.SerializedName
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.GET
@@ -18,6 +19,14 @@ data class UploadResponse(
     val message: String
 )
 
+data class HistoryItem(
+    @SerializedName("id") val id: String,
+    @SerializedName("photo_url") val photoUrl: String,
+    @SerializedName("timelapse_url") val timelapseUrl: String?,
+    @SerializedName("download_url") val downloadUrl: String,
+    @SerializedName("timestamp") val timestamp: Long
+)
+
 interface PhotoboothApi {
 
     @GET
@@ -29,4 +38,7 @@ interface PhotoboothApi {
         @Part photo: MultipartBody.Part,
         @Part timelapse: MultipartBody.Part? = null
     ): Response<UploadResponse>
+
+    @GET("history.php")
+    suspend fun getPhotoHistory(): Response<List<HistoryItem>>
 }
