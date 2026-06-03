@@ -481,11 +481,38 @@ fun CameraCaptureLayout(
                             lineHeight = 16.sp
                         )
                         
-                        CircularProgressIndicator(
-                            color = Color(0xFFE63946),
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFFE63946),
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text(
+                                text = "Menunggu senyuman...",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                isWaitingForSmile = false
+                                isTimerActive = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "MULAI FOTO",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }

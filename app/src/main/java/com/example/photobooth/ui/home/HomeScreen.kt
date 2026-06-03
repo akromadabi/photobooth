@@ -317,13 +317,13 @@ fun HomeScreen(
                     y = if (isLandscape) (-150).dp else (-120).dp
                 )
                 .graphicsLayer {
-                    rotationZ = if (isLandscape) -20f else -24f
+                    rotationZ = if (isLandscape) -22f else -24f
                     shadowElevation = 24f
                     shape = RoundedCornerShape(16.dp)
                     clip = true
                 }
                 .width(if (isLandscape) 280.dp else 140.dp)
-                .height(if (isLandscape) 1200.dp else 1350.dp)
+                .height(if (isLandscape) 2400.dp else 2200.dp)
                 .background(Color.White)
                 .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.TopCenter
