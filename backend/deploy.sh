@@ -16,8 +16,9 @@ fi
 cd "$SITE_DIR" || exit
 
 # Pull latest changes from Github
-echo "--> 1. Pulling latest code from GitHub..."
-git pull origin main
+echo "--> 1. Fetching and hard-resetting code to match origin/main..."
+git fetch origin main
+git reset --hard origin/main
 
 # Copy backend files to root (optional fallback, but kept for compatibility)
 if [ -d "backend" ]; then
