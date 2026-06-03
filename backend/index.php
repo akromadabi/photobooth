@@ -1,7 +1,219 @@
 <?php
 $sessionId = isset($_GET['id']) ? preg_replace('/[^a-f0-9]/', '', $_GET['id']) : '';
 if (empty($sessionId)) {
-    header("Location: display.php");
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Creative Studio Web Portal</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            :root {
+                --bg-color: #0c0c0e;
+                --card-bg: #14141a;
+                --primary: #4f46e5;
+                --primary-hover: #4338ca;
+                --text-main: #f8f9fa;
+                --text-muted: #8d8d9f;
+                --border-color: #22222a;
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                font-family: 'Outfit', sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-main);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 24px;
+                position: relative;
+                overflow: hidden;
+            }
+            .background-glow-1 {
+                position: absolute;
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, rgba(79, 70, 229, 0.12) 0%, rgba(12, 12, 14, 0) 70%);
+                z-index: -1;
+                pointer-events: none;
+                top: -10%;
+                left: -10%;
+            }
+            .background-glow-2 {
+                position: absolute;
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(12, 12, 14, 0) 70%);
+                z-index: -1;
+                pointer-events: none;
+                bottom: -10%;
+                right: -10%;
+            }
+            .portal-container {
+                width: 100%;
+                max-width: 900px;
+                text-align: center;
+                z-index: 10;
+            }
+            .logo {
+                font-weight: 800;
+                font-size: 2.8rem;
+                letter-spacing: -1.5px;
+                margin-bottom: 8px;
+                cursor: pointer;
+                user-select: none;
+                display: inline-block;
+                color: #ffffff;
+            }
+            .logo span { color: var(--primary); }
+            .subtitle {
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                font-weight: 600;
+                margin-bottom: 48px;
+            }
+            .portal-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: 24px;
+                width: 100%;
+                margin-bottom: 40px;
+            }
+            .portal-card {
+                background-color: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 24px;
+                padding: 36px 28px;
+                text-decoration: none;
+                color: inherit;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            }
+            .portal-card:hover {
+                transform: translateY(-8px);
+                border-color: var(--primary);
+                box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .card-icon {
+                width: 68px;
+                height: 68px;
+                border-radius: 20px;
+                background-color: #1a1a24;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.8rem;
+                color: var(--primary);
+                transition: all 0.3s ease;
+            }
+            .portal-card:hover .card-icon {
+                background-color: var(--primary);
+                color: white;
+                transform: scale(1.1);
+                box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+            }
+            .card-title {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #ffffff;
+            }
+            .card-desc {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                line-height: 1.6;
+            }
+            .footer-info {
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                margin-top: 20px;
+                font-weight: 500;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="background-glow-1"></div>
+        <div class="background-glow-2"></div>
+        
+        <div class="portal-container">
+            <div class="logo" onclick="handleLogoClick()">Creative<span>Studio</span></div>
+            <div class="subtitle">Creative Studio Web Portal</div>
+            
+            <div class="portal-grid">
+                <a href="order.php" class="portal-card">
+                    <div class="card-icon"><i class="fa-solid fa-receipt"></i></div>
+                    <div class="card-title">Halaman Pemesanan</div>
+                    <div class="card-desc">Pilih paket photobooth Anda, lakukan pembayaran simulator, dan terima tiket antrean digital Anda.</div>
+                </a>
+                
+                <a href="display.php" class="portal-card">
+                    <div class="card-icon"><i class="fa-solid fa-desktop"></i></div>
+                    <div class="card-title">Layar Antrean Kiosk</div>
+                    <div class="card-desc">Tampilan antrean berjalan saat ini serta galeri slideshow foto terbaru untuk audiens kiosk.</div>
+                </a>
+                
+                <a href="kiosk_sim.php" class="portal-card">
+                    <div class="card-icon"><i class="fa-solid fa-camera"></i></div>
+                    <div class="card-title">Simulator Kiosk</div>
+                    <div class="card-desc">Simulasi layar sentuh interaktif mesin Kiosk untuk menguji proses pengambilan foto dan cetak.</div>
+                </a>
+            </div>
+            
+            <div class="footer-info">
+                © <?php echo date('Y'); ?> Creative Studio. Seluruh hak cipta dilindungi.
+            </div>
+        </div>
+
+        <script>
+            let logoClicks = 0;
+            let clickTimer = null;
+
+            function handleLogoClick() {
+                logoClicks++;
+                
+                if (logoClicks === 1) {
+                    clickTimer = setTimeout(() => {
+                        logoClicks = 0;
+                    }, 1500);
+                } else if (logoClicks === 3) {
+                    clearTimeout(clickTimer);
+                    logoClicks = 0;
+                    
+                    const toast = document.createElement('div');
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '30px';
+                    toast.style.backgroundColor = '#4f46e5';
+                    toast.style.color = '#ffffff';
+                    toast.style.padding = '12px 24px';
+                    toast.style.borderRadius = '20px';
+                    toast.style.fontSize = '0.9rem';
+                    toast.style.fontWeight = '600';
+                    toast.style.boxShadow = '0 10px 15px -3px rgba(79, 70, 229, 0.3)';
+                    toast.style.zIndex = '1000';
+                    toast.innerHTML = 'Menuju Portal Administrasi... ⚙️';
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        window.location.href = 'admin.php';
+                    }, 800);
+                }
+            }
+        </script>
+    </body>
+    </html>
+    <?php
     exit;
 }
 $photoFile = '';
