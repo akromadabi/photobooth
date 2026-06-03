@@ -3,6 +3,7 @@ package com.example.photobooth.ui.home
 import android.content.Context
 import android.content.ContextWrapper
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.AnimatedVisibility
@@ -18,7 +19,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
@@ -46,6 +52,7 @@ import coil.compose.AsyncImage
 import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,10 +65,11 @@ fun HomeScreen(
     val context = LocalContext.current
     val configManager = remember { ConfigManager(context) }
     
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    
     var logoTapCount by remember { mutableIntStateOf(0) }
     var showPinDialog by remember { mutableStateOf(false) }
-    var pinInput by remember { mutableStateOf("") }
-    var pinError by remember { mutableStateOf(false) }
 
     // Event states
     var showEventCodeDialog by remember { mutableStateOf(false) }
@@ -69,6 +77,26 @@ fun HomeScreen(
     var eventCodeError by remember { mutableStateOf<String?>(null) }
     var unlockedEventId by remember { mutableStateOf("general") }
     var showUnlockSuccessAnim by remember { mutableStateOf(false) }
+
+    // Exit states
+    var showExitPinDialog by remember { mutableStateOf(false) }
+
+    // Intercept back gesture/button to prevent exiting
+    BackHandler(enabled = true) {
+        if (configManager.useBiometric) {
+            checkAndShowBiometric(
+                context = context,
+                onSuccess = {
+                    context.findActivity()?.finish()
+                },
+                onFallbackPin = {
+                    showExitPinDialog = true
+                }
+            )
+        } else {
+            showExitPinDialog = true
+        }
+    }
 
     // Dynamic Event Name and Logo Resolution
     val resolvedEventName = remember(configManager.syncedFramesJson, configManager.activeEventId, configManager.kioskMode, unlockedEventId) {
@@ -235,7 +263,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .statusBarsPadding()
-                .padding(top = 16.dp)
+                .padding(top = 16.dp, start = if (isLandscape) 120.dp else 0.dp)
                 .align(Alignment.TopStart)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -284,20 +312,23 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(x = 35.dp, y = (-20).dp)
+                .offset(
+                    x = if (isLandscape) 30.dp else 20.dp,
+                    y = if (isLandscape) (-150).dp else (-120).dp
+                )
                 .graphicsLayer {
-                    rotationZ = -10f
-                    shadowElevation = 16f
+                    rotationZ = if (isLandscape) -20f else -24f
+                    shadowElevation = 24f
                     shape = RoundedCornerShape(16.dp)
                     clip = true
                 }
-                .width(140.dp)
-                .height(420.dp)
+                .width(if (isLandscape) 280.dp else 140.dp)
+                .height(if (isLandscape) 1200.dp else 1350.dp)
                 .background(Color.White)
-                .padding(top = 16.dp, bottom = 16.dp, start = 8.dp, end = 8.dp),
+                .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.TopCenter
         ) {
-            InfiniteScrollingPhotoList(photoUrls = historyList)
+            InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
         }
 
         // Center Content: Slogan (Left side)
@@ -305,18 +336,18 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.Center)
-                .padding(bottom = 60.dp),
+                .padding(bottom = 60.dp, start = if (isLandscape) 120.dp else 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = "All You need\nis special",
                 color = Color.White,
-                fontSize = 46.sp,
+                fontSize = if (isLandscape) 56.sp else 46.sp,
                 fontWeight = FontWeight.ExtraBold,
-                lineHeight = 52.sp,
+                lineHeight = if (isLandscape) 64.sp else 52.sp,
                 fontFamily = FontFamily.SansSerif,
                 modifier = Modifier
-                    .fillMaxWidth(0.6f) // Keep slogan on the left, clear of the top-right tilted photo strip
+                    .fillMaxWidth(if (isLandscape) 0.5f else 0.6f)
                     .offset { IntOffset(0, dy.dp.roundToPx()) }
             )
         }
@@ -327,7 +358,7 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
+                .padding(bottom = 16.dp, start = if (isLandscape) 120.dp else 0.dp, end = if (isLandscape) 120.dp else 0.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -410,104 +441,35 @@ fun HomeScreen(
         }
 
         // Admin PIN Dialog
-        AnimatedVisibility(
-            visible = showPinDialog,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut()
-        ) {
-            Dialog(onDismissRequest = { 
-                showPinDialog = false
-                pinInput = ""
-                pinError = false
-            }) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Admin Access",
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Masukkan PIN 4-digit untuk masuk ke menu admin.",
-                            color = Color.Gray,
-                            fontSize = 13.sp,
-                            textAlign = TextAlign.Center
-                        )
-
-                        OutlinedTextField(
-                            value = pinInput,
-                            onValueChange = { 
-                                if (it.length <= 4 && it.all { char -> char.isDigit() }) {
-                                    pinInput = it
-                                    pinError = false
-                                }
-                            },
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = pinError,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color(0xFFE63946),
-                                unfocusedBorderColor = Color.Gray
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        if (pinError) {
-                            Text(
-                                text = "PIN yang Anda masukkan salah!",
-                                color = Color(0xFFE63946),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    showPinDialog = false
-                                    pinInput = ""
-                                    pinError = false
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Batal", color = Color.Gray)
-                            }
-                            
-                            Button(
-                                onClick = {
-                                    if (pinInput == configManager.adminPin) {
-                                        showPinDialog = false
-                                        pinInput = ""
-                                        onAdminNavigate()
-                                    } else {
-                                        pinError = true
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Masuk", color = Color.White)
-                            }
-                        }
-                    }
+        if (showPinDialog) {
+            PinEntryDialog(
+                title = "Admin Access",
+                subtitle = "Masukkan PIN 4-digit untuk masuk ke menu admin.",
+                correctPin = configManager.adminPin,
+                onDismissRequest = {
+                    showPinDialog = false
+                },
+                onSuccess = {
+                    showPinDialog = false
+                    onAdminNavigate()
                 }
-            }
+            )
+        }
+
+        // Exit PIN Dialog
+        if (showExitPinDialog) {
+            PinEntryDialog(
+                title = "Keluar Aplikasi",
+                subtitle = "Masukkan PIN Admin untuk menutup aplikasi kiosk.",
+                correctPin = configManager.adminPin,
+                onDismissRequest = {
+                    showExitPinDialog = false
+                },
+                onSuccess = {
+                    showExitPinDialog = false
+                    context.findActivity()?.finish()
+                }
+            )
         }
 
         // Multi-Event Ticket Launcher (Scenario B)
@@ -515,26 +477,15 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(bottom = 120.dp, start = 24.dp) // Offset above description and left aligned
-                    .clip(RoundedCornerShape(16.dp))
+                    .padding(bottom = 120.dp, start = if (isLandscape) 120.dp else 24.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.15f))
-                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)), RoundedCornerShape(16.dp))
-                    .clickable { showEventCodeDialog = true }
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)), CircleShape)
+                    .clickable { showEventCodeDialog = true },
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(text = "🎟️", fontSize = 16.sp)
-                    Text(
-                        text = if (unlockedEventId == "general") "MASUKKAN KODE EVENT" else "EVENT: ${resolvedEventName?.uppercase() ?: "TERKUNCI"}",
-                        color = if (unlockedEventId == "general") Color.White else Color(0xFFF7B801),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                }
+                Text(text = "🎟️", fontSize = 18.sp)
             }
         }
 
@@ -766,73 +717,76 @@ fun checkAndShowBiometric(
 @Composable
 fun InfiniteScrollingPhotoList(
     photoUrls: List<String>,
+    isLandscape: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val items = if (photoUrls.isNotEmpty()) photoUrls else listOf("mock1", "mock2", "mock3", "mock4")
-    
-    val originalSize = items.size
-    val repeatedItems = remember(items) {
-        var list = items
-        while (list.size < 6) {
-            list = list + items
+    val items = remember(photoUrls) {
+        val baseList = if (photoUrls.isNotEmpty()) photoUrls else listOf("mock1", "mock2", "mock3", "mock4")
+        var repeated = baseList
+        // Keep repeating the list until we have at least 16 items to ensure seamless loop
+        while (repeated.size < 16) {
+            repeated = repeated + baseList
         }
-        list
+        repeated
     }
+    val itemSpacing = 12.dp
+    val itemHeight = if (isLandscape) 844.dp else 396.dp
     
-    val itemHeight = 93.dp
-    val itemSpacing = 8.dp
-    val singleCycleHeight = (itemHeight + itemSpacing) * originalSize
-    
-    val infiniteTransition = rememberInfiniteTransition(label = "StripScroll")
-    val scrollProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ScrollProgress"
-    )
-    
+    val scrollState = rememberScrollState()
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val singleCycleHeightPx = with(density) { singleCycleHeight.toPx() }
     
-    Box(
+    val oneCycleHeightPx = remember(items, density, isLandscape) {
+        val baseListSize = if (photoUrls.isNotEmpty()) photoUrls.size else 4
+        val itemHeightPx = with(density) { itemHeight.toPx() }
+        val spacingPx = with(density) { itemSpacing.toPx() }
+        (itemHeightPx + spacingPx) * baseListSize
+    }
+
+    LaunchedEffect(items, oneCycleHeightPx) {
+        if (oneCycleHeightPx > 0f) {
+            var currentScroll = 0f
+            while (true) {
+                try {
+                    currentScroll += 1.5f
+                    if (currentScroll >= oneCycleHeightPx) {
+                        currentScroll -= oneCycleHeightPx
+                    }
+                    scrollState.scrollTo(currentScroll.toInt())
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                delay(16)
+            }
+        }
+    }
+
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(8.dp))
+            .verticalScroll(scrollState, enabled = false),
+        verticalArrangement = Arrangement.spacedBy(itemSpacing)
     ) {
-        val animatedOffset = -scrollProgress * singleCycleHeightPx
-        
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset { IntOffset(0, animatedOffset.toInt()) },
-            verticalArrangement = Arrangement.spacedBy(itemSpacing)
-        ) {
-            val doubleList = repeatedItems + repeatedItems
-            doubleList.forEach { item ->
-                StripItem(item = item)
-            }
+        items.forEach { item ->
+            StripItem(item = item, isLandscape = isLandscape)
         }
     }
 }
 
 @Composable
-fun StripItem(item: String) {
+fun StripItem(item: String, isLandscape: Boolean = false) {
+    val itemHeight = if (isLandscape) 844.dp else 396.dp
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(93.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color(0xFFEAEAEA)),
+            .height(itemHeight)
+            .clip(RoundedCornerShape(6.dp)),
         contentAlignment = Alignment.Center
     ) {
         if (item.startsWith("http")) {
             AsyncImage(
                 model = item,
                 contentDescription = "History Photo",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -853,5 +807,188 @@ fun StripItem(item: String) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun PinEntryDialog(
+    title: String,
+    subtitle: String,
+    correctPin: String,
+    onDismissRequest: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    var pinText by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val shakeOffset = remember { Animatable(0f) }
+
+    val onDigitClick = { digit: String ->
+        if (pinText.length < 4 && !isError) {
+            pinText += digit
+            if (pinText.length == 4) {
+                if (pinText == correctPin) {
+                    onSuccess()
+                } else {
+                    isError = true
+                    coroutineScope.launch {
+                        shakeOffset.animateTo(
+                            targetValue = 0f,
+                            animationSpec = keyframes {
+                                durationMillis = 400
+                                0f at 0
+                                -15f at 50
+                                15f at 100
+                                -15f at 150
+                                15f at 200
+                                -10f at 250
+                                10f at 300
+                                -5f at 350
+                                0f at 400
+                            }
+                        )
+                    }
+                    coroutineScope.launch {
+                        delay(800)
+                        pinText = ""
+                        isError = false
+                    }
+                }
+            }
+        }
+    }
+
+    val onBackspaceClick = {
+        if (pinText.isNotEmpty() && !isError) {
+            pinText = pinText.dropLast(1)
+        }
+    }
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Card(
+            modifier = Modifier
+                .width(340.dp)
+                .padding(8.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF121217)),
+            border = BorderStroke(1.dp, Color(0xFF2A2A35))
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = subtitle,
+                    color = Color.Gray,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .offset { IntOffset(shakeOffset.value.toInt(), 0) }
+                        .padding(vertical = 8.dp)
+                ) {
+                    for (i in 0 until 4) {
+                        val isFilled = i < pinText.length
+                        val dotColor = when {
+                            isError -> Color(0xFFE63946)
+                            isFilled -> Color(0xFFE63946)
+                            else -> Color.White.copy(alpha = 0.2f)
+                        }
+                        val scale by animateFloatAsState(
+                            targetValue = if (isFilled) 1.3f else 1.0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            ),
+                            label = "DotScale"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                                .background(dotColor, CircleShape)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val spacing = 16.dp
+                    Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                        KeypadButton("1", { onDigitClick("1") })
+                        KeypadButton("2", { onDigitClick("2") })
+                        KeypadButton("3", { onDigitClick("3") })
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                        KeypadButton("4", { onDigitClick("4") })
+                        KeypadButton("5", { onDigitClick("5") })
+                        KeypadButton("6", { onDigitClick("6") })
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                        KeypadButton("7", { onDigitClick("7") })
+                        KeypadButton("8", { onDigitClick("8") })
+                        KeypadButton("9", { onDigitClick("9") })
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                        KeypadButton("BATAL", { onDismissRequest() }, isAction = true)
+                        KeypadButton("0", { onDigitClick("0") })
+                        KeypadButton("⌫", { onBackspaceClick() }, isAction = true)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun KeypadButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isAction: Boolean = false
+) {
+    Box(
+        modifier = modifier
+            .size(68.dp)
+            .clip(CircleShape)
+            .background(if (isAction) Color.Transparent else Color.White.copy(alpha = 0.08f))
+            .clickable(onClick = onClick)
+            .then(
+                if (!isAction) Modifier.border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+                else Modifier
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (isAction) Color.White.copy(alpha = 0.6f) else Color.White,
+            fontSize = if (isAction) 13.sp else 24.sp,
+            fontWeight = if (isAction) FontWeight.Medium else FontWeight.SemiBold
+        )
     }
 }
