@@ -96,7 +96,7 @@ fun PreviewResultScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("PRATINJAU & CORAT-CORET", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
+                title = { Text("PRATINJAU & TANDA TANGAN", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color(0xFF0F0F12),
                     titleContentColor = Color.White
@@ -496,31 +496,37 @@ private fun stitchPhotos(
     if (doodleLines.isNotEmpty()) {
         val doodlePaint = Paint().apply {
             isAntiAlias = true
-            style = Paint.Style.STROKE
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
         }
         
         doodleLines.forEach { line ->
-            if (line.points.size > 1) {
-                val path = android.graphics.Path()
-                val startX = line.points[0].first * frame.width
-                val startY = line.points[0].second * frame.height
-                path.moveTo(startX, startY)
-                
+            doodlePaint.color = line.color.toArgb()
+            val scaleFactor = frame.width.toFloat() / 180f
+            
+            if (line.points.size == 1) {
+                val p = line.points[0]
+                doodlePaint.style = Paint.Style.FILL
+                val x = p.x * frame.width
+                val y = p.y * frame.height
+                val radius = (p.strokeWidth / 2f) * scaleFactor
+                canvas.drawCircle(x, y, radius, doodlePaint)
+            } else if (line.points.size > 1) {
+                doodlePaint.style = Paint.Style.STROKE
                 for (j in 1 until line.points.size) {
-                    val x = line.points[j].first * frame.width
-                    val y = line.points[j].second * frame.height
-                    path.lineTo(x, y)
+                    val p1 = line.points[j - 1]
+                    val p2 = line.points[j]
+                    
+                    val x1 = p1.x * frame.width
+                    val y1 = p1.y * frame.height
+                    val x2 = p2.x * frame.width
+                    val y2 = p2.y * frame.height
+                    
+                    val segmentWidth = ((p1.strokeWidth + p2.strokeWidth) / 2f) * scaleFactor
+                    doodlePaint.strokeWidth = segmentWidth
+                    
+                    canvas.drawLine(x1, y1, x2, y2, doodlePaint)
                 }
-                
-                doodlePaint.color = line.color.toArgb()
-                
-                // Scale thickness relative to final canvas width!
-                val scaleFactor = frame.width.toFloat() / 180f
-                doodlePaint.strokeWidth = line.strokeWidth * scaleFactor
-                
-                canvas.drawPath(path, doodlePaint)
             }
         }
     }

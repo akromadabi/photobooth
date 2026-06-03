@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -106,23 +107,56 @@ fun HomeScreen(
         label = "FloatingDeltaY"
     )
 
+    // Keyframe slide animations for logo texts
+    val creativeX by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 6000
+                0f at 0 with LinearEasing
+                0f at 2000 with EaseInCubic
+                500f at 3000 with LinearEasing
+                -500f at 3001 with EaseOutCubic
+                0f at 4200 with LinearEasing
+                0f at 6000
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "CreativeXAnimation"
+    )
+
+    val studioX by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 6000
+                0f at 0 with LinearEasing
+                0f at 2000 with EaseInCubic
+                -500f at 3000 with LinearEasing
+                500f at 3001 with EaseOutCubic
+                0f at 4200 with LinearEasing
+                0f at 6000
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "StudioXAnimation"
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFE63946)) // Premium Red Background
             .padding(24.dp)
     ) {
-        // Top Header
-        Row(
+        // Top Left Logo
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.clickable(
+                .padding(top = 16.dp)
+                .align(Alignment.TopStart)
+                .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
@@ -144,33 +178,46 @@ fun HomeScreen(
                         }
                     }
                 }
-            ) {
-                Text(
-                    text = "Creative",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 32.sp
-                )
-                Text(
-                    text = "Studio",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Light,
-                    lineHeight = 32.sp
-                )
-            }
-            
-            // Decorative Plus icon at top right
+        ) {
             Text(
-                text = "+",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Light
+                text = "Creative",
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
+                lineHeight = 32.sp,
+                modifier = Modifier.offset { IntOffset(creativeX.dp.roundToPx(), 0) }
+            )
+            Text(
+                text = "Studio",
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Light,
+                lineHeight = 32.sp,
+                modifier = Modifier.offset { IntOffset(studioX.dp.roundToPx(), 0) }
             )
         }
 
-        // Center Content: Slogan and Photo Strip Graphic
+        // Elongated Tilted Scrolling Photo Strip in the Top Right Corner
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 35.dp, y = (-20).dp)
+                .graphicsLayer {
+                    rotationZ = -10f
+                    shadowElevation = 16f
+                    shape = RoundedCornerShape(16.dp)
+                    clip = true
+                }
+                .width(140.dp)
+                .height(420.dp)
+                .background(Color.White)
+                .padding(top = 16.dp, bottom = 16.dp, start = 8.dp, end = 8.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            InfiniteScrollingPhotoList(photoUrls = historyList)
+        }
+
+        // Center Content: Slogan (Left side)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -178,66 +225,17 @@ fun HomeScreen(
                 .padding(bottom = 60.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Row(
+            Text(
+                text = "All You need\nis special",
+                color = Color.White,
+                fontSize = 46.sp,
+                fontWeight = FontWeight.ExtraBold,
+                lineHeight = 52.sp,
+                fontFamily = FontFamily.SansSerif,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Left: Slogan Text
-                Text(
-                    text = "All You need\nis special",
-                    color = Color.White,
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = 48.sp,
-                    fontFamily = FontFamily.SansSerif,
-                    modifier = Modifier
-                        .weight(1f)
-                        .offset { IntOffset(0, dy.dp.roundToPx()) }
-                )
-
-                // Right: Hanging Photo Strip Live Gallery
-                Box(
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(320.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .padding(8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Crossfade(targetState = currentPhotoIndex, label = "PhotoCrossfade") { index ->
-                        if (historyList.isNotEmpty() && index < historyList.size) {
-                            AsyncImage(
-                                model = historyList[index],
-                                contentDescription = "History Photo",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(8.dp))
-                            )
-                        } else {
-                            // Fallback: A nice animated gradient background/placeholder
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                repeat(3) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(Color.White.copy(alpha = 0.25f))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                    .fillMaxWidth(0.6f) // Keep slogan on the left, clear of the top-right tilted photo strip
+                    .offset { IntOffset(0, dy.dp.roundToPx()) }
+            )
         }
 
         // Bottom CTA and Description
@@ -485,5 +483,98 @@ fun checkAndShowBiometric(
         }
     } else {
         onFallbackPin()
+    }
+}
+
+@Composable
+fun InfiniteScrollingPhotoList(
+    photoUrls: List<String>,
+    modifier: Modifier = Modifier
+) {
+    val items = if (photoUrls.isNotEmpty()) photoUrls else listOf("mock1", "mock2", "mock3", "mock4")
+    
+    val originalSize = items.size
+    val repeatedItems = remember(items) {
+        var list = items
+        while (list.size < 6) {
+            list = list + items
+        }
+        list
+    }
+    
+    val itemHeight = 93.dp
+    val itemSpacing = 8.dp
+    val singleCycleHeight = (itemHeight + itemSpacing) * originalSize
+    
+    val infiniteTransition = rememberInfiniteTransition(label = "StripScroll")
+    val scrollProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ScrollProgress"
+    )
+    
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val singleCycleHeightPx = with(density) { singleCycleHeight.toPx() }
+    
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(8.dp))
+    ) {
+        val animatedOffset = -scrollProgress * singleCycleHeightPx
+        
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(0, animatedOffset.toInt()) },
+            verticalArrangement = Arrangement.spacedBy(itemSpacing)
+        ) {
+            val doubleList = repeatedItems + repeatedItems
+            doubleList.forEach { item ->
+                StripItem(item = item)
+            }
+        }
+    }
+}
+
+@Composable
+fun StripItem(item: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(93.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0xFFEAEAEA)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (item.startsWith("http")) {
+            AsyncImage(
+                model = item,
+                contentDescription = "History Photo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(Color(0xFFDFDFDF), Color(0xFFF5F5F5))
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "📸",
+                    fontSize = 24.sp,
+                    color = Color.Gray
+                )
+            }
+        }
     }
 }
