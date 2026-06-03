@@ -63,16 +63,20 @@ fun CameraCaptureScreen(
     frameId: String,
     onBackClick: () -> Unit,
     onCaptureComplete: (List<String>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    eventId: String = "general",
+    sessionId: String = "",
+    packageId: String = ""
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val configManager = remember { ConfigManager(context) }
     
     // Resolve frame configuration
-    val frame = remember(frameId) {
-        val allFrames = getFramesForLayout(context, "strip", configManager) + getFramesForLayout(context, "grid", configManager)
-        allFrames.firstOrNull { it.id == frameId } ?: allFrames.first()
+    val frame = remember(frameId, eventId) {
+        val allFrames = getFramesForLayout(context, "strip", configManager, eventId) + 
+                         getFramesForLayout(context, "grid", configManager, eventId)
+        allFrames.firstOrNull { it.id == frameId } ?: allFrames.firstOrNull() ?: getFramesForLayout(context, "strip", configManager).first()
     }
 
     // Permission state
@@ -125,7 +129,9 @@ fun CameraCaptureScreen(
             configManager = configManager,
             onBackClick = onBackClick,
             onCaptureComplete = onCaptureComplete,
-            modifier = modifier
+            modifier = modifier,
+            sessionId = sessionId,
+            packageId = packageId
         )
     }
 }
@@ -137,7 +143,9 @@ fun CameraCaptureLayout(
     configManager: ConfigManager,
     onBackClick: () -> Unit,
     onCaptureComplete: (List<String>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sessionId: String = "",
+    packageId: String = ""
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -157,12 +165,14 @@ fun CameraCaptureLayout(
     
     // Timer States
     var countdownValue by remember { mutableIntStateOf(configManager.countdownSeconds) }
-    var isTimerActive by remember { mutableStateOf(false) }
-    var isWaitingForSmile by remember { mutableStateOf(true) }
+    var isTimerActive by remember { mutableStateOf(sessionId.isNotEmpty()) }
+    var isWaitingForSmile by remember { mutableStateOf(sessionId.isEmpty()) }
 
     LaunchedEffect(Unit) {
-        delay(1500)
-        voiceManager.speak("Silakan tersenyum lebar untuk memulai pemotretan otomatis secara hands-free!")
+        if (sessionId.isEmpty()) {
+            delay(1500)
+            voiceManager.speak("Silakan tersenyum lebar untuk memulai pemotretan otomatis secara hands-free!")
+        }
     }
     
     // Flash & Capture States

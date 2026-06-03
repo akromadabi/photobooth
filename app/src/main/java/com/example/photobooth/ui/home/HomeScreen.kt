@@ -2,6 +2,7 @@ package com.example.photobooth.ui.home
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.AnimatedVisibility
@@ -11,7 +12,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -47,9 +50,10 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onStartClick: () -> Unit,
+    onStartClick: (String) -> Unit,
     onAdminNavigate: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRemoteStartClick: (frameId: String, eventId: String, packageId: String, sessionId: String) -> Unit = { _, _, _, _ -> }
 ) {
     val context = LocalContext.current
     val configManager = remember { ConfigManager(context) }
@@ -58,6 +62,45 @@ fun HomeScreen(
     var showPinDialog by remember { mutableStateOf(false) }
     var pinInput by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf(false) }
+
+    // Event states
+    var showEventCodeDialog by remember { mutableStateOf(false) }
+    var eventCodeInput by remember { mutableStateOf("") }
+    var eventCodeError by remember { mutableStateOf<String?>(null) }
+    var unlockedEventId by remember { mutableStateOf("general") }
+    var showUnlockSuccessAnim by remember { mutableStateOf(false) }
+
+    // Dynamic Event Name and Logo Resolution
+    val resolvedEventName = remember(configManager.syncedFramesJson, configManager.activeEventId, configManager.kioskMode, unlockedEventId) {
+        val activeId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
+        if (activeId == "general") null
+        else {
+            try {
+                val config = com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+                config?.events?.firstOrNull { it.id == activeId }?.name
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    val logoTextPart1 = remember(resolvedEventName) {
+        if (resolvedEventName.isNullOrEmpty()) "Creative"
+        else {
+            val words = resolvedEventName.split(" ")
+            if (words.size >= 2) words.take(words.size / 2).joinToString(" ")
+            else words.first()
+        }
+    }
+    
+    val logoTextPart2 = remember(resolvedEventName) {
+        if (resolvedEventName.isNullOrEmpty()) "Studio"
+        else {
+            val words = resolvedEventName.split(" ")
+            if (words.size >= 2) words.drop(words.size / 2).joinToString(" ")
+            else ""
+        }
+    }
 
     // Live gallery state
     var historyList by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -95,6 +138,33 @@ fun HomeScreen(
         }
     }
 
+    // Polling Remote Kiosk Command
+    LaunchedEffect(configManager.backendUrl, configManager.kioskMode, unlockedEventId) {
+        while (true) {
+            try {
+                val api = NetworkClient.getApi(configManager.backendUrl)
+                val response = api.getKioskCommand()
+                if (response.isSuccessful && response.body() != null) {
+                    val cmdRes = response.body()!!
+                    if (cmdRes.success && cmdRes.active) {
+                        if (cmdRes.command == "START_CAPTURE") {
+                            val frameId = cmdRes.frame_id ?: ""
+                            val sessionId = cmdRes.session_id ?: ""
+                            val packageId = cmdRes.package_id ?: ""
+                            val eventId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
+                            if (frameId.isNotEmpty()) {
+                                onRemoteStartClick(frameId, eventId, packageId, sessionId)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            delay(1000) // Poll every 1 second
+        }
+    }
+
     // Breathing float animation for the slogan text
     val infiniteTransition = rememberInfiniteTransition(label = "SloganFloating")
     val dy by infiniteTransition.animateFloat(
@@ -105,6 +175,17 @@ fun HomeScreen(
             repeatMode = RepeatMode.Reverse
         ),
         label = "FloatingDeltaY"
+    )
+
+    // Pulsing animation for the START button
+    val buttonScale by infiniteTransition.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "StartButtonPulse"
     )
 
     // Keyframe slide animations for logo texts
@@ -180,21 +261,23 @@ fun HomeScreen(
                 }
         ) {
             Text(
-                text = "Creative",
+                text = logoTextPart1,
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Black,
                 lineHeight = 32.sp,
                 modifier = Modifier.offset { IntOffset(creativeX.dp.roundToPx(), 0) }
             )
-            Text(
-                text = "Studio",
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Light,
-                lineHeight = 32.sp,
-                modifier = Modifier.offset { IntOffset(studioX.dp.roundToPx(), 0) }
-            )
+            if (logoTextPart2.isNotEmpty()) {
+                Text(
+                    text = logoTextPart2,
+                    color = Color.White,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Light,
+                    lineHeight = 32.sp,
+                    modifier = Modifier.offset { IntOffset(studioX.dp.roundToPx(), 0) }
+                )
+            }
         }
 
         // Elongated Tilted Scrolling Photo Strip in the Top Right Corner
@@ -250,7 +333,10 @@ fun HomeScreen(
         ) {
             // Pill shape START Button
             Button(
-                onClick = onStartClick,
+                onClick = {
+                    val finalEventId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
+                    onStartClick(finalEventId)
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF121212),
                     contentColor = Color.White
@@ -260,6 +346,10 @@ fun HomeScreen(
                 modifier = Modifier
                     .height(60.dp)
                     .width(220.dp)
+                    .graphicsLayer {
+                        scaleX = buttonScale
+                        scaleY = buttonScale
+                    }
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -414,6 +504,193 @@ fun HomeScreen(
                             ) {
                                 Text("Masuk", color = Color.White)
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Multi-Event Ticket Launcher (Scenario B)
+        if (configManager.kioskMode == "MULTI_EVENT") {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 120.dp, start = 24.dp) // Offset above description and left aligned
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)), RoundedCornerShape(16.dp))
+                    .clickable { showEventCodeDialog = true }
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = "🎟️", fontSize = 16.sp)
+                    Text(
+                        text = if (unlockedEventId == "general") "MASUKKAN KODE EVENT" else "EVENT: ${resolvedEventName?.uppercase() ?: "TERKUNCI"}",
+                        color = if (unlockedEventId == "general") Color.White else Color(0xFFF7B801),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+        }
+
+        // Event Code Verification Dialog (Scenario B)
+        if (showEventCodeDialog) {
+            Dialog(onDismissRequest = { 
+                showEventCodeDialog = false
+                eventCodeInput = ""
+                eventCodeError = null
+            }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "🎟️ Masukkan Kode Event",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Masukkan kode undangan event (misal: RIANANI26) untuk membuka bingkai foto eksklusif.",
+                            color = Color.Gray,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+
+                        OutlinedTextField(
+                            value = eventCodeInput,
+                            onValueChange = { 
+                                eventCodeInput = it
+                                eventCodeError = null
+                            },
+                            placeholder = { Text("KODE EVENT") },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color(0xFFE63946),
+                                unfocusedBorderColor = Color.Gray
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (eventCodeError != null) {
+                            Text(
+                                text = eventCodeError!!,
+                                color = Color(0xFFE63946),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    showEventCodeDialog = false
+                                    eventCodeInput = ""
+                                    eventCodeError = null
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Batal", color = Color.Gray)
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    val config = try {
+                                        com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                    val matchedEvent = config?.events?.firstOrNull { it.code.equals(eventCodeInput, ignoreCase = true) }
+                                    if (matchedEvent != null) {
+                                        unlockedEventId = matchedEvent.id
+                                        showEventCodeDialog = false
+                                        showUnlockSuccessAnim = true
+                                    } else if (eventCodeInput.equals("UMUM", ignoreCase = true)) {
+                                        unlockedEventId = "general"
+                                        showEventCodeDialog = false
+                                        Toast.makeText(context, "Sesi foto diatur kembali ke umum.", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        eventCodeError = "Kode Event salah / tidak ditemukan!"
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Verifikasi", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Event Unlocked Success Dialog (Scenario B)
+        if (showUnlockSuccessAnim) {
+            Dialog(onDismissRequest = { showUnlockSuccessAnim = false }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
+                    border = BorderStroke(2.dp, Color(0xFFF7B801)) // Gold border
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "✨ EVENT TERBUKA ✨",
+                            color = Color(0xFFF7B801),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        
+                        Text("🔓", fontSize = 48.sp)
+                        
+                        Text(
+                            text = "Selamat Datang di\n${resolvedEventName ?: "Acara Khusus"}!",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 22.sp
+                        )
+                        
+                        Text(
+                            text = "Seluruh jepretan Anda akan masuk dalam galeri album eksklusif acara ini.",
+                            color = Color.Gray,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Button(
+                            onClick = {
+                                showUnlockSuccessAnim = false
+                                onStartClick(unlockedEventId)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF7B801)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("MULAI SESI FOTO", color = Color(0xFF1E1E24), fontWeight = FontWeight.Bold)
                         }
                     }
                 }

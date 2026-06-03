@@ -25,8 +25,11 @@ fun MainNavigation() {
             // Home Screen
             entry<Home> {
                 HomeScreen(
-                    onStartClick = { backStack.add(LayoutSelect) },
-                    onAdminNavigate = { backStack.add(Admin) }
+                    onStartClick = { eventId -> backStack.add(LayoutSelect(eventId)) },
+                    onAdminNavigate = { backStack.add(Admin) },
+                    onRemoteStartClick = { frameId, eventId, packageId, sessionId ->
+                        backStack.add(CameraCapture(frameId, eventId, sessionId, packageId))
+                    }
                 )
             }
             
@@ -38,10 +41,10 @@ fun MainNavigation() {
             }
             
             // Layout Selector Screen
-            entry<LayoutSelect> {
+            entry<LayoutSelect> { key ->
                 LayoutSelectScreen(
                     onBackClick = { backStack.removeLastOrNull() },
-                    onLayoutSelected = { type -> backStack.add(FrameSelect(type)) }
+                    onLayoutSelected = { type -> backStack.add(FrameSelect(type, key.eventId)) }
                 )
             }
             
@@ -49,8 +52,9 @@ fun MainNavigation() {
             entry<FrameSelect> { key ->
                 FrameSelectScreen(
                     layoutType = key.layoutType,
+                    eventId = key.eventId,
                     onBackClick = { backStack.removeLastOrNull() },
-                    onFrameSelected = { fId -> backStack.add(CameraCapture(fId)) }
+                    onFrameSelected = { fId -> backStack.add(CameraCapture(fId, key.eventId)) }
                 )
             }
             
@@ -59,7 +63,7 @@ fun MainNavigation() {
                 CameraCaptureScreen(
                     frameId = key.frameId,
                     onBackClick = { backStack.removeLastOrNull() },
-                    onCaptureComplete = { paths -> backStack.add(PreviewResult(paths, key.frameId)) }
+                    onCaptureComplete = { paths -> backStack.add(PreviewResult(paths, key.frameId, key.eventId, key.sessionId, key.packageId)) }
                 )
             }
             
@@ -69,7 +73,7 @@ fun MainNavigation() {
                     photoPaths = key.photoPaths,
                     frameId = key.frameId,
                     onRetakeClick = { backStack.removeLastOrNull() },
-                    onConfirmClick = { path, print -> backStack.add(SharePrint(path, print, key.frameId)) }
+                    onConfirmClick = { path, print -> backStack.add(SharePrint(path, print, key.frameId, key.eventId, key.sessionId, key.packageId)) }
                 )
             }
             
@@ -79,6 +83,9 @@ fun MainNavigation() {
                     finalPhotoPath = key.finalPhotoPath,
                     shouldPrint = key.shouldPrint,
                     frameId = key.frameId,
+                    eventId = key.eventId,
+                    sessionId = key.sessionId,
+                    packageId = key.packageId,
                     onFinishClick = {
                         // Clear the backstack and return back to Home
                         while (backStack.size > 1) {

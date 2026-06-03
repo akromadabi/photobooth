@@ -33,8 +33,11 @@ if ($files) {
     }
 }
 
-// Generate unique session ID
-$sessionId = bin2hex(random_bytes(8));
+// Generate or resolve unique session ID
+$sessionId = isset($_REQUEST['session_id']) ? preg_replace('/[^a-f0-9]/', '', $_REQUEST['session_id']) : '';
+if (empty($sessionId)) {
+    $sessionId = bin2hex(random_bytes(8));
+}
 $response = [
     'success' => false,
     'session_id' => $sessionId,
@@ -83,14 +86,25 @@ if (isset($_FILES['timelapse']) && $_FILES['timelapse']['error'] === UPLOAD_ERR_
 }
 
 if ($response['success']) {
-    $frameId = isset($_GET['frame_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['frame_id']) : '';
+    $frameId = isset($_GET['frame_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['frame_id']) : (isset($_POST['frame_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['frame_id']) : '');
+    $eventId = isset($_GET['event_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['event_id']) : (isset($_POST['event_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['event_id']) : '');
+    
+    $packageId = isset($_REQUEST['package_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_REQUEST['package_id']) : '';
+    
+    $metaData = [
+        'timestamp' => time()
+    ];
     if ($frameId) {
-        $metaData = [
-            'frame_id' => $frameId,
-            'timestamp' => time()
-        ];
-        file_put_contents($uploadDir . $sessionId . '_meta.json', json_encode($metaData));
+        $metaData['frame_id'] = $frameId;
     }
+    if ($eventId) {
+        $metaData['event_id'] = $eventId;
+    }
+    if ($packageId) {
+        $metaData['package_id'] = $packageId;
+    }
+    
+    file_put_contents($uploadDir . $sessionId . '_meta.json', json_encode($metaData));
 
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
     $host = $_SERVER['HTTP_HOST'];

@@ -1,6 +1,9 @@
 package com.example.photobooth.ui.admin
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
+import android.provider.MediaStore
+import java.io.OutputStream
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.graphics.Bitmap
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -65,6 +69,14 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +99,8 @@ fun AdminScreen(
 
     // Tab Selection
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Pengaturan", "Printer", "Riwayat Foto")
+    val tabTitles = listOf("Dashboard", "Pengaturan", "Printer", "Riwayat Foto")
+    var refreshTrigger by remember { mutableIntStateOf(0) }
     
     // State variables
     var backendUrl by remember { mutableStateOf(configManager.backendUrl) }
@@ -97,6 +110,25 @@ fun AdminScreen(
     var printerType by remember { mutableStateOf(configManager.printerType) }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
+    
+    var kioskMode by remember { mutableStateOf(configManager.kioskMode) }
+    var activeEventId by remember { mutableStateOf(configManager.activeEventId) }
+    var showEventDialog by remember { mutableStateOf(false) }
+
+    val eventsList = remember(configManager.syncedFramesJson) {
+        val list = mutableListOf<com.example.photobooth.data.EventInfo>()
+        list.add(com.example.photobooth.data.EventInfo("general", "Umum (Default)", "UMUM"))
+        val syncedJson = configManager.syncedFramesJson
+        if (syncedJson.isNotEmpty()) {
+            try {
+                val config = com.google.gson.Gson().fromJson(syncedJson, com.example.photobooth.data.FrameConfig::class.java)
+                config?.events?.let { list.addAll(it) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        list
+    }
     
     var isSyncing by remember { mutableStateOf(false) }
     var isTestingPrint by remember { mutableStateOf(false) }
@@ -148,9 +180,9 @@ fun AdminScreen(
         }
     }
 
-    // Refresh history when Tab 2 (Riwayat Foto) is selected
-    LaunchedEffect(selectedTab) {
-        if (selectedTab == 2) {
+    // Refresh history when Tab 3 (Riwayat Foto) or Tab 0 (Dashboard) is selected, or when refresh is triggered
+    LaunchedEffect(selectedTab, refreshTrigger) {
+        if (selectedTab == 0 || selectedTab == 3) {
             isLoadingHistory = true
             photoHistory.clear()
             scope.launch(Dispatchers.IO) {
@@ -161,13 +193,13 @@ fun AdminScreen(
                         if (response.isSuccessful && response.body() != null) {
                             photoHistory.addAll(response.body()!!)
                         } else {
-                            Toast.makeText(context, "Gagal memuat riwayat server", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Gagal memuat data dari server", Toast.LENGTH_SHORT).show()
                         }
                         isLoadingHistory = false
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Error koneksi riwayat: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Error koneksi data: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                         isLoadingHistory = false
                     }
                 }
@@ -235,8 +267,19 @@ fun AdminScreen(
                     .padding(16.dp)
             ) {
                 when (selectedTab) {
-                    // TAB 0: Configurations
-                    0 -> Column(
+                    // TAB 0: Interactive Dashboard
+                    0 -> DashboardTab(
+                        photoHistory = photoHistory,
+                        isLoading = isLoadingHistory,
+                        serverOnline = serverOnline,
+                        printerType = printerType,
+                        syncedFramesCount = syncedFramesCount,
+                        onRefresh = { refreshTrigger++ },
+                        onNavigateToTab = { tabIndex -> selectedTab = tabIndex }
+                    )
+
+                    // TAB 1: Configurations
+                    1 -> Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
@@ -480,10 +523,130 @@ fun AdminScreen(
                                 Text("Simpan Setelan Sesi", fontWeight = FontWeight.Bold)
                             }
                         }
+
+                        // Section 4: Event & Kiosk Mode Config
+                        AdminCard(title = "Mode Kiosk & Pengelolaan Event") {
+                            Text("Pilih Mode Operasional Kiosk:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Kiosk mode options
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { kioskMode = "MULTI_EVENT" }
+                                ) {
+                                    RadioButton(
+                                        selected = kioskMode == "MULTI_EVENT",
+                                        onClick = { kioskMode = "MULTI_EVENT" },
+                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Multi-Event (Kode)", color = Color.White, fontSize = 12.sp)
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { kioskMode = "DEDICATED" }
+                                ) {
+                                    RadioButton(
+                                        selected = kioskMode == "DEDICATED",
+                                        onClick = { kioskMode = "DEDICATED" },
+                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Satu Event Terkunci", color = Color.White, fontSize = 12.sp)
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            if (kioskMode == "DEDICATED") {
+                                val currentEventName = eventsList.firstOrNull { it.id == activeEventId }?.name ?: "Pilih Event"
+                                Text("Pilih Event Aktif Acara:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF2A2A35))
+                                        .border(1.dp, Color(0xFF3F3F4F), RoundedCornerShape(8.dp))
+                                        .clickable { showEventDialog = true }
+                                        .padding(16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(currentEventName, color = Color.White, fontSize = 14.sp)
+                                        Text("Ubah ▾", color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    configManager.kioskMode = kioskMode
+                                    configManager.activeEventId = activeEventId
+                                    Toast.makeText(context, "Setelan mode event disimpan!", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("Simpan Setelan Event", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // Event Selection Dialog
+                        if (showEventDialog) {
+                            Dialog(onDismissRequest = { showEventDialog = false }) {
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text("Pilih Event Aktif", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        eventsList.forEach { event ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        activeEventId = event.id
+                                                        showEventDialog = false
+                                                    }
+                                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(event.name, color = Color.White, fontSize = 14.sp)
+                                                if (activeEventId == event.id) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Selected",
+                                                        tint = Color(0xFFE63946)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
-                    // TAB 1: Printer Config
-                    1 -> Column(
+                    // TAB 2: Printer Config
+                    2 -> Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
@@ -653,8 +816,8 @@ fun AdminScreen(
                         }
                     }
 
-                    // TAB 2: Photo History Grid
-                    2 -> {
+                    // TAB 3: Photo History Grid
+                    3 -> {
                         if (isLoadingHistory) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(color = Color(0xFFE63946))
@@ -718,6 +881,8 @@ fun AdminScreen(
         
         // Detail History Dialog
         selectedHistoryItem?.let { item ->
+            var isSaving by remember { mutableStateOf(false) }
+
             // Generate QR Code bitmap for the history download url
             LaunchedEffect(item.id) {
                 scope.launch(Dispatchers.IO) {
@@ -835,6 +1000,27 @@ fun AdminScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text("CETAK ULANG FOTO (REPRINT)", fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    isSaving = true
+                                    scope.launch {
+                                        val msg = saveImageToGallery(context, item.photoUrl)
+                                        isSaving = false
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                enabled = !isSaving,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (isSaving) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                                } else {
+                                    Text("SIMPAN FOTO KE GALERI", fontWeight = FontWeight.Bold)
                                 }
                             }
                             
@@ -1038,4 +1224,572 @@ private fun generateQrCode(text: String, width: Int, height: Int): Bitmap {
     val bitmap = Bitmap.createBitmap(bitMatrixWidth, bitMatrixHeight, Bitmap.Config.ARGB_8888)
     bitmap.setPixels(pixels, 0, bitMatrixWidth, 0, 0, bitMatrixWidth, bitMatrixHeight)
     return bitmap
+}
+
+@Composable
+fun DashboardTab(
+    photoHistory: List<HistoryItem>,
+    isLoading: Boolean,
+    serverOnline: Boolean?,
+    printerType: String,
+    syncedFramesCount: Int,
+    onRefresh: () -> Unit,
+    onNavigateToTab: (Int) -> Unit
+) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color(0xFFE63946))
+        }
+        return
+    }
+
+    val context = LocalContext.current
+
+    // Calculate stats: today count
+    val todayCount = remember(photoHistory) {
+        val cal = java.util.Calendar.getInstance()
+        val todayYear = cal.get(java.util.Calendar.YEAR)
+        val todayDay = cal.get(java.util.Calendar.DAY_OF_YEAR)
+        photoHistory.count { item ->
+            val itemCal = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }
+            itemCal.get(java.util.Calendar.YEAR) == todayYear &&
+            itemCal.get(java.util.Calendar.DAY_OF_YEAR) == todayDay
+        }
+    }
+
+    // Peak Hour calculation
+    val peakHourStr = remember(photoHistory) {
+        if (photoHistory.isEmpty()) {
+            "N/A"
+        } else {
+            val hourlyCounts = IntArray(24)
+            photoHistory.forEach { item ->
+                val cal = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }
+                val hour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+                if (hour in 0..23) {
+                    hourlyCounts[hour]++
+                }
+            }
+            val maxHour = hourlyCounts.indices.maxByOrNull { hourlyCounts[it] } ?: 0
+            val maxHourFormatted = String.format(Locale.getDefault(), "%02d:00", maxHour)
+            val nextHourFormatted = String.format(Locale.getDefault(), "%02d:00", (maxHour + 1) % 24)
+            "$maxHourFormatted - $nextHourFormatted"
+        }
+    }
+
+    // Weekly metrics
+    val last7Days = remember {
+        (0..6).map { i ->
+            val cal = java.util.Calendar.getInstance()
+            cal.add(java.util.Calendar.DAY_OF_YEAR, -i)
+            cal.time
+        }.reversed()
+    }
+    val weeklyLabels = remember(last7Days) {
+        last7Days.map { date ->
+            SimpleDateFormat("dd/MM", Locale.getDefault()).format(date)
+        }
+    }
+    val weeklyValues = remember(photoHistory, last7Days) {
+        last7Days.map { date ->
+            val cal = java.util.Calendar.getInstance().apply { time = date }
+            val targetYear = cal.get(java.util.Calendar.YEAR)
+            val targetDay = cal.get(java.util.Calendar.DAY_OF_YEAR)
+            photoHistory.count { item ->
+                val itemCal = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }
+                itemCal.get(java.util.Calendar.YEAR) == targetYear &&
+                itemCal.get(java.util.Calendar.DAY_OF_YEAR) == targetDay
+            }
+        }
+    }
+
+    // Time of day metrics
+    val morningCount = remember(photoHistory) {
+        photoHistory.count { item ->
+            val hour = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }.get(java.util.Calendar.HOUR_OF_DAY)
+            hour in 6..11
+        }
+    }
+    val afternoonCount = remember(photoHistory) {
+        photoHistory.count { item ->
+            val hour = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }.get(java.util.Calendar.HOUR_OF_DAY)
+            hour in 12..17
+        }
+    }
+    val eveningCount = remember(photoHistory) {
+        photoHistory.count { item ->
+            val hour = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }.get(java.util.Calendar.HOUR_OF_DAY)
+            hour in 18..23
+        }
+    }
+    val nightCount = remember(photoHistory) {
+        photoHistory.count { item ->
+            val hour = java.util.Calendar.getInstance().apply { timeInMillis = item.timestamp * 1000L }.get(java.util.Calendar.HOUR_OF_DAY)
+            hour in 0..5
+        }
+    }
+    val timeLabels = listOf("Pagi", "Siang", "Malam", "Subuh")
+    val timeValues = listOf(morningCount, afternoonCount, eveningCount, nightCount)
+
+    // Toggle logic for chart
+    var selectedChartMode by remember { mutableStateOf("WEEKLY") } // "WEEKLY" or "TIMEOFDAY"
+
+    // Pulsing dot animation for live connection indicator
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Upper stats row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Stat 1: Total Sesi
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(95.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF18181F))
+                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                    Text("TOTAL SESI FOTO", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "${photoHistory.size} Sesi",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Stat 2: Sesi Hari Ini
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(95.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF18181F))
+                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                    Text("SESI HARI INI", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "$todayCount Sesi",
+                        color = Color(0xFF52B788),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Stat 3: Jam Teramai
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(95.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF18181F))
+                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                    Text("JAM TERAMAI", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = peakHourStr,
+                        color = Color(0xFFF7B801),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // Toggle Chart Selector Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF18181F))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Button(
+                onClick = { selectedChartMode = "WEEKLY" },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedChartMode == "WEEKLY") Color(0xFFE63946) else Color.Transparent,
+                    contentColor = if (selectedChartMode == "WEEKLY") Color.White else Color.Gray
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 10.dp)
+            ) {
+                Text("Grafik 7 Hari Terakhir", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            Button(
+                onClick = { selectedChartMode = "TIMEOFDAY" },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedChartMode == "TIMEOFDAY") Color(0xFFE63946) else Color.Transparent,
+                    contentColor = if (selectedChartMode == "TIMEOFDAY") Color.White else Color.Gray
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 10.dp)
+            ) {
+                Text("Distribusi Waktu Hari", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        // The Custom Chart Card
+        if (selectedChartMode == "WEEKLY") {
+            InteractiveBarChart(
+                title = "Statistik Mingguan",
+                labels = weeklyLabels,
+                values = weeklyValues,
+                accentColor = Color(0xFFE63946)
+            )
+        } else {
+            InteractiveBarChart(
+                title = "Distribusi Berdasarkan Waktu",
+                labels = timeLabels,
+                values = timeValues,
+                accentColor = Color(0xFFF7B801)
+            )
+        }
+
+        // Live connection & status summary card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+            border = BorderStroke(1.dp, Color(0xFF2A2A35))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Status Sistem & Koneksi Kiosk", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = onRefresh) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh Data", tint = Color.White)
+                    }
+                }
+
+                HorizontalDivider(color = Color(0xFF2A2A35))
+
+                // Detail connection row 1
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("API Server:", color = Color.Gray, fontSize = 12.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(RoundedCornerShape(50.dp))
+                                .alpha(pulseAlpha)
+                                .background(
+                                    when (serverOnline) {
+                                        true -> Color(0xFF52B788)
+                                        false -> Color(0xFFE63946)
+                                        else -> Color(0xFFF7B801)
+                                    }
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when (serverOnline) {
+                                true -> "ONLINE"
+                                false -> "OFFLINE"
+                                else -> "CHECKING"
+                            },
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Detail connection row 2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Printer Driver Terpilih:", color = Color.Gray, fontSize = 12.sp)
+                    Text(
+                        text = when (printerType) {
+                            "THERMAL" -> "THERMAL (XP-420B)"
+                            "COLOR" -> "COLOR (PDF/SYSTEM)"
+                            else -> "NONE"
+                        },
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Detail connection row 3
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Katalog Bingkai Offline:", color = Color.Gray, fontSize = 12.sp)
+                    Text(
+                        text = "$syncedFramesCount Bingkai",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // Fast actions shortcuts list
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+            border = BorderStroke(1.dp, Color(0xFF2A2A35))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("Pintasan Navigasi Cepat", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onNavigateToTab(1) },
+                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                    ) {
+                        Text("Pengaturan", fontSize = 11.sp, maxLines = 1)
+                    }
+
+                    OutlinedButton(
+                        onClick = { onNavigateToTab(2) },
+                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                    ) {
+                        Text("Setel Printer", fontSize = 11.sp, maxLines = 1)
+                    }
+
+                    OutlinedButton(
+                        onClick = { onNavigateToTab(3) },
+                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                    ) {
+                        Text("Riwayat Foto", fontSize = 11.sp, maxLines = 1)
+                    }
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun InteractiveBarChart(
+    title: String,
+    labels: List<String>,
+    values: List<Int>,
+    accentColor: Color = Color(0xFFE63946),
+    modifier: Modifier = Modifier
+) {
+    var selectedBarIndex by remember(labels, values) { mutableStateOf<Int?>(null) }
+    val maxVal = if (values.maxOrNull() ?: 0 > 0) values.maxOrNull()!! else 10
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+        border = BorderStroke(1.dp, Color(0xFF2A2A35))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                if (selectedBarIndex != null) {
+                    Text(
+                        text = "${labels[selectedBarIndex!!]}: ${values[selectedBarIndex!!]} foto",
+                        color = accentColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Text(
+                        text = "Sentuh batang untuk detail",
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                values.forEachIndexed { index, value ->
+                    val barHeightFraction = value.toFloat() / maxVal
+                    val isSelected = selectedBarIndex == index
+                    
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { selectedBarIndex = if (isSelected) null else index }
+                    ) {
+                        Box(
+                            modifier = Modifier.height(20.dp),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            if (isSelected || (value > 0 && selectedBarIndex == null)) {
+                                Text(
+                                    text = value.toString(),
+                                    color = if (isSelected) accentColor else Color.White.copy(alpha = 0.8f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        val barHeight = (100 * barHeightFraction).coerceAtLeast(4f).dp
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(barHeight)
+                                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = if (isSelected) {
+                                            listOf(accentColor, accentColor.copy(alpha = 0.7f))
+                                        } else {
+                                            listOf(accentColor.copy(alpha = 0.4f), accentColor.copy(alpha = 0.15f))
+                                        }
+                                    )
+                                )
+                        )
+                        
+                        Spacer(modifier = Modifier.height(6.dp))
+                        
+                        Text(
+                            text = labels[index],
+                            color = if (isSelected) Color.White else Color.Gray,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private suspend fun saveImageToGallery(context: Context, photoUrl: String): String {
+    return withContext(Dispatchers.IO) {
+        try {
+            val url = URL(photoUrl)
+            val connection = url.openConnection()
+            connection.connectTimeout = 10000
+            connection.readTimeout = 15000
+            val inputStream = connection.getInputStream()
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream.close()
+            
+            if (bitmap == null) {
+                return@withContext "Gagal mengunduh gambar untuk disimpan."
+            }
+            
+            val filename = "Photobooth_${System.currentTimeMillis()}.png"
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Photobooth")
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+            }
+            
+            val resolver = context.contentResolver
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            
+            if (uri == null) {
+                return@withContext "Gagal membuat entri galeri."
+            }
+            
+            val outputStream: java.io.OutputStream? = resolver.openOutputStream(uri)
+            if (outputStream == null) {
+                return@withContext "Gagal membuka media penyimpanan."
+            }
+            
+            val saved = bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, contentValues, null, null)
+            }
+            
+            if (saved) {
+                "Foto berhasil disimpan ke Galeri!"
+            } else {
+                "Gagal menyimpan berkas gambar."
+            }
+        } catch (e: Exception) {
+            "Gagal menyimpan: ${e.localizedMessage}"
+        }
+    }
 }

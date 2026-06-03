@@ -1,0 +1,7 @@
+{
+  "admin_pin": "1234",
+  "countdown_seconds": 5,
+  "total_shots": 4,
+  "printer_type": "NONE",
+  "use_biometric": true
+}

@@ -42,7 +42,10 @@ fun SharePrintScreen(
     shouldPrint: Boolean,
     onFinishClick: () -> Unit,
     modifier: Modifier = Modifier,
-    frameId: String = ""
+    frameId: String = "",
+    eventId: String = "general",
+    sessionId: String = "",
+    packageId: String = ""
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -77,7 +80,10 @@ fun SharePrintScreen(
                 val api = NetworkClient.getApi(configManager.backendUrl)
                 val response = api.uploadPhotos(
                     photo = photoPart,
-                    frameId = if (frameId.isNotEmpty()) frameId else null
+                    frameId = if (frameId.isNotEmpty()) frameId else null,
+                    eventId = if (eventId.isNotEmpty() && eventId != "general") eventId else null,
+                    sessionId = if (sessionId.isNotEmpty()) sessionId else null,
+                    packageId = if (packageId.isNotEmpty()) packageId else null
                 )
                 
                 withContext(Dispatchers.Main) {
@@ -89,6 +95,16 @@ fun SharePrintScreen(
                         }
                         uploadStatus = "Foto berhasil diunggah!"
                         isUploading = false
+                        
+                        if (sessionId.isNotEmpty()) {
+                            scope.launch(Dispatchers.IO) {
+                                try {
+                                    api.completeSession(sessionId)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        }
                     } else {
                         val msg = response.body()?.message ?: "Gagal mengunggah foto."
                         uploadStatus = "Gagal: $msg"

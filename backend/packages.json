@@ -1,0 +1,24 @@
+[
+  {
+    "id": "paket_hemat",
+    "name": "Paket Hemat",
+    "price": 15000,
+    "features": {
+      "print": true,
+      "download": false,
+      "gif": false,
+      "sticker": false
+    }
+  },
+  {
+    "id": "paket_best_deal",
+    "name": "Paket Best Deal",
+    "price": 30000,
+    "features": {
+      "print": true,
+      "download": true,
+      "gif": true,
+      "sticker": true
+    }
+  }
+]

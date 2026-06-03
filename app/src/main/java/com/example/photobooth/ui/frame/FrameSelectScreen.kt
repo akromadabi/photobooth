@@ -36,6 +36,7 @@ import java.io.File
 @Composable
 fun FrameSelectScreen(
     layoutType: String,
+    eventId: String,
     onBackClick: () -> Unit,
     onFrameSelected: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -44,8 +45,8 @@ fun FrameSelectScreen(
     val configManager = remember { ConfigManager(context) }
     
     // Load synced frames or get fallbacks
-    val frames = remember(layoutType) {
-        getFramesForLayout(context, layoutType, configManager)
+    val frames = remember(layoutType, eventId) {
+        getFramesForLayout(context, layoutType, configManager, eventId)
     }
 
     Scaffold(
@@ -196,14 +197,25 @@ fun FrameCard(
 }
 
 // Logic to load frames from synced configurations or load fallbacks
-fun getFramesForLayout(context: Context, layoutType: String, configManager: ConfigManager): List<Frame> {
+fun getFramesForLayout(context: Context, layoutType: String, configManager: ConfigManager, eventId: String = "general"): List<Frame> {
     val syncedJson = configManager.syncedFramesJson
     val framesList = mutableListOf<Frame>()
     
     if (syncedJson.isNotEmpty()) {
         try {
             val config = Gson().fromJson(syncedJson, FrameConfig::class.java)
-            framesList.addAll(config.frames.filter { it.type.equals(layoutType, ignoreCase = true) })
+            val matchingTypeFrames = config.frames.filter { it.type.equals(layoutType, ignoreCase = true) }
+            val filteredByEvent = if (eventId.isNotEmpty() && eventId != "general") {
+                matchingTypeFrames.filter { it.eventId == eventId }
+            } else {
+                matchingTypeFrames.filter { it.eventId == "general" || it.eventId.isNullOrEmpty() }
+            }
+            
+            if (filteredByEvent.isEmpty() && eventId != "general") {
+                framesList.addAll(matchingTypeFrames.filter { it.eventId == "general" || it.eventId.isNullOrEmpty() })
+            } else {
+                framesList.addAll(filteredByEvent)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

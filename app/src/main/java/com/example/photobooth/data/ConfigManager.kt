@@ -15,7 +15,17 @@ class ConfigManager(context: Context) {
         private const val KEY_TOTAL_SHOTS = "total_shots"
         private const val KEY_SYNCED_FRAMES_JSON = "synced_frames_json"
         private const val KEY_USE_BIOMETRIC = "use_biometric"
+        private const val KEY_ACTIVE_EVENT_ID = "active_event_id"
+        private const val KEY_KIOSK_MODE = "kiosk_mode" // "DEDICATED" or "MULTI_EVENT"
     }
+
+    var activeEventId: String
+        get() = prefs.getString(KEY_ACTIVE_EVENT_ID, "general") ?: "general"
+        set(value) = prefs.edit().putString(KEY_ACTIVE_EVENT_ID, value).apply()
+
+    var kioskMode: String
+        get() = prefs.getString(KEY_KIOSK_MODE, "MULTI_EVENT") ?: "MULTI_EVENT"
+        set(value) = prefs.edit().putString(KEY_KIOSK_MODE, value).apply()
 
     var adminPin: String
         get() = prefs.getString(KEY_ADMIN_PIN, "1234") ?: "1234"
