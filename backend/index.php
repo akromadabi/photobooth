@@ -1,5 +1,9 @@
 <?php
 $sessionId = isset($_GET['id']) ? preg_replace('/[^a-f0-9]/', '', $_GET['id']) : '';
+if (empty($sessionId)) {
+    header("Location: display.php");
+    exit;
+}
 $photoFile = '';
 $timelapseFile = '';
 
