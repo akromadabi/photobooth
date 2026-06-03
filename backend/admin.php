@@ -55,19 +55,20 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
             :root {
-                --bg-color: #0f0f12;
-                --card-bg: #18181f;
-                --primary-red: #e63946;
-                --text-main: #f8f9fa;
-                --text-muted: #a0a0b0;
-                --border-color: #2a2a35;
+                --bg-color: #f8fafc;
+                --card-bg: #ffffff;
+                --primary: #4f46e5;
+                --text-main: #0f172a;
+                --text-muted: #64748b;
+                --border-color: #e2e8f0;
             }
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
                 font-family: 'Outfit', sans-serif;
-                background-color: var(--bg-color);
+                background: linear-gradient(135deg, #eef2f6 0%, #f8fafc 100%);
                 color: var(--text-main);
                 min-height: 100vh;
                 display: flex;
@@ -77,38 +78,52 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
                 position: relative;
                 overflow: hidden;
             }
-            .background-glow {
+            .background-glow-1 {
                 position: absolute;
-                width: 500px;
-                height: 500px;
-                background: radial-gradient(circle, rgba(230, 57, 70, 0.15) 0%, rgba(15, 15, 18, 0) 70%);
-                z-index: -1;
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
+                z-index: 1;
                 pointer-events: none;
+                top: -10%;
+                left: -10%;
+            }
+            .background-glow-2 {
+                position: absolute;
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, rgba(248, 250, 252, 0) 70%);
+                z-index: 1;
+                pointer-events: none;
+                bottom: -10%;
+                right: -10%;
             }
             .login-card {
                 width: 100%;
-                max-width: 400px;
+                max-width: 420px;
                 background-color: var(--card-bg);
                 border: 1px solid var(--border-color);
                 border-radius: 24px;
-                padding: 36px 30px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+                padding: 44px 36px;
+                box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.1);
                 text-align: center;
                 z-index: 10;
             }
             .logo {
                 font-weight: 800;
-                font-size: 2rem;
-                letter-spacing: -0.5px;
-                margin-bottom: 8px;
+                font-size: 2.2rem;
+                letter-spacing: -1px;
+                margin-bottom: 6px;
+                color: #1e293b;
             }
-            .logo span { color: var(--primary-red); }
+            .logo span { color: var(--primary); }
             .subtitle {
-                font-size: 0.9rem;
+                font-size: 0.8rem;
                 color: var(--text-muted);
                 text-transform: uppercase;
-                letter-spacing: 1px;
-                margin-bottom: 30px;
+                letter-spacing: 1.5px;
+                font-weight: 600;
+                margin-bottom: 36px;
             }
             .form-group {
                 margin-bottom: 24px;
@@ -116,57 +131,66 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
             }
             label {
                 display: block;
-                font-size: 0.85rem;
+                font-size: 0.75rem;
                 font-weight: 600;
                 color: var(--text-muted);
                 margin-bottom: 8px;
                 text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
             input[type="password"] {
                 width: 100%;
                 padding: 16px;
-                background-color: #0d0d11;
+                background-color: #f8fafc;
                 border: 1px solid var(--border-color);
-                border-radius: 12px;
-                color: white;
-                font-size: 1.1rem;
+                border-radius: 14px;
+                color: var(--text-main);
+                font-size: 1.2rem;
                 text-align: center;
-                letter-spacing: 4px;
+                letter-spacing: 6px;
                 font-family: inherit;
                 outline: none;
-                transition: border-color 0.25s;
+                transition: all 0.2s ease;
             }
             input[type="password"]:focus {
-                border-color: var(--primary-red);
+                border-color: var(--primary);
+                background-color: #ffffff;
+                box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
             }
             .btn {
                 width: 100%;
                 padding: 16px;
                 font-size: 1rem;
                 font-weight: 600;
-                border-radius: 12px;
+                border-radius: 14px;
                 border: none;
                 cursor: pointer;
-                background-color: var(--primary-red);
+                background-color: var(--primary);
                 color: white;
-                box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);
+                box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
                 font-family: inherit;
-                transition: all 0.25s;
+                transition: all 0.25s ease;
             }
             .btn:hover {
-                background-color: #d62d3a;
+                background-color: #4338ca;
                 transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25);
             }
             .error-message {
-                color: var(--primary-red);
+                color: #ef4444;
                 font-size: 0.85rem;
-                margin-top: 12px;
+                margin-top: 18px;
                 font-weight: 600;
+                background-color: #fee2e2;
+                padding: 12px;
+                border-radius: 10px;
+                border: 1px solid rgba(239, 68, 68, 0.1);
             }
         </style>
     </head>
     <body>
-        <div class="background-glow"></div>
+        <div class="background-glow-1"></div>
+        <div class="background-glow-2"></div>
         <div class="login-card">
             <div class="logo">Creative<span>Studio</span></div>
             <div class="subtitle">Kiosk Web Controller</div>
@@ -402,110 +426,288 @@ foreach ($weeklyStats as $date => $cnt) {
     <title>Kiosk Admin Dashboard - Creative Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #0c0c0e;
-            --card-bg: #14141a;
-            --primary-red: #e63946;
-            --primary-green: #52b788;
-            --primary-amber: #f7b801;
-            --text-main: #f8f9fa;
-            --text-muted: #8d8d9f;
-            --border-color: #22222a;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #e0e7ff;
+            
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --success-dark: #065f46;
+            
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --warning-dark: #92400e;
+            
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --danger-dark: #991b1b;
+            
+            --info: #0ea5e9;
+            --info-light: #e0f2fe;
+            --info-dark: #075985;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-main);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            overflow-x: hidden;
         }
 
-        header {
-            background-color: var(--card-bg);
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 28px 24px;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding-bottom: 24px;
             border-bottom: 1px solid var(--border-color);
-            padding: 18px 30px;
+            margin-bottom: 28px;
+        }
+
+        .sidebar-brand .logo {
+            font-weight: 800;
+            font-size: 1.6rem;
+            letter-spacing: -1px;
+            color: #1e293b;
+        }
+
+        .sidebar-brand .logo span {
+            color: var(--primary);
+        }
+
+        .sidebar-brand .logo-sub {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 18px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            color: var(--text-main);
+            background-color: #f1f5f9;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            display: inline-block;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .logout-link:hover {
+            background-color: var(--danger-light);
+            color: var(--danger);
+        }
+
+        /* Main Content wrapper */
+        .main-wrapper {
+            margin-left: 280px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .top-header {
+            background-color: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 90;
         }
 
-        .header-logo {
+        .page-title {
+            font-size: 1.5rem;
             font-weight: 800;
-            font-size: 1.6rem;
+            color: var(--text-main);
             letter-spacing: -0.5px;
         }
-        .header-logo span { color: var(--primary-red); }
 
-        .header-actions {
+        .header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 28px;
         }
 
-        .btn-header {
-            padding: 10px 18px;
-            font-size: 0.9rem;
+        .current-time {
+            font-size: 0.85rem;
+            color: var(--text-muted);
             font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            font-family: inherit;
-            border: 1px solid var(--border-color);
-            background-color: #1a1a24;
-            color: var(--text-main);
-            transition: all 0.25s;
-        }
-        .btn-header:hover {
-            background-color: var(--primary-red);
-            border-color: var(--primary-red);
+            background-color: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 20px;
         }
 
-        .main-content {
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-profile .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.12);
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .profile-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Content Body */
+        .content-body {
+            padding: 40px;
             flex: 1;
-            padding: 30px;
             max-width: 1400px;
             width: 100%;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
+        }
+
+        /* Tab panels */
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Metrics grid */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1f));
-            gap: 20px;
-            width: 100%;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
         }
 
         .metric-card {
-            background-color: var(--card-bg);
+            background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 24px;
             display: flex;
             align-items: center;
             gap: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
         }
 
         .metric-icon {
-            width: 54px;
-            height: 54px;
-            border-radius: 14px;
-            background-color: #1a1a24;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            color: var(--primary-red);
         }
+
+        .metric-icon.indigo { background-color: var(--primary-light); color: var(--primary); }
+        .metric-icon.emerald { background-color: var(--success-light); color: var(--success); }
+        .metric-icon.rose { background-color: var(--danger-light); color: var(--danger); }
+        .metric-icon.amber { background-color: var(--warning-light); color: var(--warning); }
 
         .metric-info {
             display: flex;
@@ -514,123 +716,344 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .metric-label {
-            font-size: 0.8rem;
-            font-weight: 600;
+            font-size: 0.75rem;
+            font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
         .metric-value {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 800;
+            color: var(--text-main);
         }
 
-        /* Two column layout */
-        .content-layout {
+        /* Split layout for dynamic status widget on Dashboard */
+        .dashboard-row {
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 30px;
-            align-items: start;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 28px;
+            margin-bottom: 32px;
         }
 
         @media (max-width: 1024px) {
-            .content-layout {
+            .dashboard-row {
                 grid-template-columns: 1fr;
             }
         }
 
-        .dashboard-section {
-            background-color: var(--card-bg);
+        /* Card Section styling */
+        .card-section {
+            background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 24px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            padding: 28px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+            margin-bottom: 28px;
         }
 
-        .section-header {
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 700;
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* Configuration Form */
-        .form-row {
+        /* Forms Layout & Inputs */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
+            gap: 8px;
+            margin-bottom: 20px;
         }
 
-        .form-row label {
-            font-size: 0.8rem;
-            font-weight: 600;
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
 
-        .form-control {
-            width: 100%;
-            padding: 12px;
-            background-color: #0c0c0e;
+        .form-input, .form-select {
+            padding: 12px 18px;
+            background-color: #f8fafc;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            color: white;
+            border-radius: 12px;
+            color: var(--text-main);
             font-family: inherit;
             font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.25s;
+            transition: all 0.2s ease;
         }
 
-        .form-control:focus {
-            border-color: var(--primary-red);
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
-        .btn-submit {
-            background-color: var(--primary-red);
-            color: white;
+        /* Checkbox styling */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background-color: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container:hover {
+            border-color: var(--primary);
+            background-color: #f5f6ff;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            font-size: 0.85rem;
             font-weight: 600;
-            padding: 14px;
+            color: var(--text-main);
+        }
+
+        /* Buttons styling */
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 700;
+            padding: 14px 28px;
             border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1.5px);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            font-weight: 700;
+            padding: 14px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-light);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            font-weight: 700;
+            padding: 14px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            text-decoration: none;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger);
+            color: white;
+            transform: translateY(-1.5px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        }
+
+        /* Custom mini clear history button */
+        .btn-clear-history {
+            background-color: var(--danger-light);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.1);
+            padding: 8px 16px;
+            font-size: 0.8rem;
             border-radius: 10px;
             cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 700;
+        }
+
+        .btn-clear-history:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Table & Lists */
+        .table-responsive {
             width: 100%;
-            transition: background-color 0.25s;
-            font-family: inherit;
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
         }
 
-        .btn-submit:hover {
-            background-color: #d62d3a;
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
         }
 
-        /* History Photo Grid */
-        .history-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        .custom-table th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 16px 20px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .custom-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .custom-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .custom-table tbody tr:hover {
+            background-color: #fcfdfe;
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background-color: var(--success-light); color: var(--success-dark); }
+        .badge-warning { background-color: var(--warning-light); color: var(--warning-dark); }
+        .badge-danger { background-color: var(--danger-light); color: var(--danger-dark); }
+        .badge-info { background-color: var(--info-light); color: var(--info-dark); }
+        .badge-gray { background-color: #f1f5f9; color: #475569; }
+
+        /* Quick Info card */
+        .status-widget {
+            display: flex;
+            flex-direction: column;
             gap: 16px;
         }
 
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-row .label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .status-row .val {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Polaroid-style Film strips */
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 28px;
+        }
+
         .history-card {
-            background-color: #0c0c0e;
+            background-color: #ffffff;
             border: 1px solid var(--border-color);
             border-radius: 16px;
-            overflow: hidden;
+            padding: 12px 12px 18px 12px;
             cursor: pointer;
-            transition: border-color 0.25s, transform 0.25s;
-            position: relative;
-            aspect-ratio: 0.45;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .history-card:hover {
-            border-color: var(--primary-red);
-            transform: translateY(-2px);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.03);
+            border-color: var(--primary);
+        }
+
+        .history-img-wrapper {
+            width: 100%;
+            aspect-ratio: 0.45;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
         }
 
         .history-img {
@@ -638,36 +1061,73 @@ foreach ($weeklyStats as $date => $cnt) {
             height: 100%;
             object-fit: cover;
             display: block;
+            transition: transform 0.3s ease;
         }
 
-        .history-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-            padding: 8px;
-            text-align: center;
+        .history-card:hover .history-img {
+            transform: scale(1.05);
+        }
+
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-id {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            font-family: monospace;
+            letter-spacing: -0.2px;
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-frame {
+            font-size: 0.65rem;
+            font-weight: 700;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
         }
 
         .history-time {
             font-size: 0.7rem;
-            font-weight: 600;
-            color: white;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
+        /* Success alerts styling */
         .alert-status {
-            padding: 14px;
-            border-radius: 10px;
+            padding: 16px 20px;
+            border-radius: 14px;
             font-size: 0.9rem;
-            font-weight: 600;
-            text-align: center;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            animation: slideDown 0.3s ease;
         }
-        .alert-saved { background-color: rgba(82, 183, 136, 0.15); color: var(--primary-green); border: 1px solid var(--primary-green); }
-        .alert-deleted { background-color: rgba(230, 57, 70, 0.15); color: var(--primary-red); border: 1px solid var(--primary-red); }
-        .alert-cleared { background-color: rgba(247, 184, 1, 0.15); color: var(--primary-amber); border: 1px solid var(--primary-amber); }
 
-        /* Modal Dialog Styling */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-saved { background-color: var(--success-light); color: var(--success-dark); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .alert-deleted { background-color: var(--danger-light); color: var(--danger-dark); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .alert-cleared { background-color: var(--warning-light); color: var(--warning-dark); border: 1px solid rgba(245, 158, 11, 0.2); }
+
+        /* Modal frosted overlay */
         .modal {
             display: none;
             position: fixed;
@@ -675,12 +1135,13 @@ foreach ($weeklyStats as $date => $cnt) {
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
+            background-color: rgba(15, 23, 42, 0.4);
             z-index: 1000;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            backdrop-filter: blur(8px);
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
         }
 
         .modal.active {
@@ -688,43 +1149,58 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .modal-content {
-            background-color: var(--card-bg);
+            background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 28px;
-            max-width: 720px;
+            max-width: 780px;
             width: 100%;
-            padding: 24px;
+            padding: 32px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
             position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .modal-close {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
+            top: 24px;
+            right: 24px;
+            background: #f1f5f9;
             border: none;
             color: var(--text-muted);
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             cursor: pointer;
-            transition: color 0.25s;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
-        .modal-close:hover { color: white; }
+        .modal-close:hover { background-color: var(--danger-light); color: var(--danger); }
 
         .modal-title {
             font-size: 1.3rem;
-            font-weight: 700;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
         }
 
         .modal-split {
             display: flex;
-            gap: 24px;
-            height: 380px;
+            gap: 32px;
+            height: 420px;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 640px) {
             .modal-split {
                 flex-direction: column;
                 height: auto;
@@ -733,12 +1209,14 @@ foreach ($weeklyStats as $date => $cnt) {
 
         .modal-preview {
             flex: 1;
-            background-color: black;
-            border-radius: 16px;
+            background-color: #0f172a;
+            border-radius: 20px;
             border: 1px solid var(--border-color);
             overflow: hidden;
             display: flex;
             justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .modal-preview img {
@@ -748,303 +1226,409 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .modal-actions {
-            width: 220px;
+            width: 250px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
             justify-content: center;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 640px) {
             .modal-actions {
                 width: 100%;
             }
         }
 
         .qr-box {
-            background-color: white;
-            border-radius: 12px;
-            padding: 10px;
-            width: 160px;
-            height: 160px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 12px;
+            width: 170px;
+            height: 170px;
             margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         .qr-box canvas { width: 100% !important; height: 100% !important; }
-
-        .btn-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 12px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            font-family: inherit;
-            transition: all 0.25s;
-            border: none;
-        }
-        .btn-action-primary {
-            background-color: var(--primary-red);
-            color: white;
-        }
-        .btn-action-primary:hover { background-color: #d62d3a; }
-        .btn-action-secondary {
-            background-color: transparent;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-        }
-        .btn-action-secondary:hover { background-color: #1a1a24; }
-        .btn-action-danger {
-            background-color: rgba(230, 57, 70, 0.15);
-            color: var(--primary-red);
-            border: 1px solid rgba(230, 57, 70, 0.3);
-        }
-        .btn-action-danger:hover { background-color: rgba(230, 57, 70, 0.3); }
-
-        .btn-clear-history {
-            background-color: rgba(230, 57, 70, 0.1);
-            color: var(--primary-red);
-            border: 1px solid rgba(230, 57, 70, 0.2);
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.25s;
-            font-weight: 600;
-        }
-        .btn-clear-history:hover {
-            background-color: var(--primary-red);
-            color: white;
-        }
     </style>
     <!-- Include QRCode Generator Library for Web -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
 <body>
 
-    <header>
-        <div class="header-logo">Creative<span>Studio</span> Admin</div>
-        <div class="header-actions">
-            <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;"><?php echo date('d M Y, H:i'); ?></span>
-            <a href="admin.php?action=logout" class="btn-header">Logout Portal</a>
-        </div>
-    </header>
-
-    <div class="main-content">
-        
-        <?php if (isset($_GET['status'])): ?>
-            <?php if ($_GET['status'] === 'saved'): ?>
-                <div class="alert-status alert-saved">✓ Konfigurasi remote kiosk berhasil disimpan dan disinkronkan!</div>
-            <?php elseif ($_GET['status'] === 'packages_saved'): ?>
-                <div class="alert-status alert-saved">✓ Pengaturan harga paket photobooth berhasil disimpan!</div>
-            <?php elseif ($_GET['status'] === 'queue_reset'): ?>
-                <div class="alert-status alert-cleared">⚠ Semua antrean Kiosk berhasil direset!</div>
-            <?php elseif ($_GET['status'] === 'deleted'): ?>
-                <div class="alert-status alert-deleted">✕ Sesi riwayat foto berhasil dihapus permanen!</div>
-            <?php elseif ($_GET['status'] === 'cleared'): ?>
-                <div class="alert-status alert-cleared">⚠ Semua file riwayat foto kiosk dibersihkan!</div>
-            <?php endif; ?>
-        <?php endif; ?>
-
-        <!-- Upper Metrics -->
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-icon">📷</div>
-                <div class="metric-info">
-                    <div class="metric-label">Total Sesi Foto</div>
-                    <div class="metric-value"><?php echo $photosCount; ?> Sesi</div>
-                </div>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo">Creative<span>Studio</span></div>
+                <div class="logo-sub">Kiosk Controller</div>
             </div>
-            
-            <div class="metric-card">
-                <div class="metric-icon" style="color: var(--primary-green);">⚡</div>
-                <div class="metric-info">
-                    <div class="metric-label">Sesi Hari Ini</div>
-                    <div class="metric-value"><?php echo $todayPhotosCount; ?> Sesi</div>
-                </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="dashboard">
+                    <span class="nav-icon"><i class="fa-solid fa-chart-simple"></i></span> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-tab="settings">
+                    <span class="nav-icon"><i class="fa-solid fa-sliders"></i></span> Kiosk Settings
+                </a>
+                <a href="#" class="nav-item" data-tab="queue">
+                    <span class="nav-icon"><i class="fa-solid fa-hourglass-half"></i></span> Kiosk Queue
+                </a>
+                <a href="#" class="nav-item" data-tab="packages">
+                    <span class="nav-icon"><i class="fa-solid fa-box-archive"></i></span> Manage Packages
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="admin.php?action=logout" class="nav-item logout-link">
+                    <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout Portal
+                </a>
             </div>
+        </aside>
 
-            <div class="metric-card">
-                <div class="metric-icon" style="color: var(--primary-amber);">💾</div>
-                <div class="metric-info">
-                    <div class="metric-label">Memori Terpakai</div>
-                    <div class="metric-value"><?php echo $formattedSize; ?></div>
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Top Sticky Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 class="page-title">Dashboard</h1>
                 </div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-icon" style="color: #2196f3;">🖨</div>
-                <div class="metric-info">
-                    <div class="metric-label">Printer Aktif</div>
-                    <div class="metric-value"><?php echo htmlspecialchars($settings['printer_type']); ?></div>
+                <div class="header-right">
+                    <span class="current-time"><i class="fa-regular fa-calendar-days"></i> &nbsp;<?php echo date('d M Y, H:i'); ?></span>
+                    <div class="user-profile">
+                        <div class="avatar">AD</div>
+                        <div class="profile-info">
+                            <div class="profile-name">Administrator</div>
+                            <div class="profile-role">Super Admin</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </header>
 
-        <div class="content-layout">
-            <!-- Left Column: Weekly Chart & Photo Logs -->
-            <div style="display: flex; flex-direction: column; gap: 30px; width: 100%;">
+            <!-- Scrollable Workspace Body -->
+            <main class="content-body">
                 
-                <!-- Weekly Analytics Chart -->
-                <div class="dashboard-section">
-                    <div class="section-title">Tren Aktivitas 7 Hari Terakhir</div>
-                    <div style="height: 220px; width: 100%;">
-                        <canvas id="weeklyChart"></canvas>
+                <!-- Action Status Banners -->
+                <?php if (isset($_GET['status'])): ?>
+                    <?php if ($_GET['status'] === 'saved'): ?>
+                        <div class="alert-status alert-saved">✓ Remote kiosk configuration successfully updated and synced!</div>
+                    <?php elseif ($_GET['status'] === 'packages_saved'): ?>
+                        <div class="alert-status alert-saved">✓ Package features and prices updated successfully!</div>
+                    <?php elseif ($_GET['status'] === 'queue_reset'): ?>
+                        <div class="alert-status alert-cleared">⚠ All kiosk queues cleared successfully!</div>
+                    <?php elseif ($_GET['status'] === 'deleted'): ?>
+                        <div class="alert-status alert-deleted">✕ Selected photo session permanently removed from disk!</div>
+                    <?php elseif ($_GET['status'] === 'cleared'): ?>
+                        <div class="alert-status alert-cleared">⚠ Entire photobooth session history cleared from disk!</div>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- Upper Metrics Row (Horizontal Cards) -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon indigo"><i class="fa-solid fa-camera"></i></div>
+                        <div class="metric-info">
+                            <div class="metric-label">Total Sesi Foto</div>
+                            <div class="metric-value"><?php echo $photosCount; ?> Sesi</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon emerald"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="metric-info">
+                            <div class="metric-label">Sesi Hari Ini</div>
+                            <div class="metric-value"><?php echo $todayPhotosCount; ?> Sesi</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon rose"><i class="fa-solid fa-floppy-disk"></i></div>
+                        <div class="metric-info">
+                            <div class="metric-label">Memori Terpakai</div>
+                            <div class="metric-value"><?php echo $formattedSize; ?></div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon amber"><i class="fa-solid fa-print"></i></div>
+                        <div class="metric-info">
+                            <div class="metric-label">Printer Aktif</div>
+                            <div class="metric-value"><?php echo htmlspecialchars($settings['printer_type']); ?></div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Gallery Logs -->
-                <div class="dashboard-section">
-                    <div class="section-header">
-                        <div class="section-title">Log Hasil Foto Kiosk (<?php echo count($historyList); ?>)</div>
-                        <?php if (!empty($historyList)): ?>
-                            <form action="admin.php" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA riwayat foto? Tindakan ini tidak dapat dibatalkan.');">
-                                <input type="hidden" name="action" value="clear_all">
-                                <button type="submit" class="btn-clear-history">Bersihkan Semua Riwayat</button>
-                            </form>
+                <!-- DYNAMIC TAB PANES -->
+
+                <!-- TAB: Dashboard -->
+                <div class="tab-pane active" id="tab-dashboard">
+                    <div class="dashboard-row">
+                        <!-- Chart Card -->
+                        <div class="card-section" style="margin-bottom: 0;">
+                            <div class="card-header" style="border: none; margin-bottom: 12px; padding-bottom: 0;">
+                                <div class="card-title"><i class="fa-solid fa-chart-line"></i> &nbsp;Tren Aktivitas 7 Hari Terakhir</div>
+                            </div>
+                            <div style="height: 230px; width: 100%;">
+                                <canvas id="weeklyChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Kiosk Quick Status Widget -->
+                        <div class="card-section" style="margin-bottom: 0;">
+                            <div class="card-header" style="border: none; margin-bottom: 12px; padding-bottom: 0;">
+                                <div class="card-title"><i class="fa-solid fa-sliders"></i> &nbsp;Status Kiosk</div>
+                            </div>
+                            <div class="status-widget">
+                                <div class="status-row">
+                                    <span class="label">Antrean Aktif</span>
+                                    <span class="val" style="color: var(--primary); font-weight: 800;">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="label">Printer Active</span>
+                                    <span class="val badge badge-info"><?php echo htmlspecialchars($settings['printer_type']); ?></span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="label">Sesi Aktif</span>
+                                    <span class="val" style="font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars($queueState['active_session_id']) : 'None'; ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Photo Logs Gallery Card -->
+                    <div class="card-section">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid fa-images"></i> &nbsp;Log Hasil Foto Kiosk (<?php echo count($historyList); ?>)</div>
+                            <?php if (!empty($historyList)): ?>
+                                <form action="admin.php" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS SEMUA riwayat foto? Tindakan ini tidak dapat dibatalkan.');">
+                                    <input type="hidden" name="action" value="clear_all">
+                                    <button type="submit" class="btn-clear-history">Bersihkan Semua Riwayat</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if (empty($historyList)): ?>
+                            <div style="padding: 60px; text-align: center; color: var(--text-muted); font-weight: 500; background-color: #f8fafc; border-radius: 16px; border: 1px dashed var(--border-color);">
+                                Belum ada riwayat jepretan foto yang diunggah ke server.
+                            </div>
+                        <?php else: ?>
+                            <div class="history-grid">
+                                <?php foreach ($historyList as $item): ?>
+                                    <div class="history-card" onclick="openDetails('<?php echo htmlspecialchars($item['id']); ?>', '<?php echo htmlspecialchars($item['photo']); ?>', '<?php echo htmlspecialchars($item['frame']); ?>', '<?php echo date('d M Y, H:i', $item['time']); ?>')">
+                                        <div class="history-img-wrapper">
+                                            <img src="<?php echo htmlspecialchars($item['photo']); ?>" class="history-img" alt="Photo strip">
+                                        </div>
+                                        <div class="history-info">
+                                            <div class="history-id">ID: <?php echo htmlspecialchars($item['id']); ?></div>
+                                            <div class="history-meta">
+                                                <span class="history-frame"><?php echo htmlspecialchars($item['frame']); ?></span>
+                                                <span class="history-time"><?php echo date('d M, H:i', $item['time']); ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
                         <?php endif; ?>
                     </div>
+                </div>
 
-                    <?php if (empty($historyList)): ?>
-                        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
-                            Belum ada riwayat jepretan foto yang diunggah ke server.
+                <!-- TAB: Settings -->
+                <div class="tab-pane" id="tab-settings">
+                    <div class="card-section">
+                        <div class="card-header">
+                            <div class="card-title">⚙️ Pengaturan Kontrol Kiosk</div>
                         </div>
-                    <?php else: ?>
-                        <div class="history-grid">
-                            <?php foreach ($historyList as $item): ?>
-                                <div class="history-card" onclick="openDetails('<?php echo htmlspecialchars($item['id']); ?>', '<?php echo htmlspecialchars($item['photo']); ?>', '<?php echo htmlspecialchars($item['frame']); ?>', '<?php echo date('d M Y, H:i', $item['time']); ?>')">
-                                    <img src="<?php echo htmlspecialchars($item['photo']); ?>" class="history-img" alt="Photo strip">
-                                    <div class="history-overlay">
-                                        <div class="history-time"><?php echo date('d/M, H:i', $item['time']); ?></div>
+                        <form action="admin.php" method="POST">
+                            <input type="hidden" name="action" value="update_settings">
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="admin_pin">PIN Keamanan Admin</label>
+                                    <input type="text" id="admin_pin" name="admin_pin" class="form-input" value="<?php echo htmlspecialchars($settings['admin_pin']); ?>" pattern="[0-9]{4,8}" required placeholder="Contoh: 1234">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="countdown_seconds">Durasi Hitung Mundur (Detik)</label>
+                                    <input type="number" id="countdown_seconds" name="countdown_seconds" class="form-input" value="<?php echo intval($settings['countdown_seconds']); ?>" min="2" max="15" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="total_shots">Jumlah Jepretan Sesi</label>
+                                    <input type="number" id="total_shots" name="total_shots" class="form-input" value="<?php echo intval($settings['total_shots']); ?>" min="1" max="8" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="printer_type">Mode Pencetakan</label>
+                                    <select id="printer_type" name="printer_type" class="form-select">
+                                        <option value="NONE" <?php echo $settings['printer_type'] === 'NONE' ? 'selected' : ''; ?>>NONE (Mode Digital Saja)</option>
+                                        <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>THERMAL (Printer XP-420B)</option>
+                                        <option value="COLOR" <?php echo $settings['printer_type'] === 'COLOR' ? 'selected' : ''; ?>>COLOR (Printer Warna Sistem)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="use_biometric">Autentikasi Biometrik Tablet</label>
+                                    <select id="use_biometric" name="use_biometric" class="form-select">
+                                        <option value="1" <?php echo $settings['use_biometric'] ? 'selected' : ''; ?>>Aktif (Sensor Sidik Jari)</option>
+                                        <option value="0" <?php echo !$settings['use_biometric'] ? 'selected' : ''; ?>>Nonaktif (PIN Saja)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 24px; text-align: right;">
+                                <button type="submit" class="btn-primary">✓ SIMPAN & SINKRONISASI KIOSK</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TAB: Queue -->
+                <div class="tab-pane" id="tab-queue">
+                    <div class="card-section">
+                        <div class="card-header">
+                            <div class="card-title">📊 Antrean Remote Kiosk</div>
+                            <div>
+                                <a href="admin.php?action=reset_queue" class="btn-danger" onclick="return confirm('Apakah Anda yakin ingin MERESET TOTAL antrean? Sesi remote aktif dan antrean berbayar akan dihapus.');">RESET ANTRIAN KIOSK</a>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-row" style="margin-bottom: 24px;">
+                            <div class="status-widget" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; width: 100%;">
+                                <div class="status-row">
+                                    <span class="label">Antrean Aktif:</span>
+                                    <span class="val" style="color: var(--warning); font-size: 1.1rem; font-weight: 800;">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="label">Sesi Aktif saat ini:</span>
+                                    <span class="val" style="font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars($queueState['active_session_id']) : 'Tidak ada'; ?></span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="label">Menunggu (Waiting):</span>
+                                    <span class="val" style="color: var(--danger); font-size: 1.1rem; font-weight: 800;"><?php 
+                                        $waitingNum = 0;
+                                        foreach ($queueState['queue_list'] as $item) {
+                                            if ($item['status'] === 'WAITING') $waitingNum++;
+                                        }
+                                        echo $waitingNum;
+                                    ?></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Table of Queue Sessions -->
+                        <div class="card-header" style="border: none; margin-bottom: 12px; padding-bottom: 0;">
+                            <div class="card-title" style="font-size: 1.05rem;">📋 Daftar Sesi Antrean</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>No. Antrean</th>
+                                        <th>ID Sesi</th>
+                                        <th>Paket</th>
+                                        <th>Waktu Masuk</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $packageNames = [];
+                                    if (file_exists($packagesFile)) {
+                                        $pkgs = json_decode(file_get_contents($packagesFile), true);
+                                        foreach ($pkgs as $p) {
+                                            $packageNames[$p['id']] = $p['name'];
+                                        }
+                                    }
+                                    ?>
+                                    <?php if (empty($queueState['queue_list'])): ?>
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px 0;">Tidak ada antrean terdaftar saat ini.</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($queueState['queue_list'] as $item): ?>
+                                            <tr>
+                                                <td style="font-weight: 700; color: var(--primary);">#<?php echo htmlspecialchars($item['queue_number']); ?></td>
+                                                <td style="font-family: monospace; font-size: 0.85rem;"><?php echo htmlspecialchars($item['session_id']); ?></td>
+                                                <td><span class="badge badge-gray"><?php echo htmlspecialchars($packageNames[$item['package_id']] ?? $item['package_id']); ?></span></td>
+                                                <td style="color: var(--text-muted);"><?php echo date('H:i:s (d M)', $item['timestamp']); ?></td>
+                                                <td>
+                                                    <?php if ($item['status'] === 'UNPAID'): ?>
+                                                        <span class="badge badge-danger">Unpaid</span>
+                                                    <?php elseif ($item['status'] === 'PAID'): ?>
+                                                        <span class="badge badge-info">Paid</span>
+                                                    <?php elseif ($item['status'] === 'WAITING'): ?>
+                                                        <span class="badge badge-warning">Waiting</span>
+                                                    <?php elseif ($item['status'] === 'ACTIVE'): ?>
+                                                        <span class="badge badge-success" style="animation: pulse 1.5s infinite;">Active</span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-gray"><?php echo htmlspecialchars($item['status']); ?></span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Packages -->
+                <div class="tab-pane" id="tab-packages">
+                    <div class="card-section">
+                        <div class="card-header">
+                            <div class="card-title">🛍️ Manajemen Paket & Fitur Kiosk</div>
+                        </div>
+                        <form action="admin.php" method="POST">
+                            <input type="hidden" name="action" value="update_packages">
+                            
+                            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+                                <?php foreach ($packagesList as $pkg): ?>
+                                    <div class="card-section" style="border: 1px solid var(--border-color); background-color: #f8fafc; border-radius: 18px; margin-bottom: 0;">
+                                        <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-main); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                            🎁 <?php echo htmlspecialchars($pkg['name']); ?>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label>Harga Paket (Rp)</label>
+                                            <input type="number" name="price_<?php echo $pkg['id']; ?>" class="form-input" value="<?php echo intval($pkg['price']); ?>" required style="background-color: white;">
+                                        </div>
+
+                                        <div class="form-group" style="margin-top: 14px; gap: 10px;">
+                                            <label>Fitur Akses Layanan Kiosk:</label>
+                                            
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" name="feature_print_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['print'] ? 'checked' : ''; ?>> 
+                                                <span class="checkbox-label">🖨️ Cetak Struk Fisik</span>
+                                            </label>
+                                            
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" name="feature_download_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['download'] ? 'checked' : ''; ?>> 
+                                                <span class="checkbox-label">📥 Download Foto Strip</span>
+                                            </label>
+                                            
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" name="feature_gif_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['gif'] ? 'checked' : ''; ?>> 
+                                                <span class="checkbox-label">🎞️ Live Animated GIF</span>
+                                            </label>
+                                            
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" name="feature_sticker_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['sticker'] ? 'checked' : ''; ?>> 
+                                                <span class="checkbox-label">💬 Stiker WhatsApp Kreatif</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Right Column: Settings remote Kiosk -->
-            <div class="dashboard-section">
-                <div class="section-title">Kontrol & Pengaturan Kiosk</div>
-                
-                <form action="admin.php" method="POST">
-                    <input type="hidden" name="action" value="update_settings">
-                    
-                    <div class="form-row">
-                        <label for="admin_pin">PIN Keamanan Admin</label>
-                        <input type="text" id="admin_pin" name="admin_pin" class="form-control" value="<?php echo htmlspecialchars($settings['admin_pin']); ?>" pattern="[0-9]{4,8}" required placeholder="Contoh: 1234">
-                    </div>
-
-                    <div class="form-row">
-                        <label for="countdown_seconds">Durasi Hitung Mundur (Detik)</label>
-                        <input type="number" id="countdown_seconds" name="countdown_seconds" class="form-control" value="<?php echo intval($settings['countdown_seconds']); ?>" min="2" max="15" required>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="total_shots">Jumlah Jepretan Sesi</label>
-                        <input type="number" id="total_shots" name="total_shots" class="form-control" value="<?php echo intval($settings['total_shots']); ?>" min="1" max="8" required>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="printer_type">Mode Pencetakan</label>
-                        <select id="printer_type" name="printer_type" class="form-control">
-                            <option value="NONE" <?php echo $settings['printer_type'] === 'NONE' ? 'selected' : ''; ?>>NONE (Mode Digital Saja)</option>
-                            <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>THERMAL (Printer XP-420B)</option>
-                            <option value="COLOR" <?php echo $settings['printer_type'] === 'COLOR' ? 'selected' : ''; ?>>COLOR (Printer Warna Sistem)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="use_biometric">Autentikasi Biometrik Tablet</label>
-                        <select id="use_biometric" name="use_biometric" class="form-control">
-                            <option value="1" <?php echo $settings['use_biometric'] ? 'selected' : ''; ?>>Aktif (Sensor Sidik Jari)</option>
-                            <option value="0" <?php echo !$settings['use_biometric'] ? 'selected' : ''; ?>>Nonaktif (PIN Saja)</option>
-                        </select>
-                    </div>
-
-                    <div style="margin-top: 10px;">
-                        <button type="submit" class="btn-submit">SIMPAN & SINKRON KIOSK</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Queue monitoring dashboard -->
-            <div class="dashboard-section" style="margin-top: 20px;">
-                <div class="section-title">📊 Antrean Remote Kiosk</div>
-                <div class="bill-details" style="background-color: #0c0c0f; border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; font-size: 0.9rem; display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Antrean Aktif Saat Ini:</span>
-                        <span style="font-weight: bold; color: var(--primary-amber);">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Sesi Aktif:</span>
-                        <span style="font-weight: bold; font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars($queueState['active_session_id']) : 'Tidak ada'; ?></span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Total Mengantre (Waiting):</span>
-                        <span style="font-weight: bold; color: var(--primary-red);"><?php 
-                            $waitingNum = 0;
-                            foreach ($queueState['queue_list'] as $item) {
-                                if ($item['status'] === 'WAITING') $waitingNum++;
-                            }
-                            echo $waitingNum;
-                        ?></span>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 4px;">
-                    <a href="admin.php?action=reset_queue" class="btn-action btn-action-danger" style="text-align: center; text-decoration: none; width: 100%; display: block;" onclick="return confirm('Apakah Anda yakin ingin MERESET TOTAL antrean? Sesi remote aktif dan antrean berbayar akan dihapus.');">RESET ANTRIAN KIOSK</a>
-                </div>
-            </div>
-
-            <!-- Package pricing & feature management -->
-            <div class="dashboard-section" style="margin-top: 20px;">
-                <div class="section-title">🛍️ Manajemen Paket Photobooth</div>
-                <form action="admin.php" method="POST">
-                    <input type="hidden" name="action" value="update_packages">
-                    
-                    <?php foreach ($packagesList as $pkg): ?>
-                        <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px;">
-                            <div style="font-weight: bold; font-size: 0.95rem; margin-bottom: 6px;"><?php echo htmlspecialchars($pkg['name']); ?></div>
-                            <div class="form-row">
-                                <label>Harga (Rp)</label>
-                                <input type="number" name="price_<?php echo $pkg['id']; ?>" class="form-control" value="<?php echo intval($pkg['price']); ?>" required>
+                                <?php endforeach; ?>
                             </div>
-                            <div class="form-row" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
-                                <label style="font-size: 0.75rem;">Fitur Paket:</label>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <input type="checkbox" name="feature_print_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['print']?'checked':''; ?>> 
-                                    <span style="font-size:0.8rem; color: var(--text-main);">Cetak Struk Fisik</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <input type="checkbox" name="feature_download_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['download']?'checked':''; ?>> 
-                                    <span style="font-size:0.8rem; color: var(--text-main);">Download Foto Strip</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <input type="checkbox" name="feature_gif_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['gif']?'checked':''; ?>> 
-                                    <span style="font-size:0.8rem; color: var(--text-main);">Live Animated GIF</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <input type="checkbox" name="feature_sticker_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['sticker']?'checked':''; ?>> 
-                                    <span style="font-size:0.8rem; color: var(--text-main);">Stiker WhatsApp</span>
-                                </div>
+                            
+                            <div style="margin-top: 28px; border-top: 1px solid var(--border-color); padding-top: 24px; text-align: right;">
+                                <button type="submit" class="btn-primary">✓ SIMPAN PRICING & AKSES FITUR</button>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                    
-                    <div style="margin-top: 10px;">
-                        <button type="submit" class="btn-submit" style="background-color: var(--primary-gold); color: black;">SIMPAN HARGA & FITUR</button>
+                        </form>
                     </div>
-                </form>
-            </div>
+                </div>
+            </main>
         </div>
     </div>
 
@@ -1052,7 +1636,7 @@ foreach ($weeklyStats as $date => $cnt) {
     <div class="modal" id="detailsModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeDetails()">&times;</button>
-            <div class="modal-title">Sesi Foto: <span id="modalIdVal"></span></div>
+            <div class="modal-title">Sesi Foto: <span id="modalIdVal" style="color: var(--primary); font-family: monospace;"></span></div>
             
             <div class="modal-split">
                 <div class="modal-preview">
@@ -1063,14 +1647,14 @@ foreach ($weeklyStats as $date => $cnt) {
                     <div class="qr-box">
                         <canvas id="modalQr"></canvas>
                     </div>
-                    <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+                    <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px;">
                         Scan QR untuk Download
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <a id="modalDownloadBtn" href="" download="" class="btn-action btn-action-primary">Unduh Gambar</a>
-                        <button id="modalDeleteBtn" class="btn-action btn-action-danger">Hapus Sesi</button>
-                        <button class="btn-action btn-action-secondary" onclick="closeDetails()">Tutup</button>
+                        <a id="modalDownloadBtn" href="" download="" class="btn-primary">Unduh Gambar</a>
+                        <button id="modalDeleteBtn" class="btn-danger">Hapus Sesi</button>
+                        <button class="btn-secondary" onclick="closeDetails()">Tutup</button>
                     </div>
                 </div>
             </div>
@@ -1078,8 +1662,49 @@ foreach ($weeklyStats as $date => $cnt) {
     </div>
 
     <script>
+        // Tab switching logic
+        const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        const pageTitle = document.querySelector('.page-title');
+
+        function switchTab(tabId, updateHash = true) {
+            navItems.forEach(item => item.classList.remove('active'));
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+            
+            const selectedNavItem = document.querySelector(`.sidebar-nav .nav-item[data-tab="${tabId}"]`);
+            const selectedTabPane = document.getElementById(`tab-${tabId}`);
+            
+            if (selectedNavItem && selectedTabPane) {
+                selectedNavItem.classList.add('active');
+                selectedTabPane.classList.add('active');
+                
+                // Set Header title
+                let titleText = selectedNavItem.textContent.trim();
+                titleText = titleText.replace(/^[\p{Emoji}\s]+/u, '');
+                pageTitle.textContent = titleText;
+                
+                localStorage.setItem('active_admin_tab', tabId);
+                
+                if (updateHash) {
+                    window.location.hash = tabId;
+                }
+            }
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabId = item.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+
         // Chart.js render
         const ctx = document.getElementById('weeklyChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.85)'); // Indigo
+        gradient.addColorStop(1, 'rgba(129, 140, 248, 0.2)');  // Soft Indigo
+
         new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1087,10 +1712,11 @@ foreach ($weeklyStats as $date => $cnt) {
                 datasets: [{
                     label: 'Jumlah Sesi',
                     data: <?php echo json_encode($counts); ?>,
-                    backgroundColor: 'rgba(230, 57, 70, 0.85)',
-                    borderColor: 'rgba(230, 57, 70, 1)',
-                    borderWidth: 1,
-                    borderRadius: 6
+                    backgroundColor: gradient,
+                    borderColor: '#4f46e5',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    borderSkipped: false
                 }]
             },
             options: {
@@ -1099,12 +1725,12 @@ foreach ($weeklyStats as $date => $cnt) {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#1a1a24' },
-                        ticks: { color: '#8d8d9f', stepSize: 1 }
+                        grid: { color: '#f1f5f9' },
+                        ticks: { color: '#64748b', font: { family: 'Outfit', size: 11 }, stepSize: 1 }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: '#8d8d9f' }
+                        ticks: { color: '#64748b', font: { family: 'Outfit', size: 11 } }
                     }
                 },
                 plugins: {
@@ -1121,12 +1747,10 @@ foreach ($weeklyStats as $date => $cnt) {
             document.getElementById('modalIdVal').innerText = id;
             document.getElementById('modalImg').src = photoPath;
             
-            // Setup download link
             const downloadBtn = document.getElementById('modalDownloadBtn');
             downloadBtn.href = photoPath;
             downloadBtn.download = `PhotoBooth_${id}.png`;
             
-            // Setup delete action
             const deleteBtn = document.getElementById('modalDeleteBtn');
             deleteBtn.onclick = function() {
                 if (confirm(`Apakah Anda yakin ingin menghapus sesi ${id} secara permanen?`)) {
@@ -1134,7 +1758,6 @@ foreach ($weeklyStats as $date => $cnt) {
                 }
             };
             
-            // Generate QR Code dynamically
             const protocol = window.location.protocol;
             const host = window.location.host;
             const pathname = window.location.pathname;
@@ -1158,12 +1781,32 @@ foreach ($weeklyStats as $date => $cnt) {
             modal.classList.remove('active');
         }
 
-        // Close on background click
         window.onclick = function(event) {
             if (event.target === modal) {
                 closeDetails();
             }
         }
+
+        // On Load active tab resolver
+        window.addEventListener('DOMContentLoaded', () => {
+            let activeTab = window.location.hash.replace('#', '');
+            
+            if (!activeTab) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const status = urlParams.get('status');
+                if (status === 'saved') {
+                    activeTab = 'settings';
+                } else if (status === 'packages_saved') {
+                    activeTab = 'packages';
+                } else if (status === 'queue_reset') {
+                    activeTab = 'queue';
+                } else {
+                    activeTab = localStorage.getItem('active_admin_tab') || 'dashboard';
+                }
+            }
+            
+            switchTab(activeTab);
+        });
     </script>
 </body>
 </html>

@@ -15,6 +15,7 @@ if (file_exists($configPath)) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         :root {
@@ -326,37 +327,52 @@ if (file_exists($configPath)) {
         /* Tilted Scrolling History Strip (Home Screen) */
         .home-strip-container {
             position: absolute;
-            right: 40px;
-            top: -30px;
+            right: -15px;
+            top: -120px;
             width: 140px;
-            height: 420px;
+            height: 1350px;
             background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            transform: rotate(-10deg);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.45);
+            transform: rotate(-24deg);
             z-index: 5;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             padding: 8px;
-            gap: 8px;
+            gap: 12px;
         }
 
         .scrolling-strip {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            animation: scrollStrip 15s linear infinite;
+            gap: 12px;
+            animation: scrollStrip 25s linear infinite;
         }
 
         .strip-pic {
             width: 100%;
-            height: 90px;
-            border-radius: 6px;
-            background-color: #ccc;
-            object-fit: cover;
+            height: 396px;
+            border-radius: 8px;
+            background-color: white;
+            background-image: 
+                linear-gradient(to bottom, #dcdcdc 0%, #dcdcdc 100%),
+                linear-gradient(to bottom, #dcdcdc 0%, #dcdcdc 100%),
+                linear-gradient(to bottom, #dcdcdc 0%, #dcdcdc 100%),
+                linear-gradient(to bottom, #dcdcdc 0%, #dcdcdc 100%);
+            background-size: 
+                calc(100% - 20px) 76px,
+                calc(100% - 20px) 76px,
+                calc(100% - 20px) 76px,
+                calc(100% - 20px) 76px;
+            background-position: 
+                10px 12px,
+                10px 98px,
+                10px 184px,
+                10px 270px;
+            background-repeat: no-repeat;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             flex-shrink: 0;
-            background-image: linear-gradient(45deg, #eee, #ccc);
         }
 
         @keyframes scrollStrip {
@@ -372,11 +388,12 @@ if (file_exists($configPath)) {
             background-color: rgba(255,255,255,0.15);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 16px;
-            padding: 10px 18px;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
             cursor: pointer;
             z-index: 10;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
@@ -389,7 +406,6 @@ if (file_exists($configPath)) {
         }
 
         .ticket-icon { font-size: 1.3rem; }
-        .ticket-text { font-size: 0.8rem; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* 2. LAYOUT SELECT SCREEN */
         .screen-header-back {
@@ -1169,13 +1185,17 @@ if (file_exists($configPath)) {
         }
 
         .tablet-device.phone-mode .ticket-launcher {
-            position: relative !important;
-            left: auto !important;
-            bottom: auto !important;
-            margin-top: 10px !important;
-            width: 100% !important;
+            position: absolute !important;
+            left: 20px !important;
+            bottom: 20px !important;
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
             justify-content: center !important;
-            padding: 10px 14px !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .tablet-device.phone-mode .layout-options {
@@ -1415,8 +1435,8 @@ if (file_exists($configPath)) {
             <div class="section-box">
                 <div class="section-title">Orientasi Simulator</div>
                 <div class="kiosk-mode-selector">
-                    <button class="mode-btn active" id="btnDeviceTablet" onclick="setDeviceMode('TABLET')">📟 Tablet</button>
-                    <button class="mode-btn" id="btnDevicePhone" onclick="setDeviceMode('PHONE')">📱 HP Potret</button>
+                    <button class="mode-btn active" id="btnDeviceTablet" onclick="setDeviceMode('TABLET')"><i class="fa-solid fa-tablet-screen-button"></i> &nbsp;Tablet</button>
+                    <button class="mode-btn" id="btnDevicePhone" onclick="setDeviceMode('PHONE')"><i class="fa-solid fa-mobile-screen-button"></i> &nbsp;HP Potret</button>
                 </div>
             </div>
 
@@ -1489,11 +1509,23 @@ if (file_exists($configPath)) {
                         <!-- Scrolling Tilted History Strip -->
                         <div class="home-strip-container">
                             <div class="scrolling-strip" id="historyStrip">
-                                <!-- Duplicated for seamless vertical loop -->
+                                <!-- Repeated 4 times to ensure seamless vertical loop over 700px viewport -->
+                                <!-- Set 1 -->
                                 <div class="strip-pic"></div>
                                 <div class="strip-pic" style="filter: hue-rotate(90deg);"></div>
                                 <div class="strip-pic" style="filter: hue-rotate(180deg);"></div>
                                 <div class="strip-pic" style="filter: hue-rotate(270deg);"></div>
+                                <!-- Set 2 -->
+                                <div class="strip-pic"></div>
+                                <div class="strip-pic" style="filter: hue-rotate(90deg);"></div>
+                                <div class="strip-pic" style="filter: hue-rotate(180deg);"></div>
+                                <div class="strip-pic" style="filter: hue-rotate(270deg);"></div>
+                                <!-- Set 3 -->
+                                <div class="strip-pic"></div>
+                                <div class="strip-pic" style="filter: hue-rotate(90deg);"></div>
+                                <div class="strip-pic" style="filter: hue-rotate(180deg);"></div>
+                                <div class="strip-pic" style="filter: hue-rotate(270deg);"></div>
+                                <!-- Set 4 -->
                                 <div class="strip-pic"></div>
                                 <div class="strip-pic" style="filter: hue-rotate(90deg);"></div>
                                 <div class="strip-pic" style="filter: hue-rotate(180deg);"></div>
@@ -1503,8 +1535,7 @@ if (file_exists($configPath)) {
 
                         <!-- Floating Ticket Launcher (Scenario B) -->
                         <div class="ticket-launcher" id="ticketLauncher" onclick="openTicketModal()">
-                            <span class="ticket-icon">🎟️</span>
-                            <span class="ticket-text">Masukkan Tiket Event</span>
+                            <span class="ticket-icon"><i class="fa-solid fa-ticket"></i></span>
                         </div>
                     </div>
 
@@ -1517,17 +1548,17 @@ if (file_exists($configPath)) {
                         </div>
                         <div class="layout-options">
                             <div class="layout-card" onclick="selectLayout('strip')">
-                                <div class="layout-icon">🎞️</div>
+                                <div class="layout-icon"><i class="fa-solid fa-film"></i></div>
                                 <div class="layout-name">Strip (4x1)</div>
                                 <div class="layout-desc">4 pose memanjang vertikal yang klasik</div>
                             </div>
                             <div class="layout-card" onclick="selectLayout('grid')">
-                                <div class="layout-icon">🪟</div>
+                                <div class="layout-icon"><i class="fa-solid fa-table-cells-large"></i></div>
                                 <div class="layout-name">Grid 2x2</div>
                                 <div class="layout-desc">4 pose kotak sejajar simetris</div>
                             </div>
                             <div class="layout-card" onclick="selectLayout('postcard')">
-                                <div class="layout-icon">🎴</div>
+                                <div class="layout-icon"><i class="fa-solid fa-image"></i></div>
                                 <div class="layout-name">Postcard</div>
                                 <div class="layout-desc">1 pose utama besar lanskap premium</div>
                             </div>
@@ -1585,7 +1616,7 @@ if (file_exists($configPath)) {
                             </div>
                             <div class="preview-controllers">
                                 <div class="doodle-tools">
-                                    <div class="section-title">📝 Gambar Tanda Tangan</div>
+                                    <div class="section-title"><i class="fa-solid fa-pen-nib"></i> &nbsp;Gambar Tanda Tangan</div>
                                     <p style="font-size:0.7rem; color:var(--text-muted); line-height:1.4;">Goreskan kuas tanda tangan digital Anda di atas foto strip</p>
                                     
                                     <label>Warna Neon Kuas</label>
@@ -1629,7 +1660,7 @@ if (file_exists($configPath)) {
                     <!-- 1. Ticket Code Input Modal (Scenario B) -->
                     <div class="sim-dialog-overlay" id="ticketModal">
                         <div class="sim-dialog">
-                            <div class="sim-dialog-title">🎟️ Verifikasi Tiket Event</div>
+                            <div class="sim-dialog-title"><i class="fa-solid fa-ticket"></i> &nbsp;Verifikasi Tiket Event</div>
                             <div class="sim-dialog-desc">Masukkan kode event khusus (misal: RIANANI26 atau BUDI17) untuk meng-unlock bingkai dan filter acara tersebut.</div>
                             <input type="text" class="sim-dialog-input" id="ticketCodeInput" placeholder="KODE EVENT">
                             <div class="dialog-actions">
@@ -1642,20 +1673,22 @@ if (file_exists($configPath)) {
                     <!-- 2. Ticket Unlock Gold Success Modal (Scenario B) -->
                     <div class="sim-dialog-overlay" id="ticketSuccessModal">
                         <div class="sim-dialog gold-border">
-                            <div class="sim-dialog-title gold-title">✨ EVENT UNLOCKED ✨</div>
-                            <div style="font-size: 3rem; text-align: center;">🔓</div>
+                            <div class="sim-dialog-title gold-title"><i class="fa-solid fa-wand-magic-sparkles"></i> &nbsp;EVENT UNLOCKED&nbsp; <i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <div style="font-size: 3rem; text-align: center; color: var(--primary-gold); margin-bottom: 10px;"><i class="fa-solid fa-lock-open"></i></div>
                             <div class="sim-dialog-desc" id="ticketSuccessDesc" style="color:white; font-weight:700; font-size:0.9rem;">
                                 Selamat Datang di Acara Pernikahan Rian & Ani!
                             </div>
                             <div class="sim-dialog-desc">Sesi foto eksklusif Anda telah siap. Semua jepretan Anda akan masuk dalam galeri album acara ini.</div>
-                            <button class="btn-dialog btn-dialog-gold" onclick="startUnlockedSession()">MULAI SESI FOTO</button>
+                            <div class="dialog-actions" style="justify-content: center; width: 100%;">
+                                <button class="btn-dialog btn-dialog-gold" style="width: 100%;" onclick="startUnlockedSession()">MULAI SESI FOTO</button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- 3. Admin Security PIN Modal -->
                     <div class="sim-dialog-overlay" id="adminPinModal">
                         <div class="sim-dialog">
-                            <div class="sim-dialog-title">⚙️ Kiosk Security Admin Gateway</div>
+                            <div class="sim-dialog-title"><i class="fa-solid fa-shield-halved"></i> &nbsp;Kiosk Security Admin Gateway</div>
                             <div class="sim-dialog-desc">Masukkan PIN keamanan administrator untuk mengakses setelan atau keluar ke Windows.</div>
                             <input type="password" class="sim-dialog-input" id="adminPinInput" placeholder="PIN" maxlength="4">
                             <div class="dialog-actions">
@@ -1668,7 +1701,7 @@ if (file_exists($configPath)) {
                     <!-- 4. Thermal Printer Feeding simulation modal -->
                     <div class="sim-dialog-overlay" id="printerModal">
                         <div class="sim-dialog" style="width: 320px;">
-                            <div class="sim-dialog-title">🖨️ Mencetak Struk Foto Kiosk</div>
+                            <div class="sim-dialog-title"><i class="fa-solid fa-print"></i> &nbsp;Mencetak Struk Foto Kiosk</div>
                             <div class="sim-dialog-desc">Kertas termal sedang dipotong dan dikeluarkan dari slot printer...</div>
                             <div class="printer-sim-container">
                                 <div class="printer-mock">

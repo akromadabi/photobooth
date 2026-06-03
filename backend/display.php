@@ -34,6 +34,7 @@ if (file_exists($queueFile)) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         :root {
@@ -320,14 +321,14 @@ if (file_exists($queueFile)) {
             
             <div class="queue-status-box">
                 <div class="status-pill">
-                    <span class="status-pill-icon">🎟️</span>
+                    <span class="status-pill-icon"><i class="fa-solid fa-ticket"></i></span>
                     <div class="status-pill-text">
                         <span class="status-label">Antrean Saat Ini</span>
                         <span class="status-value" id="infoActiveQueue">#<?php echo $activeQueue > 0 ? $activeQueue : '-'; ?></span>
                     </div>
                 </div>
                 <div class="status-pill">
-                    <span class="status-pill-icon">⏳</span>
+                    <span class="status-pill-icon"><i class="fa-solid fa-hourglass-half"></i></span>
                     <div class="status-pill-text">
                         <span class="status-label">Menunggu Antrean</span>
                         <span class="status-value" id="infoWaitingCount"><?php echo $waitingCount; ?> Orang</span>
@@ -373,21 +374,15 @@ if (file_exists($queueFile)) {
             level: 'H'
         });
 
-        // Real-time update of queue status via check_queue action simulation
+        // Real-time update of queue status via get_queue_stats API
         function checkQueueInfo() {
-            // We fetch check_queue with a dummy session ID to read active queue status
-            fetch('kiosk_control.php?action=get_command')
+            fetch('kiosk_control.php?action=get_queue_stats')
                 .then(res => res.json())
                 .then(data => {
-                    // Refetch status info from API periodically
-                    fetch('kiosk_control.php?action=check_queue&session_id=123') // dummy session to read state
-                        .then(res => res.json())
-                        .then(queueInfo => {
-                            if (queueInfo.success) {
-                                document.getElementById('infoActiveQueue').innerText = queueInfo.active_queue_number > 0 ? '#' + queueInfo.active_queue_number : '-';
-                                document.getElementById('infoWaitingCount').innerText = queueInfo.total_waiting + ' Orang';
-                            }
-                        }).catch(e => {});
+                    if (data.success) {
+                        document.getElementById('infoActiveQueue').innerText = data.active_queue_number > 0 ? '#' + data.active_queue_number : '-';
+                        document.getElementById('infoWaitingCount').innerText = data.total_waiting + ' Orang';
+                    }
                 })
                 .catch(err => {});
         }
