@@ -298,7 +298,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_packages') {
         $pkg['features']['print'] = isset($_POST["feature_print_$id"]) ? true : false;
         $pkg['features']['download'] = isset($_POST["feature_download_$id"]) ? true : false;
         $pkg['features']['gif'] = isset($_POST["feature_gif_$id"]) ? true : false;
-        $pkg['features']['sticker'] = isset($_POST["feature_sticker_$id"]) ? true : false;
     }
     
     file_put_contents($packagesFile, json_encode($packages, JSON_PRETTY_PRINT));
@@ -1611,11 +1610,6 @@ foreach ($weeklyStats as $date => $cnt) {
                                             <label class="checkbox-container">
                                                 <input type="checkbox" name="feature_gif_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['gif'] ? 'checked' : ''; ?>> 
                                                 <span class="checkbox-label">🎞️ Live Animated GIF</span>
-                                            </label>
-                                            
-                                            <label class="checkbox-container">
-                                                <input type="checkbox" name="feature_sticker_<?php echo $pkg['id']; ?>" value="1" <?php echo $pkg['features']['sticker'] ? 'checked' : ''; ?>> 
-                                                <span class="checkbox-label">💬 Stiker WhatsApp Kreatif</span>
                                             </label>
                                         </div>
                                     </div>

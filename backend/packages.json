@@ -6,8 +6,7 @@
     "features": {
       "print": true,
       "download": false,
-      "gif": false,
-      "sticker": false
+      "gif": false
     }
   },
   {
@@ -17,8 +16,7 @@
     "features": {
       "print": true,
       "download": true,
-      "gif": true,
-      "sticker": true
+      "gif": true
     }
   }
 ]

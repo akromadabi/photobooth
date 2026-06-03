@@ -28,8 +28,7 @@ if ($sessionId) {
     $packageFeatures = [
         'print' => true,
         'download' => true,
-        'gif' => true,
-        'sticker' => true
+        'gif' => true
     ];
     if (file_exists($uploadDir . $sessionId . '_meta.json')) {
         $meta = json_decode(file_get_contents($uploadDir . $sessionId . '_meta.json'), true);
@@ -87,7 +86,6 @@ $found = !empty($photoFile);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
     <style>
         :root {
             --bg-color: #0f0f12;
@@ -469,6 +467,44 @@ $found = !empty($photoFile);
         .hidden {
             display: none !important;
         }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+            header {
+                margin-top: 10px;
+                margin-bottom: 20px;
+            }
+            .logo {
+                font-size: 1.8rem !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                text-align: center !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+            }
+            .subtitle {
+                font-size: 0.8rem;
+            }
+            .main-container {
+                padding: 14px;
+                border-radius: 20px;
+                gap: 16px;
+            }
+            .btn {
+                padding: 12px;
+                font-size: 0.95rem;
+                border-radius: 12px;
+            }
+            .media-container {
+                border-radius: 12px;
+            }
+            .photo-img, .video-player {
+                border-radius: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -526,10 +562,7 @@ $found = !empty($photoFile);
                         Download Photo Strip
                     </a>
 
-                    <button onclick="downloadAnimatedStrip()" class="btn btn-secondary" id="btn-download-animated" style="background: linear-gradient(135deg, #ff007f 0%, #bd00ff 100%); border: none; box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3); color: white;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
-                        Download Live Animated Strip
-                    </button>
+                    <!-- Live video button removed due to client-side browser recorder issues -->
                 <?php endif; ?>
 
                 <?php if ($packageFeatures['gif']): ?>
@@ -537,26 +570,6 @@ $found = !empty($photoFile);
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2z"></path><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         Download GIF Animasi Lucu
                     </button>
-                <?php endif; ?>
-
-                <?php if ($packageFeatures['sticker']): ?>
-                    <div class="sticker-buttons-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px; width: 100%;">
-                        <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; text-align: center;">Koleksi Stiker WA (Sesuai Pose):</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
-                            <button onclick="downloadPoseSticker(0)" class="btn btn-secondary" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border: none; color: white; padding: 12px; font-size: 0.85rem; border-radius: 12px; height: auto; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25); display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                Pose 1: Haha! 😂
-                            </button>
-                            <button onclick="downloadPoseSticker(1)" class="btn btn-secondary" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border: none; color: white; padding: 12px; font-size: 0.85rem; border-radius: 12px; height: auto; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25); display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                Pose 2: Hehe.. 🤭
-                            </button>
-                            <button onclick="downloadPoseSticker(2)" class="btn btn-secondary" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border: none; color: white; padding: 12px; font-size: 0.85rem; border-radius: 12px; height: auto; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25); display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                Pose 3: Gokil! 🤯
-                            </button>
-                            <button onclick="downloadPoseSticker(3)" class="btn btn-secondary" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border: none; color: white; padding: 12px; font-size: 0.85rem; border-radius: 12px; height: auto; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25); display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                Pose 4: Kece! 😎
-                            </button>
-                        </div>
-                    </div>
                 <?php endif; ?>
 
                 <?php if ($timelapseFile && $packageFeatures['download']): ?>
@@ -856,13 +869,18 @@ $found = !empty($photoFile);
                     pCtx.fillStyle = '#121212';
                     pCtx.font = 'bold 20px "Outfit", Arial, sans-serif';
                     pCtx.textAlign = 'center';
-                    pCtx.fillText(eventName, pCanvas.width / 2, pCanvas.height - 24);
+                    pCtx.fillText(eventName, pCanvas.width / 2, pCanvas.height - 30);
+
+                    // Draw brand logo watermark below event name
+                    pCtx.fillStyle = '#e63946';
+                    pCtx.font = '800 12px "Outfit", Arial, sans-serif';
+                    pCtx.fillText('CREATIVE STUDIO', pCanvas.width / 2, pCanvas.height - 12);
 
                     // 5. Draw a cute icon/heart
                     pCtx.fillStyle = '#e63946';
                     pCtx.font = '22px Arial';
-                    pCtx.fillText('❤️', pCanvas.width - 35, pCanvas.height - 22);
-                    pCtx.fillText('📸', 35, pCanvas.height - 22);
+                    pCtx.fillText('❤️', pCanvas.width - 35, pCanvas.height - 24);
+                    pCtx.fillText('📸', 35, pCanvas.height - 24);
 
                     frameImages.push(pCanvas.toDataURL('image/png'));
                 }
@@ -874,7 +892,8 @@ $found = !empty($photoFile);
                     gifHeight: slots[0].height + padding + bottomTextSpace,
                     interval: 0.4, // speed of transition
                     numFrames: slots.length,
-                    frameDuration: 4
+                    frameDuration: 4,
+                    sampleInterval: 2 // High-quality color mapping to prevent blurriness
                 }, function (obj) {
                     if (!obj.error) {
                         const a = document.createElement('a');
@@ -896,271 +915,6 @@ $found = !empty($photoFile);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
-        }
-
-        // Initialize MediaPipe Selfie Segmentation for client-side background removal
-        let selfieSegmentation = null;
-        let isMediaPipeLoaded = false;
-
-        try {
-            if (typeof SelfieSegmentation !== 'undefined') {
-                selfieSegmentation = new SelfieSegmentation({
-                    locateFile: (file) => {
-                        return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
-                    }
-                });
-                selfieSegmentation.setOptions({
-                    modelSelection: 1, // 1 for landscape/faster performance
-                });
-                isMediaPipeLoaded = true;
-                console.log("MediaPipe Selfie Segmentation initialized successfully!");
-            }
-        } catch (e) {
-            console.error("MediaPipe initialization error:", e);
-        }
-
-        // Helper to segment the image (remove background) asynchronously
-        function segmentImage(canvasInput) {
-            return new Promise((resolve, reject) => {
-                if (!selfieSegmentation) {
-                    reject("MediaPipe not loaded");
-                    return;
-                }
-
-                selfieSegmentation.onResults((results) => {
-                    try {
-                        const width = canvasInput.width;
-                        const height = canvasInput.height;
-                        
-                        const outputCanvas = document.createElement('canvas');
-                        outputCanvas.width = width;
-                        outputCanvas.height = height;
-                        const outCtx = outputCanvas.getContext('2d');
-
-                        // 1. Draw segmentation mask
-                        outCtx.drawImage(results.segmentationMask, 0, 0, width, height);
-
-                        // 2. Overlay source-in to crop the person only
-                        outCtx.globalCompositeOperation = 'source-in';
-                        outCtx.drawImage(canvasInput, 0, 0, width, height);
-                        
-                        resolve(outputCanvas);
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
-
-                selfieSegmentation.send({ image: canvasInput }).catch(err => reject(err));
-            });
-        }
-
-        async function downloadPoseSticker(poseIndex) {
-            // Update UI feedback on header during generation
-            const btnContainer = document.querySelector('.sticker-buttons-container');
-            const originalHeader = btnContainer.firstElementChild.innerHTML;
-            btnContainer.firstElementChild.innerHTML = "Memproses Stiker WA... ⏳";
-
-            try {
-                const img = document.querySelector('.photo-img');
-                const frameId = "<?php echo htmlspecialchars($frameId); ?>";
-
-                if (!img.complete) {
-                    await new Promise(resolve => img.onload = resolve);
-                }
-
-                // Slices coordinates based on frameId and poseIndex
-                let slots = [
-                    { x: 50, y: 50, width: 500, height: 375 },
-                    { x: 50, y: 455, width: 500, height: 375 },
-                    { x: 50, y: 860, width: 500, height: 375 },
-                    { x: 50, y: 1265, width: 500, height: 375 }
-                ];
-
-                if (frameId === 'retro_film_strip') {
-                    slots = [
-                        { x: 80, y: 80, width: 440, height: 330 },
-                        { x: 80, y: 475, width: 440, height: 330 },
-                        { x: 80, y: 870, width: 440, height: 330 },
-                        { x: 80, y: 1265, width: 440, height: 330 }
-                    ];
-                }
-
-                const slot = slots[poseIndex];
-
-                // 1. Crop original pose to a temporary canvas
-                const cropCanvas = document.createElement('canvas');
-                cropCanvas.width = slot.width;
-                cropCanvas.height = slot.height;
-                const cropCtx = cropCanvas.getContext('2d');
-                cropCtx.drawImage(
-                    img,
-                    slot.x, slot.y, slot.width, slot.height,
-                    0, 0, slot.width, slot.height
-                );
-
-                const canvas = document.createElement('canvas');
-                canvas.width = 512;
-                canvas.height = 512;
-                const ctx = canvas.getContext('2d');
-
-                // Sticker Themes corresponding to each pose index (max 4)
-                const themes = [
-                    { text: "Haha! 😂", color: "#e63946", emojis: ['✨', '⭐', '😂', '🤣'] },
-                    { text: "Hehe.. 🤭", color: "#833ab4", emojis: ['✨', '💖', '🤭', '🌸'] },
-                    { text: "Gokil! 🤯", color: "#bd00ff", emojis: ['🤯', '⚡', '🔥', '💥'] },
-                    { text: "Kece! 😎", color: "#121212", emojis: ['😎', '🕶️', '✨', '🔥'] }
-                ];
-                const theme = themes[poseIndex] || themes[0];
-
-                const cX = 256;
-                const cY = 220; // Center offset vertically for person sticker space
-
-                // If MediaPipe model loaded, cut out person and make a cool outline sticker
-                if (isMediaPipeLoaded && selfieSegmentation) {
-                    // Segment person (remove backdrop)
-                    const segmentedCanvas = await segmentImage(cropCanvas);
-
-                    const maxDim = 320; // scale boundary inside the 512x512 canvas
-                    let destW = maxDim;
-                    let destH = maxDim / (slot.width / slot.height);
-                    
-                    const destX = cX - destW / 2;
-                    const destY = cY - destH / 2;
-
-                    // Draw segmented person scaled to a helper canvas to facilitate silhouette creation
-                    const personCanvas = document.createElement('canvas');
-                    personCanvas.width = 512;
-                    personCanvas.height = 512;
-                    const personCtx = personCanvas.getContext('2d');
-                    personCtx.drawImage(segmentedCanvas, destX, destY, destW, destH);
-
-                    // Draw solid white outline outline border around the person silhouette
-                    ctx.save();
-                    const d = 10; // outline border thickness
-                    ctx.fillStyle = '#ffffff';
-                    for (let x = -d; x <= d; x += 3) {
-                        for (let y = -d; y <= d; y += 3) {
-                            if (x*x + y*y <= d*d) {
-                                ctx.drawImage(personCanvas, x, y);
-                            }
-                        }
-                    }
-                    
-                    // Transform silhouette outline to solid white fill
-                    ctx.globalCompositeOperation = 'source-in';
-                    ctx.fillRect(0, 0, 512, 512);
-                    ctx.restore();
-
-                    // Overlay original colored segmented person shape on top
-                    ctx.drawImage(personCanvas, 0, 0);
-
-                } else {
-                    // Fallback to circular badge outline style if MediaPipe is not ready
-                    const radius = 170;
-
-                    // Sticker white background glow/offset
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(cX, cY, radius + 12, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Clip path for the photo
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(cX, cY, radius, 0, Math.PI * 2);
-                    ctx.clip();
-
-                    // Draw photo scaled to fit circle
-                    const sAspect = slot.width / slot.height;
-                    let sWidth = slot.width;
-                    let sHeight = slot.height;
-                    let sx = slot.x;
-                    let sy = slot.y;
-
-                    if (sAspect > 1) { // Landscape
-                        sWidth = slot.height;
-                        sx = slot.x + (slot.width - sWidth) / 2;
-                    } else {
-                        sHeight = slot.width;
-                        sy = slot.y + (slot.height - sHeight) / 2;
-                    }
-
-                    ctx.drawImage(
-                        img,
-                        sx, sy, sWidth, sHeight,
-                        cX - radius, cY - radius, radius * 2, radius * 2
-                    );
-                    ctx.restore();
-
-                    // Draw nice thick border over the cropped photo
-                    ctx.strokeStyle = theme.color;
-                    ctx.lineWidth = 6;
-                    ctx.beginPath();
-                    ctx.arc(cX, cY, radius, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-
-                // 5. Draw stickers/emojis on top
-                ctx.font = '36px Arial';
-                ctx.textAlign = 'center';
-                
-                ctx.fillText(theme.emojis[0], cX - 180, cY - 130);
-                ctx.fillText(theme.emojis[1], cX + 180, cY - 130);
-                ctx.fillText(theme.emojis[2], cX - 180, cY + 120);
-                ctx.fillText(theme.emojis[3], cX + 180, cY + 120);
-
-                // 6. Draw Sticker Text Badge at the bottom
-                const textWidth = 320;
-                const textHeight = 65;
-                const tx = cX - textWidth / 2;
-                const ty = 410;
-
-                // Draw white text bubble border first
-                ctx.fillStyle = '#ffffff';
-                drawRoundedRect(ctx, tx - 6, ty - 6, textWidth + 12, textHeight + 12, 18);
-                ctx.fill();
-
-                // Draw background of the text badge
-                ctx.fillStyle = theme.color;
-                drawRoundedRect(ctx, tx, ty, textWidth, textHeight, 14);
-                ctx.fill();
-
-                // Draw text inside badge
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 26px "Outfit", Arial, sans-serif';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(theme.text, cX, ty + textHeight / 2);
-
-                // Download WebP image
-                const stickerUrl = canvas.toDataURL('image/webp', 0.85);
-                const a = document.createElement('a');
-                a.href = stickerUrl;
-                a.download = `StikerWA_Pose${poseIndex + 1}_${Date.now()}.webp`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-            } catch (err) {
-                console.error(err);
-                alert("Gagal membuat Stiker WhatsApp.");
-            } finally {
-                btnContainer.firstElementChild.innerHTML = originalHeader;
-            }
-        }
-
-        // Helper to draw rounded rectangle in Canvas
-        function drawRoundedRect(ctx, x, y, width, height, radius) {
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.lineTo(x + width - radius, y);
-            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-            ctx.lineTo(x + width, y + height - radius);
-            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-            ctx.lineTo(x + radius, y + height - radius);
-            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-            ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y);
-            ctx.closePath();
         }
     </script>
 </body>

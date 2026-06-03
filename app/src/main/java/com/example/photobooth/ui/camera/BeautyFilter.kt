@@ -36,8 +36,8 @@ object BeautyFilter {
             val faceBmp = Bitmap.createBitmap(resultBmp, left, top, faceW, faceH)
 
             // 3. Orton Soft-Glow: Bilateral-like smart blur by scaling down and up
-            // Downscale face by 4x to create a natural, dream-like soft focus blur
-            val scaleFactor = 4
+            // Downscale face by 2x to create a natural, dream-like soft focus blur while keeping sharpness
+            val scaleFactor = 2
             val smallW = max(1, faceW / scaleFactor)
             val smallH = max(1, faceH / scaleFactor)
             
@@ -48,7 +48,7 @@ object BeautyFilter {
             val glowPaint = Paint().apply {
                 colorFilter = ColorMatrixColorFilter(ColorMatrix().apply {
                     // Slightly increase brightness and warmth
-                    setScale(1.08f, 1.06f, 1.02f, 1.0f)
+                    setScale(1.04f, 1.03f, 1.01f, 1.0f)
                 })
             }
             glowCanvas.drawBitmap(smallBmp, 0f, 0f, glowPaint)
@@ -56,9 +56,9 @@ object BeautyFilter {
             // Scale back up to full face region with bilinear filtering enabled (true)
             val blurredFaceBmp = Bitmap.createScaledBitmap(smallBmp, faceW, faceH, true)
 
-            // 4. Blend the glowing blurred face back onto the original face canvas with 45% opacity
+            // 4. Blend the glowing blurred face back onto the original face canvas with 18% opacity
             // This selectively smooths out skin pores/lines while keeping contrasty lines (eyes, teeth, hair) sharp!
-            paint.alpha = 115 // ~45% opacity
+            paint.alpha = 45 // ~18% opacity
             canvas.drawBitmap(blurredFaceBmp, left.toFloat(), top.toFloat(), paint)
 
             // 5. Procedural Glowing Cheek Blush-on

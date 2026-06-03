@@ -58,6 +58,21 @@ function saveQueueState($file, $state) {
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 switch ($action) {
+    case 'get_queue_stats':
+        $state = getQueueState($queueFile);
+        $waitingCount = 0;
+        foreach ($state['queue_list'] as $item) {
+            if ($item['status'] === 'WAITING') {
+                $waitingCount++;
+            }
+        }
+        echo json_encode([
+            'success' => true,
+            'active_queue_number' => $state['active_queue_number'],
+            'total_waiting' => $waitingCount
+        ]);
+        break;
+
     case 'check_queue':
         $sessionId = isset($_GET['session_id']) ? $_GET['session_id'] : '';
         if (!$sessionId) {

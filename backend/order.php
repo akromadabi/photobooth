@@ -418,16 +418,13 @@ $isRemoteMode = !empty($sessionId);
                             </div>
                             <div class="features-list">
                                 <div class="feature-item <?php echo $pkg['features']['print']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon">🖨️</span> Cetak Struk Fisik
+                                    <span class="feature-icon"><?php echo $pkg['features']['print'] ? '✓' : '✗'; ?></span> Cetak Struk Fisik
                                 </div>
                                 <div class="feature-item <?php echo $pkg['features']['download']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon">📥</span> Download Foto Strip
+                                    <span class="feature-icon"><?php echo $pkg['features']['download'] ? '✓' : '✗'; ?></span> Download Foto Strip
                                 </div>
                                 <div class="feature-item <?php echo $pkg['features']['gif']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon">🎞️</span> Live Animated GIF
-                                </div>
-                                <div class="feature-item <?php echo $pkg['features']['sticker']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon">😂</span> Stiker WhatsApp Custom
+                                    <span class="feature-icon"><?php echo $pkg['features']['gif'] ? '✓' : '✗'; ?></span> Live Animated GIF
                                 </div>
                             </div>
                         </div>
@@ -463,9 +460,9 @@ $isRemoteMode = !empty($sessionId);
                 <div class="selector-box">
                     <span class="selector-label">1. Pilih Layout</span>
                     <div class="layout-grid-select">
-                        <button class="layout-btn active" id="layout-strip" onclick="setSessionLayout('strip')">🎞️ Strip</button>
-                        <button class="layout-btn" id="layout-grid" onclick="setSessionLayout('grid')">🪟 Grid</button>
-                        <button class="layout-btn" id="layout-postcard" onclick="setSessionLayout('postcard')">🎴 Card</button>
+                        <button class="layout-btn active" id="layout-strip" onclick="setSessionLayout('strip')">Strip</button>
+                        <button class="layout-btn" id="layout-grid" onclick="setSessionLayout('grid')">Grid</button>
+                        <button class="layout-btn" id="layout-postcard" onclick="setSessionLayout('postcard')">Card</button>
                     </div>
                 </div>
 
@@ -477,7 +474,7 @@ $isRemoteMode = !empty($sessionId);
                 </div>
 
                 <button class="btn-capture-glowing" id="btnCaptureStart" onclick="sendCaptureCommand()">
-                    📸 MULAI FOTO
+                    MULAI FOTO
                 </button>
             </div>
 
@@ -519,18 +516,18 @@ $isRemoteMode = !empty($sessionId);
                                 controller.style.display = 'none';
                             } 
                             else if (data.status === 'ACTIVE') {
-                                title.innerText = '✨ GILIRAN ANDA AKTIF! ✨';
+                                title.innerText = 'GILIRAN ANDA AKTIF';
                                 desc.innerHTML = 'Silakan pilih layout dan frame di bawah, lalu tekan tombol ambil foto untuk memicu kamera tablet!';
                                 controller.style.display = 'flex';
                                 loadFramesList(data.package_id);
                             }
                             else if (data.status === 'CAPTURING') {
-                                title.innerText = '📷 PROSES MEMOTRET...';
+                                title.innerText = 'PROSES MEMOTRET...';
                                 desc.innerHTML = 'Kamera depan tablet sedang aktif mengambil pose Anda. Bersiaplah berpose di depan Kiosk!';
                                 controller.style.display = 'none';
                             }
                             else if (data.status === 'FINISHED') {
-                                title.innerText = '🎉 SESI FOTO SELESAI!';
+                                title.innerText = 'SESI FOTO SELESAI';
                                 desc.innerHTML = 'Foto Anda sedang diproses. Menuju halaman portal unduhan...';
                                 controller.style.display = 'none';
                                 
@@ -615,9 +612,9 @@ $isRemoteMode = !empty($sessionId);
                         speakAssistiveCue("Mempersiapkan kamera. Bersiaplah untuk pose pertama.");
                         setTimeout(() => { playSyncCountdown(); }, 2500);
                     } else {
-                        alert("❌ Gagal: " + data.message);
+                        alert("Gagal: " + data.message);
                         document.getElementById('btnCaptureStart').disabled = false;
-                        document.getElementById('btnCaptureStart').innerText = "📸 MULAI FOTO";
+                        document.getElementById('btnCaptureStart').innerText = "MULAI FOTO";
                     }
                 })
                 .catch(err => {

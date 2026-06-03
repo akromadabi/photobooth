@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -59,6 +61,19 @@ fun SharePrintScreen(
     
     var isUploading by remember { mutableStateOf(true) }
     var isPrinting by remember { mutableStateOf(shouldPrint) }
+    
+    var autoDismissSeconds by remember { mutableIntStateOf(15) }
+
+    LaunchedEffect(isUploading, isPrinting) {
+        if (!isUploading && !isPrinting) {
+            autoDismissSeconds = 15
+            while (autoDismissSeconds > 0) {
+                delay(1000)
+                autoDismissSeconds--
+            }
+            onFinishClick()
+        }
+    }
 
     if (isPrinting) {
         PrintStatusDialog(
@@ -166,6 +181,20 @@ fun SharePrintScreen(
             .background(Color(0xFF0F0F12))
             .padding(24.dp)
     ) {
+        // Direct Close Button in the top right corner
+        IconButton(
+            onClick = onFinishClick,
+            modifier = Modifier
+                .statusBarsPadding()
+                .align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Lewati",
+                tint = Color.White.copy(alpha = 0.6f)
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -275,7 +304,12 @@ fun SharePrintScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
         ) {
-            Text("SELESAI", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            val buttonText = if (!isUploading && !isPrinting) {
+                "SELESAI (${autoDismissSeconds}s)"
+            } else {
+                "SELESAI"
+            }
+            Text(buttonText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }
