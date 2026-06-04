@@ -240,7 +240,8 @@ if ($sessionId) {
     $packageFeatures = [
         'print' => true,
         'download' => true,
-        'gif' => true
+        'gif' => true,
+        'sticker' => true
     ];
     if (file_exists($uploadDir . $sessionId . '_meta.json')) {
         $meta = json_decode(file_get_contents($uploadDir . $sessionId . '_meta.json'), true);
@@ -785,7 +786,7 @@ $found = !empty($photoFile);
                     </button>
                 <?php endif; ?>
 
-                <?php if ($packageFeatures['download']): ?>
+                <?php if ($packageFeatures['sticker']): ?>
                     <div class="sticker-buttons-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px; width: 100%;">
                         <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; text-align: center;">Koleksi Stiker WA (Sesuai Pose):</div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">

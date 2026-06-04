@@ -16,3 +16,4 @@ local.properties
 *.apk
 .kotlin/
 backend/uploads/
+backend/queue.json

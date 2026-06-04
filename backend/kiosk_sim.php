@@ -254,7 +254,7 @@ if (file_exists($configPath)) {
             font-weight: 900;
             line-height: 1;
             color: white;
-            animation: slideInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
         }
 
         .home-logo-part2 {
@@ -262,16 +262,26 @@ if (file_exists($configPath)) {
             font-weight: 300;
             line-height: 1;
             color: white;
-            animation: slideInRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
         }
 
-        @keyframes slideInLeft {
-            0% { transform: translateX(-300px); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
+        /* 1.1 Entrance Animations when active */
+        .screen-home.active .home-logo-part1 {
+            animation: revealLogoPart1 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes slideInRight {
-            0% { transform: translateX(300px); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
+
+        .screen-home.active .home-logo-part2 {
+            animation: revealLogoPart2 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 0.12s;
+        }
+
+        @keyframes revealLogoPart1 {
+            0% { transform: translateY(40px) scale(0.95); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes revealLogoPart2 {
+            0% { transform: translateY(40px) scale(0.95); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
         }
 
         .home-center {
@@ -294,13 +304,28 @@ if (file_exists($configPath)) {
             border: none;
             cursor: pointer;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            animation: pulseBtn 2s infinite ease-in-out;
             letter-spacing: 1px;
-            transition: transform 0.2s;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            opacity: 0;
+        }
+
+        .screen-home.active .btn-start {
+            animation: revealStartBtn 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, pulseBtn 2s infinite ease-in-out 1.2s;
+            animation-delay: 0.35s, 1.35s;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.35);
         }
 
         .btn-start:active {
-            transform: scale(0.96);
+            transform: scale(0.95);
+        }
+
+        @keyframes revealStartBtn {
+            0% { transform: scale(0.7) translateY(30px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }
 
         @keyframes pulseBtn {
@@ -315,7 +340,17 @@ if (file_exists($configPath)) {
             color: rgba(255,255,255,0.85);
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            animation: floatText 3s infinite ease-in-out;
+            opacity: 0;
+        }
+
+        .screen-home.active .home-slogan {
+            animation: revealSlogan 1s cubic-bezier(0.16, 1, 0.3, 1) forwards, floatText 4s infinite ease-in-out 1.4s;
+            animation-delay: 0.5s, 1.5s;
+        }
+
+        @keyframes revealSlogan {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
         }
 
         @keyframes floatText {
@@ -328,9 +363,9 @@ if (file_exists($configPath)) {
         .home-strip-container {
             position: absolute;
             right: -15px;
-            top: -120px;
+            top: -280px;
             width: 140px;
-            height: 1350px;
+            height: 1500px;
             background-color: white;
             border-radius: 16px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.45);
@@ -341,6 +376,17 @@ if (file_exists($configPath)) {
             flex-direction: column;
             padding: 8px;
             gap: 12px;
+            opacity: 0;
+        }
+
+        .screen-home.active .home-strip-container {
+            animation: revealStrip 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 0.15s;
+        }
+
+        @keyframes revealStrip {
+            0% { transform: translate(120px, -120px) rotate(-24deg); opacity: 0; }
+            100% { transform: translate(0, 0) rotate(-24deg); opacity: 1; }
         }
 
         .scrolling-strip {
@@ -398,11 +444,22 @@ if (file_exists($configPath)) {
             z-index: 10;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
             transition: all 0.25s;
+            opacity: 0;
+        }
+
+        .screen-home.active .ticket-launcher {
+            animation: revealTicketLauncher 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: 0.7s;
+        }
+
+        @keyframes revealTicketLauncher {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
         }
 
         .ticket-launcher:hover {
-            transform: translateY(-2px);
-            background-color: rgba(255,255,255,0.2);
+            transform: scale(1.1) translateY(-2px);
+            background-color: rgba(255,255,255,0.25);
         }
 
         .ticket-icon { font-size: 1.3rem; }
