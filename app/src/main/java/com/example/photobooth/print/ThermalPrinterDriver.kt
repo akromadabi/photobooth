@@ -249,6 +249,28 @@ class ThermalPrinterDriver : PrinterManager {
         if (usbManager.hasPermission(device)) return@withContext true
 
         val ACTION_USB_PERMISSION = "com.example.photobooth.USB_PERMISSION"
+        val activity = context.findActivity()
+        
+        val wasPinned = try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am?.lockTaskModeState == android.app.ActivityManager.LOCK_TASK_MODE_LOCKED ||
+                am?.lockTaskModeState == android.app.ActivityManager.LOCK_TASK_MODE_PINNED
+            } else {
+                @Suppress("DEPRECATION")
+                am?.isInLockTaskMode ?: false
+            }
+        } catch (e: Exception) {
+            false
+        }
+
+        if (wasPinned) {
+            try {
+                activity?.stopLockTask()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         
         suspendCancellableCoroutine { continuation ->
             val usbReceiver = object : BroadcastReceiver() {
@@ -258,12 +280,18 @@ class ThermalPrinterDriver : PrinterManager {
                         synchronized(this) {
                             @Suppress("DEPRECATION")
                             val dev = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
-                            if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                                if (dev != null && dev.deviceId == device.deviceId) {
-                                    if (continuation.isActive) continuation.resume(true)
-                                } else {
-                                    if (continuation.isActive) continuation.resume(false)
+                            val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                            
+                            if (wasPinned) {
+                                try {
+                                    activity?.startLockTask()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
+                            }
+                            
+                            if (granted && dev != null && dev.deviceId == device.deviceId) {
+                                if (continuation.isActive) continuation.resume(true)
                             } else {
                                 if (continuation.isActive) continuation.resume(false)
                             }
@@ -297,6 +325,13 @@ class ThermalPrinterDriver : PrinterManager {
             )
 
             continuation.invokeOnCancellation {
+                if (wasPinned) {
+                    try {
+                        activity?.startLockTask()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
                 try {
                     context.unregisterReceiver(usbReceiver)
                 } catch (e: Exception) {}
@@ -306,3 +341,15 @@ class ThermalPrinterDriver : PrinterManager {
         }
     }
 }
+
+private fun Context.findActivity(): android.app.Activity? {
+    var currentContext = this
+    while (currentContext is android.content.ContextWrapper) {
+        if (currentContext is android.app.Activity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
+}
+

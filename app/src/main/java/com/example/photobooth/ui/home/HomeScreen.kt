@@ -124,7 +124,7 @@ fun HomeScreen(
     }
 
     val logoTextPart1 = remember(resolvedEventName) {
-        if (resolvedEventName.isNullOrEmpty()) "Creative"
+        if (resolvedEventName.isNullOrEmpty()) "Jeprat"
         else {
             val words = resolvedEventName.split(" ")
             if (words.size >= 2) words.take(words.size / 2).joinToString(" ")
@@ -133,7 +133,7 @@ fun HomeScreen(
     }
     
     val logoTextPart2 = remember(resolvedEventName) {
-        if (resolvedEventName.isNullOrEmpty()) "Studio"
+        if (resolvedEventName.isNullOrEmpty()) "Jepret"
         else {
             val words = resolvedEventName.split(" ")
             if (words.size >= 2) words.drop(words.size / 2).joinToString(" ")
@@ -434,14 +434,14 @@ fun HomeScreen(
                     modifier = Modifier.padding(start = 16.dp)
                 ) {
                     Text(
-                        text = "Receipt",
+                        text = "Jeprat",
                         color = Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         lineHeight = 18.sp
                     )
                     Text(
-                        text = "Photo",
+                        text = "Jepret",
                         color = Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Light,
