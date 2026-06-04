@@ -239,9 +239,7 @@ class ThermalPrinterDriver : PrinterManager {
             PrintResult.Error("Kesalahan saat mencetak USB: ${e.message}")
         } finally {
             try {
-                if (usbInterface != null) {
-                    connection?.releaseInterface(usbInterface)
-                }
+                connection?.releaseInterface(usbInterface)
                 connection?.close()
             } catch (e: Exception) {}
         }
@@ -258,12 +256,8 @@ class ThermalPrinterDriver : PrinterManager {
                     val action = intent.action
                     if (ACTION_USB_PERMISSION == action) {
                         synchronized(this) {
-                            val dev = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-                            } else {
-                                @Suppress("DEPRECATION")
-                                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
-                            }
+                            @Suppress("DEPRECATION")
+                            val dev = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
                             if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                                 if (dev != null && dev.deviceId == device.deviceId) {
                                     if (continuation.isActive) continuation.resume(true)
@@ -283,20 +277,22 @@ class ThermalPrinterDriver : PrinterManager {
 
             val filter = IntentFilter(ACTION_USB_PERMISSION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+                context.registerReceiver(usbReceiver, filter, Context.RECEIVER_EXPORTED)
             } else {
                 context.registerReceiver(usbReceiver, filter)
             }
 
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             } else {
-                0
+                PendingIntent.FLAG_UPDATE_CURRENT
             }
             val permissionIntent = PendingIntent.getBroadcast(
                 context,
                 0,
-                Intent(ACTION_USB_PERMISSION),
+                Intent(ACTION_USB_PERMISSION).apply {
+                    setPackage(context.packageName)
+                },
                 flags
             )
 
