@@ -18,7 +18,22 @@ class ConfigManager(context: Context) {
         private const val KEY_ACTIVE_EVENT_ID = "active_event_id"
         private const val KEY_KIOSK_MODE = "kiosk_mode" // "DEDICATED" or "MULTI_EVENT"
         private const val KEY_THERMAL_MODE = "thermal_mode" // "TSPL" or "ESC_POS"
+        private const val KEY_PAPER_WIDTH = "printer_paper_width"
+        private const val KEY_PRINT_DENSITY = "print_density"
+        private const val KEY_AUTO_CUT = "printer_auto_cut"
     }
+
+    var printerPaperWidth: Int
+        get() = prefs.getInt(KEY_PAPER_WIDTH, 80)
+        set(value) = prefs.edit().putInt(KEY_PAPER_WIDTH, value).apply()
+
+    var printDensity: Int
+        get() = prefs.getInt(KEY_PRINT_DENSITY, 3)
+        set(value) = prefs.edit().putInt(KEY_PRINT_DENSITY, value).apply()
+
+    var printerAutoCut: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_CUT, true)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_CUT, value).apply()
 
     var thermalMode: String
         get() = prefs.getString(KEY_THERMAL_MODE, "TSPL") ?: "TSPL"

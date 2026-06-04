@@ -110,6 +110,9 @@ fun AdminScreen(
     var printerType by remember { mutableStateOf(configManager.printerType) }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
     var thermalMode by remember { mutableStateOf(configManager.thermalMode) }
+    var printerPaperWidth by remember { mutableStateOf(configManager.printerPaperWidth) }
+    var printDensity by remember { mutableStateOf(configManager.printDensity) }
+    var printerAutoCut by remember { mutableStateOf(configManager.printerAutoCut) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
     
     var kioskMode by remember { mutableStateOf(configManager.kioskMode) }
@@ -787,6 +790,129 @@ fun AdminScreen(
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
+                                Text("Ukuran Lebar Kertas:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    // Option 58mm
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (printerPaperWidth == 58) Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                            .border(1.dp, if (printerPaperWidth == 58) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            .clickable { 
+                                                printerPaperWidth = 58
+                                                configManager.printerPaperWidth = 58 
+                                            }
+                                            .padding(12.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = printerPaperWidth == 58,
+                                            onClick = { 
+                                                printerPaperWidth = 58
+                                                configManager.printerPaperWidth = 58 
+                                            },
+                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text("58 mm", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text("Struk Kasir Kecil", color = Color.Gray, fontSize = 10.sp)
+                                        }
+                                    }
+
+                                    // Option 80mm
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (printerPaperWidth == 80) Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                            .border(1.dp, if (printerPaperWidth == 80) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            .clickable { 
+                                                printerPaperWidth = 80
+                                                configManager.printerPaperWidth = 80 
+                                            }
+                                            .padding(12.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = printerPaperWidth == 80,
+                                            onClick = { 
+                                                printerPaperWidth = 80
+                                                configManager.printerPaperWidth = 80 
+                                            },
+                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text("80 mm", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text("Struk Kasir Lebar / Stiker", color = Color.Gray, fontSize = 10.sp)
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("Kepekatan Cetak (Density): $printDensity", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    (1..5).forEach { densityVal ->
+                                        val isSelected = printDensity == densityVal
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(45.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35))
+                                                .border(1.dp, if (isSelected) Color(0xFFE63946) else Color(0xFF3F3F4F), RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    printDensity = densityVal
+                                                    configManager.printDensity = densityVal
+                                                }
+                                        ) {
+                                            Text(
+                                                text = densityVal.toString(),
+                                                color = if (isSelected) Color.White else Color.Gray,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Potong Kertas Otomatis (Auto-Cut)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Memotong kertas struk secara otomatis setelah selesai mencetak", color = Color.Gray, fontSize = 12.sp)
+                                    }
+                                    Switch(
+                                        checked = printerAutoCut,
+                                        onCheckedChange = {
+                                            printerAutoCut = it
+                                            configManager.printerAutoCut = it
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFFE63946),
+                                            uncheckedThumbColor = Color.Gray,
+                                            uncheckedTrackColor = Color(0xFF2A2A35)
+                                        )
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
                                 Text("Pilih Port Printer Thermal Terdeteksi:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 
                                 // USB list
@@ -1212,9 +1338,13 @@ private suspend fun testPrintJob(context: Context, configManager: ConfigManager)
     }
     
     paint.color = android.graphics.Color.BLACK
+    paint.textSize = 24f
+    canvas.drawText("Lebar: ${configManager.printerPaperWidth}mm | Mode: ${configManager.thermalMode}", 65f, 600f, paint)
+    canvas.drawText("Density: ${configManager.printDensity} | AutoCut: ${if (configManager.printerAutoCut) "ON" else "OFF"}", 65f, 630f, paint)
+    
     paint.textSize = 25f
-    canvas.drawText("Tingkat Hitam-Putih Floyd-Steinberg", 60f, 660f, paint)
-    canvas.drawText("Selesai! Printer siap digunakan.", 100f, 720f, paint)
+    canvas.drawText("Tingkat Hitam-Putih Floyd-Steinberg", 60f, 680f, paint)
+    canvas.drawText("Selesai! Printer siap digunakan.", 100f, 740f, paint)
 
     val driver: com.example.photobooth.print.PrinterManager = when (configManager.printerType) {
         "THERMAL" -> ThermalPrinterDriver()

@@ -8,16 +8,24 @@ $packagesFile = __DIR__ . '/packages.json';
 
 // Load settings from JSON
 function loadSettings($file) {
-    if (file_exists($file)) {
-        return json_decode(file_get_contents($file), true);
-    }
-    return [
+    $defaults = [
         "admin_pin" => "1234",
         "countdown_seconds" => 5,
         "total_shots" => 4,
         "printer_type" => "NONE",
-        "use_biometric" => true
+        "use_biometric" => true,
+        "payment_mode" => "dummy",
+        "midtrans_server_key" => "",
+        "midtrans_client_key" => "",
+        "midtrans_environment" => "sandbox"
     ];
+    if (file_exists($file)) {
+        $loaded = json_decode(file_get_contents($file), true);
+        if (is_array($loaded)) {
+            return array_merge($defaults, $loaded);
+        }
+    }
+    return $defaults;
 }
 
 // Function to dynamically punch transparent holes (slots) in the frame PNG file
@@ -342,13 +350,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $shots = isset($_POST['total_shots']) ? intval($_POST['total_shots']) : 4;
     $printer = isset($_POST['printer_type']) ? $_POST['printer_type'] : 'NONE';
     $biometric = isset($_POST['use_biometric']) && $_POST['use_biometric'] == '1';
+    $paymentMode = isset($_POST['payment_mode']) ? $_POST['payment_mode'] : 'dummy';
+    $midtransServerKey = isset($_POST['midtrans_server_key']) ? trim($_POST['midtrans_server_key']) : '';
+    $midtransClientKey = isset($_POST['midtrans_client_key']) ? trim($_POST['midtrans_client_key']) : '';
+    $midtransEnv = isset($_POST['midtrans_environment']) ? $_POST['midtrans_environment'] : 'sandbox';
     
     $settings = [
         "admin_pin" => $newPin ? $newPin : '1234',
         "countdown_seconds" => $countdown,
         "total_shots" => $shots,
         "printer_type" => $printer,
-        "use_biometric" => $biometric
+        "use_biometric" => $biometric,
+        "payment_mode" => $paymentMode,
+        "midtrans_server_key" => $midtransServerKey,
+        "midtrans_client_key" => $midtransClientKey,
+        "midtrans_environment" => $midtransEnv
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -2096,7 +2112,62 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <option value="0" <?php echo !$settings['use_biometric'] ? 'selected' : ''; ?>>Nonaktif (PIN Saja)</option>
                                     </select>
                                 </div>
+
+                                <div class="form-group">
+                                    <label for="payment_mode">Mode Pembayaran</label>
+                                    <select id="payment_mode" name="payment_mode" class="form-select" onchange="toggleMidtransFields(this.value)">
+                                        <option value="dummy" <?php echo $settings['payment_mode'] === 'dummy' ? 'selected' : ''; ?>>Simulasi / Dummy (Tanpa Kunci API)</option>
+                                        <option value="midtrans" <?php echo $settings['payment_mode'] === 'midtrans' ? 'selected' : ''; ?>>Midtrans (Real / Sandbox)</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            <!-- Midtrans Config Section -->
+                            <div id="midtrans-settings-section" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 24px; <?php echo $settings['payment_mode'] === 'midtrans' ? '' : 'display: none;'; ?>">
+                                <h4 style="margin-bottom: 16px; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-credit-card"></i> Pengaturan Midtrans</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="midtrans_environment">Environment Midtrans</label>
+                                        <select id="midtrans_environment" name="midtrans_environment" class="form-select">
+                                            <option value="sandbox" <?php echo $settings['midtrans_environment'] === 'sandbox' ? 'selected' : ''; ?>>Sandbox (Mode Uji Coba)</option>
+                                            <option value="production" <?php echo $settings['midtrans_environment'] === 'production' ? 'selected' : ''; ?>>Production (Pembayaran Asli)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="midtrans_client_key">Midtrans Client Key</label>
+                                        <input type="text" id="midtrans_client_key" name="midtrans_client_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_client_key']); ?>" placeholder="SB-Mid-client-...">
+                                    </div>
+
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="midtrans_server_key">Midtrans Server Key</label>
+                                        <input type="password" id="midtrans_server_key" name="midtrans_server_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_server_key']); ?>" placeholder="SB-Mid-server-...">
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                                function toggleMidtransFields(mode) {
+                                    const section = document.getElementById('midtrans-settings-section');
+                                    const serverKey = document.getElementById('midtrans_server_key');
+                                    const clientKey = document.getElementById('midtrans_client_key');
+                                    if (mode === 'midtrans') {
+                                        section.style.display = 'block';
+                                        serverKey.setAttribute('required', 'required');
+                                        clientKey.setAttribute('required', 'required');
+                                    } else {
+                                        section.style.display = 'none';
+                                        serverKey.removeAttribute('required');
+                                        clientKey.removeAttribute('required');
+                                    }
+                                }
+                                // Set initial required attributes
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const selectEl = document.getElementById('payment_mode');
+                                    if (selectEl) {
+                                        toggleMidtransFields(selectEl.value);
+                                    }
+                                });
+                            </script>
 
                             <div style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 24px; text-align: right;">
                                 <button type="submit" class="btn-primary">

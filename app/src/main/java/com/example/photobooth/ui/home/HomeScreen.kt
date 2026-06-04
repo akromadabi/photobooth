@@ -324,8 +324,8 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(
-                    x = if (isLandscape) 30.dp else 20.dp,
-                    y = if (isLandscape) (-150).dp else (-120).dp
+                    x = if (isLandscape) 30.dp else 10.dp,
+                    y = if (isLandscape) (-150).dp else (-150).dp
                 )
                 .graphicsLayer {
                     rotationZ = if (isLandscape) -22f else -24f
@@ -333,8 +333,8 @@ fun HomeScreen(
                     shape = RoundedCornerShape(16.dp)
                     clip = true
                 }
-                .requiredWidth(if (isLandscape) 300.dp else 140.dp)
-                .requiredHeight(if (isLandscape) 2800.dp else 2200.dp)
+                .requiredWidth(if (isLandscape) 300.dp else 220.dp)
+                .requiredHeight(if (isLandscape) 4000.dp else 3000.dp)
                 .background(Color.White)
                 .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.TopCenter

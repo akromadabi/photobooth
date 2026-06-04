@@ -59,33 +59,56 @@ class ThermalPrinterDriver : PrinterManager {
         PrintResult.Error("Printer tidak terkonfigurasi. Konfigurasi alamat printer di Menu Admin.")
     }
 
-    private fun generateTsplData(bitmap: Bitmap): ByteArray {
+    private fun generateTsplData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
+        val targetWidth = if (configManager.printerPaperWidth == 58) 384 else 576
+        val targetHeight = (bitmap.height * targetWidth) / bitmap.width
+        val scaledBitmap = if (bitmap.width == targetWidth) bitmap else Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+
         // Dither the bitmap to monochrome
-        val dithered = DitherHelper.ditherFloydSteinberg(bitmap)
+        val dithered = DitherHelper.ditherFloydSteinberg(scaledBitmap)
+        if (scaledBitmap != bitmap) {
+            scaledBitmap.recycle()
+        }
         val width = dithered.width
         val height = dithered.height
         val widthBytes = (width + 7) / 8
         val raster = DitherHelper.convertTo1BitRaster(dithered)
+        dithered.recycle()
         
         // Assume 203 DPI (8 dots/mm). Scale width and height to mm.
         val widthMm = (width / 8).coerceAtLeast(40)
         val heightMm = (height / 8).coerceAtLeast(100)
         
         val sizeText = "SIZE $widthMm mm, $heightMm mm\r\n"
+        
+        // Print density: Map 1..5 to TSPL density levels (2, 5, 8, 12, 15)
+        val densityLevels = intArrayOf(2, 5, 8, 12, 15)
+        val densityIndex = (configManager.printDensity - 1).coerceIn(0, 4)
+        val densityVal = densityLevels[densityIndex]
+        val densityText = "DENSITY $densityVal\r\n"
+
         val configText = "GAP 0\r\nCLS\r\n"
         val bitmapHeader = "BITMAP 0,0,$widthBytes,$height,0,"
-        val printFooter = "\r\nPRINT 1,1\r\n"
+        
+        // Auto-cut option
+        val printFooter = if (configManager.printerAutoCut) {
+            "\r\nPRINT 1,1\r\nCUT\r\n"
+        } else {
+            "\r\nPRINT 1,1\r\n"
+        }
         
         val sizeBytes = sizeText.toByteArray(StandardCharsets.US_ASCII)
+        val densityBytes = densityText.toByteArray(StandardCharsets.US_ASCII)
         val configBytes = configText.toByteArray(StandardCharsets.US_ASCII)
         val headerBytes = bitmapHeader.toByteArray(StandardCharsets.US_ASCII)
         val footerBytes = printFooter.toByteArray(StandardCharsets.US_ASCII)
         
-        val totalSize = sizeBytes.size + configBytes.size + headerBytes.size + raster.size + footerBytes.size
+        val totalSize = sizeBytes.size + densityBytes.size + configBytes.size + headerBytes.size + raster.size + footerBytes.size
         val command = ByteArray(totalSize)
         
         var offset = 0
         System.arraycopy(sizeBytes, 0, command, offset, sizeBytes.size); offset += sizeBytes.size
+        System.arraycopy(densityBytes, 0, command, offset, densityBytes.size); offset += densityBytes.size
         System.arraycopy(configBytes, 0, command, offset, configBytes.size); offset += configBytes.size
         System.arraycopy(headerBytes, 0, command, offset, headerBytes.size); offset += headerBytes.size
         System.arraycopy(raster, 0, command, offset, raster.size); offset += raster.size
@@ -94,16 +117,28 @@ class ThermalPrinterDriver : PrinterManager {
         return command
     }
 
-    private fun generateEscPosData(bitmap: Bitmap): ByteArray {
-        val dithered = DitherHelper.ditherFloydSteinberg(bitmap)
+    private fun generateEscPosData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
+        val targetWidth = if (configManager.printerPaperWidth == 58) 384 else 576
+        val targetHeight = (bitmap.height * targetWidth) / bitmap.width
+        val scaledBitmap = if (bitmap.width == targetWidth) bitmap else Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+
+        val dithered = DitherHelper.ditherFloydSteinberg(scaledBitmap)
+        if (scaledBitmap != bitmap) {
+            scaledBitmap.recycle()
+        }
         val width = dithered.width
         val height = dithered.height
         val widthBytes = (width + 7) / 8
         val raster = DitherHelper.convertTo1BitRaster(dithered)
+        dithered.recycle()
         
         // Initialize printer: ESC @ (0x1B, 0x40)
         val initCmd = byteArrayOf(0x1B, 0x40)
         
+        // Print density: GS ~ n (0x1D, 0x7E, n) where n is 0..4 (mapped from 1..5)
+        val densityVal = (configManager.printDensity - 1).coerceIn(0, 4).toByte()
+        val densityCmd = byteArrayOf(0x1D, 0x7E, densityVal)
+
         // Print raster bit image: GS v 0 0 (0x1D, 0x76, 0x30, 0x00)
         val headerCmd = byteArrayOf(
             0x1D, 0x76, 0x30, 0x00,
@@ -113,17 +148,25 @@ class ThermalPrinterDriver : PrinterManager {
             (height / 256).toByte()
         )
         
-        // Feed 4 lines and cut: ESC d 4 and GS V A 0
-        val cutCmd = byteArrayOf(
-            0x1B, 0x64, 0x04,
-            0x1D, 0x56, 0x00
-        )
+        // Feed 4 lines: ESC d 4 (0x1B, 0x64, 0x04)
+        // If auto-cut is enabled, send GS V 0 (0x1D, 0x56, 0x00)
+        val cutCmd = if (configManager.printerAutoCut) {
+            byteArrayOf(
+                0x1B, 0x64, 0x04,
+                0x1D, 0x56, 0x00
+            )
+        } else {
+            byteArrayOf(
+                0x1B, 0x64, 0x04
+            )
+        }
         
-        val totalSize = initCmd.size + headerCmd.size + raster.size + cutCmd.size
+        val totalSize = initCmd.size + densityCmd.size + headerCmd.size + raster.size + cutCmd.size
         val command = ByteArray(totalSize)
         
         var offset = 0
         System.arraycopy(initCmd, 0, command, offset, initCmd.size); offset += initCmd.size
+        System.arraycopy(densityCmd, 0, command, offset, densityCmd.size); offset += densityCmd.size
         System.arraycopy(headerCmd, 0, command, offset, headerCmd.size); offset += headerCmd.size
         System.arraycopy(raster, 0, command, offset, raster.size); offset += raster.size
         System.arraycopy(cutCmd, 0, command, offset, cutCmd.size)
@@ -155,9 +198,9 @@ class ThermalPrinterDriver : PrinterManager {
             
             val configManager = ConfigManager(context)
             val printData = if (configManager.thermalMode == "ESC_POS") {
-                generateEscPosData(bitmap)
+                generateEscPosData(bitmap, configManager)
             } else {
-                generateTsplData(bitmap)
+                generateTsplData(bitmap, configManager)
             }
             val outputStream = socket.outputStream
             outputStream.write(printData)
@@ -278,9 +321,9 @@ class ThermalPrinterDriver : PrinterManager {
             
             val configManager = ConfigManager(context)
             val printData = if (configManager.thermalMode == "ESC_POS") {
-                generateEscPosData(bitmap)
+                generateEscPosData(bitmap, configManager)
             } else {
-                generateTsplData(bitmap)
+                generateTsplData(bitmap, configManager)
             }
             
             // Transfer in chunks to prevent buffer issues
