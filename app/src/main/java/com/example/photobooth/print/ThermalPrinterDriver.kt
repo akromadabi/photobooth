@@ -188,6 +188,7 @@ class ThermalPrinterDriver : PrinterManager {
         var usbInterface: UsbInterface? = null
         var outEndpoint: UsbEndpoint? = null
         
+        // 1. Try to find standard Printer class interface first
         for (i in 0 until device.interfaceCount) {
             val intr = device.getInterface(i)
             if (intr.interfaceClass == UsbConstants.USB_CLASS_PRINTER) {
@@ -201,6 +202,22 @@ class ThermalPrinterDriver : PrinterManager {
                 }
             }
             if (usbInterface != null) break
+        }
+        
+        // 2. Fallback: Check any interface if standard printer class was not found (for Vendor-Specific class 255)
+        if (usbInterface == null || outEndpoint == null) {
+            for (i in 0 until device.interfaceCount) {
+                val intr = device.getInterface(i)
+                for (j in 0 until intr.endpointCount) {
+                    val ep = intr.getEndpoint(j)
+                    if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
+                        usbInterface = intr
+                        outEndpoint = ep
+                        break
+                    }
+                }
+                if (usbInterface != null) break
+            }
         }
         
         if (usbInterface == null || outEndpoint == null) {
