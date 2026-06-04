@@ -94,6 +94,43 @@ class ThermalPrinterDriver : PrinterManager {
         return command
     }
 
+    private fun generateEscPosData(bitmap: Bitmap): ByteArray {
+        val dithered = DitherHelper.ditherFloydSteinberg(bitmap)
+        val width = dithered.width
+        val height = dithered.height
+        val widthBytes = (width + 7) / 8
+        val raster = DitherHelper.convertTo1BitRaster(dithered)
+        
+        // Initialize printer: ESC @ (0x1B, 0x40)
+        val initCmd = byteArrayOf(0x1B, 0x40)
+        
+        // Print raster bit image: GS v 0 0 (0x1D, 0x76, 0x30, 0x00)
+        val headerCmd = byteArrayOf(
+            0x1D, 0x76, 0x30, 0x00,
+            (widthBytes % 256).toByte(),
+            (widthBytes / 256).toByte(),
+            (height % 256).toByte(),
+            (height / 256).toByte()
+        )
+        
+        // Feed 4 lines and cut: ESC d 4 and GS V A 0
+        val cutCmd = byteArrayOf(
+            0x1B, 0x64, 0x04,
+            0x1D, 0x56, 0x00
+        )
+        
+        val totalSize = initCmd.size + headerCmd.size + raster.size + cutCmd.size
+        val command = ByteArray(totalSize)
+        
+        var offset = 0
+        System.arraycopy(initCmd, 0, command, offset, initCmd.size); offset += initCmd.size
+        System.arraycopy(headerCmd, 0, command, offset, headerCmd.size); offset += headerCmd.size
+        System.arraycopy(raster, 0, command, offset, raster.size); offset += raster.size
+        System.arraycopy(cutCmd, 0, command, offset, cutCmd.size)
+        
+        return command
+    }
+
     @SuppressLint("MissingPermission")
     private fun printViaBluetooth(bitmap: Bitmap, macAddress: String, context: Context): PrintResult {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -116,9 +153,14 @@ class ThermalPrinterDriver : PrinterManager {
             socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
             socket.connect()
             
-            val tsplData = generateTsplData(bitmap)
+            val configManager = ConfigManager(context)
+            val printData = if (configManager.thermalMode == "ESC_POS") {
+                generateEscPosData(bitmap)
+            } else {
+                generateTsplData(bitmap)
+            }
             val outputStream = socket.outputStream
-            outputStream.write(tsplData)
+            outputStream.write(printData)
             outputStream.flush()
             
             PrintResult.Success
@@ -234,15 +276,20 @@ class ThermalPrinterDriver : PrinterManager {
                 return PrintResult.Error("Gagal mengklaim interface printer USB")
             }
             
-            val tsplData = generateTsplData(bitmap)
+            val configManager = ConfigManager(context)
+            val printData = if (configManager.thermalMode == "ESC_POS") {
+                generateEscPosData(bitmap)
+            } else {
+                generateTsplData(bitmap)
+            }
             
             // Transfer in chunks to prevent buffer issues
             val maxChunk = 8192
             var sent = 0
-            while (sent < tsplData.size) {
-                val length = (tsplData.size - sent).coerceAtMost(maxChunk)
+            while (sent < printData.size) {
+                val length = (printData.size - sent).coerceAtMost(maxChunk)
                 val chunk = ByteArray(length)
-                System.arraycopy(tsplData, sent, chunk, 0, length)
+                System.arraycopy(printData, sent, chunk, 0, length)
                 
                 val result = connection.bulkTransfer(outEndpoint, chunk, length, 10000)
                 if (result < 0) {

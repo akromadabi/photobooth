@@ -56,7 +56,7 @@ class MainActivity : FragmentActivity() {
                             serverConfig.adminPin?.let { if (it.isNotEmpty()) configManager.adminPin = it }
                             serverConfig.countdownSeconds?.let { configManager.countdownSeconds = it }
                             serverConfig.totalShots?.let { configManager.totalShots = it }
-                            serverConfig.printerType?.let { if (it.isNotEmpty()) configManager.printerType = it }
+                            serverConfig.printerType?.let { if (it.isNotEmpty() && it != "NONE") configManager.printerType = it }
                             serverConfig.useBiometric?.let { configManager.useBiometric = it }
                         }
                     }

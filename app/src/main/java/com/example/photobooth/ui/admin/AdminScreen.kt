@@ -109,6 +109,7 @@ fun AdminScreen(
     var totalShots by remember { mutableStateOf(configManager.totalShots.toString()) }
     var printerType by remember { mutableStateOf(configManager.printerType) }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
+    var thermalMode by remember { mutableStateOf(configManager.thermalMode) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
     
     var kioskMode by remember { mutableStateOf(configManager.kioskMode) }
@@ -731,6 +732,61 @@ fun AdminScreen(
 
                             if (printerType == "THERMAL") {
                                 HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
+                                
+                                Text("Pilih Protokol Printer Thermal:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    // Option 1: TSPL
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (thermalMode == "TSPL") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                            .border(1.dp, if (thermalMode == "TSPL") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            .clickable { thermalMode = "TSPL"; configManager.thermalMode = "TSPL" }
+                                            .padding(12.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = thermalMode == "TSPL",
+                                            onClick = { thermalMode = "TSPL"; configManager.thermalMode = "TSPL" },
+                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text("TSPL", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text("Untuk Kertas Label / Stiker", color = Color.Gray, fontSize = 10.sp)
+                                        }
+                                    }
+
+                                    // Option 2: ESC/POS
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (thermalMode == "ESC_POS") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                            .border(1.dp, if (thermalMode == "ESC_POS") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            .clickable { thermalMode = "ESC_POS"; configManager.thermalMode = "ESC_POS" }
+                                            .padding(12.dp)
+                                    ) {
+                                        RadioButton(
+                                            selected = thermalMode == "ESC_POS",
+                                            onClick = { thermalMode = "ESC_POS"; configManager.thermalMode = "ESC_POS" },
+                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text("ESC/POS", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text("Untuk Kertas Struk / Kasir", color = Color.Gray, fontSize = 10.sp)
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
                                 Text("Pilih Port Printer Thermal Terdeteksi:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 
                                 // USB list

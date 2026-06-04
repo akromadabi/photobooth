@@ -17,7 +17,12 @@ class ConfigManager(context: Context) {
         private const val KEY_USE_BIOMETRIC = "use_biometric"
         private const val KEY_ACTIVE_EVENT_ID = "active_event_id"
         private const val KEY_KIOSK_MODE = "kiosk_mode" // "DEDICATED" or "MULTI_EVENT"
+        private const val KEY_THERMAL_MODE = "thermal_mode" // "TSPL" or "ESC_POS"
     }
+
+    var thermalMode: String
+        get() = prefs.getString(KEY_THERMAL_MODE, "TSPL") ?: "TSPL"
+        set(value) = prefs.edit().putString(KEY_THERMAL_MODE, value).apply()
 
     var activeEventId: String
         get() = prefs.getString(KEY_ACTIVE_EVENT_ID, "general") ?: "general"
