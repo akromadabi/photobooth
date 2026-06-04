@@ -1,11 +1,15 @@
 package com.example.photobooth.print
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
@@ -13,12 +17,16 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import android.os.Build
 import com.example.photobooth.data.ConfigManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.coroutines.resume
+
 
 class ThermalPrinterDriver : PrinterManager {
 
@@ -123,7 +131,7 @@ class ThermalPrinterDriver : PrinterManager {
         }
     }
 
-    private fun printViaUsb(bitmap: Bitmap, vid: Int, pid: Int, context: Context): PrintResult {
+    private suspend fun printViaUsb(bitmap: Bitmap, vid: Int, pid: Int, context: Context): PrintResult {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
             ?: return PrintResult.Error("USB Host API tidak didukung")
             
@@ -140,10 +148,10 @@ class ThermalPrinterDriver : PrinterManager {
             return PrintResult.Error("Printer USB dengan VID:$vid PID:$pid tidak terdeteksi")
         }
         
-        return sendTsplToUsb(bitmap, targetDevice, usbManager)
+        return sendTsplToUsb(bitmap, targetDevice, usbManager, context)
     }
 
-    private fun printViaUsbAuto(bitmap: Bitmap, context: Context): PrintResult {
+    private suspend fun printViaUsbAuto(bitmap: Bitmap, context: Context): PrintResult {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
             ?: return PrintResult.Error("USB Host API tidak didukung")
             
@@ -166,12 +174,15 @@ class ThermalPrinterDriver : PrinterManager {
             return PrintResult.Error("Printer USB tidak ditemukan")
         }
         
-        return sendTsplToUsb(bitmap, targetDevice, usbManager)
+        return sendTsplToUsb(bitmap, targetDevice, usbManager, context)
     }
 
-    private fun sendTsplToUsb(bitmap: Bitmap, device: UsbDevice, usbManager: UsbManager): PrintResult {
+    private suspend fun sendTsplToUsb(bitmap: Bitmap, device: UsbDevice, usbManager: UsbManager, context: Context): PrintResult {
         if (!usbManager.hasPermission(device)) {
-            return PrintResult.Error("Izin akses USB untuk printer belum diberikan. Harap berikan izin.")
+            val granted = requestUsbPermission(device, context, usbManager)
+            if (!granted) {
+                return PrintResult.Error("Izin akses USB untuk printer ditolak oleh pengguna.")
+            }
         }
         
         var usbInterface: UsbInterface? = null
@@ -233,6 +244,69 @@ class ThermalPrinterDriver : PrinterManager {
                 }
                 connection?.close()
             } catch (e: Exception) {}
+        }
+    }
+
+    private suspend fun requestUsbPermission(device: UsbDevice, context: Context, usbManager: UsbManager): Boolean = withContext(Dispatchers.Main) {
+        if (usbManager.hasPermission(device)) return@withContext true
+
+        val ACTION_USB_PERMISSION = "com.example.photobooth.USB_PERMISSION"
+        
+        suspendCancellableCoroutine { continuation ->
+            val usbReceiver = object : BroadcastReceiver() {
+                override fun onReceive(c: Context, intent: Intent) {
+                    val action = intent.action
+                    if (ACTION_USB_PERMISSION == action) {
+                        synchronized(this) {
+                            val dev = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                            } else {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                            }
+                            if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                                if (dev != null && dev.deviceId == device.deviceId) {
+                                    if (continuation.isActive) continuation.resume(true)
+                                } else {
+                                    if (continuation.isActive) continuation.resume(false)
+                                }
+                            } else {
+                                if (continuation.isActive) continuation.resume(false)
+                            }
+                        }
+                    }
+                    try {
+                        context.unregisterReceiver(this)
+                    } catch (e: Exception) {}
+                }
+            }
+
+            val filter = IntentFilter(ACTION_USB_PERMISSION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                context.registerReceiver(usbReceiver, filter)
+            }
+
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_MUTABLE
+            } else {
+                0
+            }
+            val permissionIntent = PendingIntent.getBroadcast(
+                context,
+                0,
+                Intent(ACTION_USB_PERMISSION),
+                flags
+            )
+
+            continuation.invokeOnCancellation {
+                try {
+                    context.unregisterReceiver(usbReceiver)
+                } catch (e: Exception) {}
+            }
+
+            usbManager.requestPermission(device, permissionIntent)
         }
     }
 }
