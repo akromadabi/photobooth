@@ -1,90 +1,262 @@
 {
-  "version": 3,
-  "events": [
-    { "id": "general", "name": "Umum (Default)", "code": "UMUM" },
-    { "id": "wedding_rian_ani", "name": "Pernikahan Rian & Ani", "code": "RIANANI26" },
-    { "id": "birthday_budi_17", "name": "Ultah Budi ke-17", "code": "BUDI17" }
-  ],
-  "frames": [
-    {
-      "id": "classic_strip_black",
-      "name": "Classic Black",
-      "type": "strip",
-      "event_id": "general",
-      "width": 600,
-      "height": 2000,
-      "background_color": "#121212",
-      "image_url": "frames/classic_strip_black.png",
-      "slots": [
-        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
-        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
-        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
-        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
-      ]
-    },
-    {
-      "id": "creative_strip_red",
-      "name": "Creative Red",
-      "type": "strip",
-      "event_id": "general",
-      "width": 600,
-      "height": 2000,
-      "background_color": "#e63946",
-      "image_url": "frames/creative_strip_red.png",
-      "slots": [
-        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
-        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
-        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
-        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
-      ]
-    },
-    {
-      "id": "newspaper_strip",
-      "name": "Newspaper Vintage",
-      "type": "strip",
-      "event_id": "general",
-      "width": 600,
-      "height": 2000,
-      "background_color": "#e8e4db",
-      "image_url": "frames/newspaper_strip.png",
-      "slots": [
-        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
-        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
-        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
-        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
-      ]
-    },
-    {
-      "id": "magazine_strip",
-      "name": "Vogue Magazine",
-      "type": "strip",
-      "event_id": "general",
-      "width": 600,
-      "height": 2000,
-      "background_color": "#ffffff",
-      "image_url": "frames/magazine_strip.png",
-      "slots": [
-        { "index": 0, "x": 50, "y": 50, "width": 500, "height": 375 },
-        { "index": 1, "x": 50, "y": 455, "width": 500, "height": 375 },
-        { "index": 2, "x": 50, "y": 860, "width": 500, "height": 375 },
-        { "index": 3, "x": 50, "y": 1265, "width": 500, "height": 375 }
-      ]
-    },
-    {
-      "id": "retro_film_strip",
-      "name": "35mm Analog Film",
-      "type": "strip",
-      "event_id": "general",
-      "width": 600,
-      "height": 2000,
-      "background_color": "#1c1917",
-      "image_url": "frames/retro_film_strip.png",
-      "slots": [
-        { "index": 0, "x": 80, "y": 80, "width": 440, "height": 330 },
-        { "index": 1, "x": 80, "y": 475, "width": 440, "height": 330 },
-        { "index": 2, "x": 80, "y": 870, "width": 440, "height": 330 },
-        { "index": 3, "x": 80, "y": 1265, "width": 440, "height": 330 }
-      ]
-    }
-  ]
+    "version": 12,
+    "events": [
+        {
+            "id": "general",
+            "name": "Umum (Default)",
+            "code": "UMUM"
+        },
+        {
+            "id": "wedding_rian_ani",
+            "name": "Pernikahan Rian & Ani",
+            "code": "RIANANI26"
+        },
+        {
+            "id": "birthday_budi_17",
+            "name": "Ultah Budi ke-17",
+            "code": "BUDI17"
+        }
+    ],
+    "frames": [
+        {
+            "id": "classic_strip_black",
+            "name": "Classic Black",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#121212",
+            "image_url": "frames\/classic_strip_black.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
+                }
+            ]
+        },
+        {
+            "id": "creative_strip_red",
+            "name": "Creative Red",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#e63946",
+            "image_url": "frames\/creative_strip_red.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
+                }
+            ]
+        },
+        {
+            "id": "newspaper_strip",
+            "name": "Newspaper Vintage",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#e8e4db",
+            "image_url": "frames\/newspaper_strip.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
+                }
+            ]
+        },
+        {
+            "id": "magazine_strip",
+            "name": "Vogue Magazine",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#ffffff",
+            "image_url": "frames\/magazine_strip.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
+                }
+            ]
+        },
+        {
+            "id": "retro_film_strip",
+            "name": "35mm Analog Film",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#1c1917",
+            "image_url": "frames\/retro_film_strip.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 80,
+                    "y": 80,
+                    "width": 440,
+                    "height": 330
+                },
+                {
+                    "index": 1,
+                    "x": 80,
+                    "y": 475,
+                    "width": 440,
+                    "height": 330
+                },
+                {
+                    "index": 2,
+                    "x": 80,
+                    "y": 870,
+                    "width": 440,
+                    "height": 330
+                },
+                {
+                    "index": 3,
+                    "x": 80,
+                    "y": 1265,
+                    "width": 440,
+                    "height": 330
+                }
+            ]
+        },
+        {
+            "id": "TES",
+            "name": "TES",
+            "type": "strip",
+            "event_id": "general",
+            "width": 750,
+            "height": 2250,
+            "background_color": "#ffffff",
+            "image_url": "frames\/TES.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 49,
+                    "y": 98,
+                    "width": 614,
+                    "height": 417
+                },
+                {
+                    "index": 1,
+                    "x": 49,
+                    "y": 516,
+                    "width": 614,
+                    "height": 417
+                },
+                {
+                    "index": 2,
+                    "x": 68,
+                    "y": 966,
+                    "width": 614,
+                    "height": 417
+                },
+                {
+                    "index": 3,
+                    "x": 49,
+                    "y": 1448,
+                    "width": 656,
+                    "height": 459
+                }
+            ]
+        }
+    ]
 }

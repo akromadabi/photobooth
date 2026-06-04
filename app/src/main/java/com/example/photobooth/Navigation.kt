@@ -62,6 +62,9 @@ fun MainNavigation() {
             entry<CameraCapture> { key ->
                 CameraCaptureScreen(
                     frameId = key.frameId,
+                    eventId = key.eventId,
+                    sessionId = key.sessionId,
+                    packageId = key.packageId,
                     onBackClick = { backStack.removeLastOrNull() },
                     onCaptureComplete = { paths -> backStack.add(PreviewResult(paths, key.frameId, key.eventId, key.sessionId, key.packageId)) }
                 )

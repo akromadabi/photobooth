@@ -147,38 +147,68 @@ fun FrameCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Preview box
-            Box(
+            // Large dynamic preview box with silhouettes
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
-                    .width(90.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(parsedColor)
                     .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (frameFile.exists()) {
-                    AsyncImage(
-                        model = frameFile,
-                        contentDescription = frame.name,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                val frameWidth = frame.width.coerceAtLeast(1).toFloat()
+                val frameHeight = frame.height.coerceAtLeast(1).toFloat()
+                val frameAspectRatio = frameWidth / frameHeight
+                
+                val constraintWidth = maxWidth
+                val constraintHeight = maxHeight
+                
+                val previewWidth: androidx.compose.ui.unit.Dp
+                val previewHeight: androidx.compose.ui.unit.Dp
+                
+                if (constraintWidth.value / frameAspectRatio <= constraintHeight.value) {
+                    previewWidth = constraintWidth
+                    previewHeight = constraintWidth / frameAspectRatio
                 } else {
-                    // Draw slot place holders procedurally if file is missing
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(6.dp)
-                    ) {
-                        repeat(frame.slots.size) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .background(Color.White.copy(alpha = 0.15f))
+                    previewWidth = constraintHeight * frameAspectRatio
+                    previewHeight = constraintHeight
+                }
+                
+                Box(
+                    modifier = Modifier.size(previewWidth, previewHeight)
+                ) {
+                    // Draw slot silhouettes
+                    frame.slots.forEach { slot ->
+                        val slotLeft = (slot.x.toFloat() / frameWidth * previewWidth.value).dp
+                        val slotTop = (slot.y.toFloat() / frameHeight * previewHeight.value).dp
+                        val slotWidth = (slot.width.toFloat() / frameWidth * previewWidth.value).dp
+                        val slotHeight = (slot.height.toFloat() / frameHeight * previewHeight.value).dp
+                        
+                        Box(
+                            modifier = Modifier
+                                .offset(x = slotLeft, y = slotTop)
+                                .size(slotWidth, slotHeight)
+                                .background(Color.White.copy(alpha = 0.05f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "👤",
+                                fontSize = (slotHeight.value * 0.45f).sp,
+                                color = Color.White.copy(alpha = 0.25f),
+                                textAlign = TextAlign.Center
                             )
                         }
+                    }
+                    
+                    // Draw frame file on top
+                    if (frameFile.exists()) {
+                        AsyncImage(
+                            model = frameFile,
+                            contentDescription = frame.name,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }

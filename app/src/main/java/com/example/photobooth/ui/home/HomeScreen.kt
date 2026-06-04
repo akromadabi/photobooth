@@ -81,13 +81,24 @@ fun HomeScreen(
     // Exit states
     var showExitPinDialog by remember { mutableStateOf(false) }
 
+    val exitKioskApp = {
+        context.findActivity()?.let { act ->
+            try {
+                act.stopLockTask()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            act.finishAndRemoveTask()
+        }
+    }
+
     // Intercept back gesture/button to prevent exiting
     BackHandler(enabled = true) {
         if (configManager.useBiometric) {
             checkAndShowBiometric(
                 context = context,
                 onSuccess = {
-                    context.findActivity()?.finish()
+                    exitKioskApp()
                 },
                 onFallbackPin = {
                     showExitPinDialog = true
@@ -322,8 +333,8 @@ fun HomeScreen(
                     shape = RoundedCornerShape(16.dp)
                     clip = true
                 }
-                .width(if (isLandscape) 280.dp else 140.dp)
-                .height(if (isLandscape) 2400.dp else 2200.dp)
+                .requiredWidth(if (isLandscape) 300.dp else 140.dp)
+                .requiredHeight(if (isLandscape) 2800.dp else 2200.dp)
                 .background(Color.White)
                 .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.TopCenter
@@ -467,7 +478,7 @@ fun HomeScreen(
                 },
                 onSuccess = {
                     showExitPinDialog = false
-                    context.findActivity()?.finish()
+                    exitKioskApp()
                 }
             )
         }

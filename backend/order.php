@@ -310,16 +310,16 @@ $isRemoteMode = !empty($sessionId);
 
         .frame-scroll-select {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             overflow-x: auto;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
             width: 100%;
         }
 
         .frame-item-card {
-            width: 76px;
-            height: 120px;
-            border-radius: 8px;
+            width: 120px;
+            height: 190px;
+            border-radius: 10px;
             border: 2px solid var(--border-color);
             background-color: #0c0c0f;
             overflow: hidden;
@@ -328,8 +328,8 @@ $isRemoteMode = !empty($sessionId);
             transition: all 0.2s;
             display: flex;
             flex-direction: column;
-            padding: 4px;
-            gap: 4px;
+            padding: 6px;
+            gap: 6px;
         }
 
         .frame-item-card.active {
@@ -339,25 +339,45 @@ $isRemoteMode = !empty($sessionId);
 
         .frame-item-preview {
             flex: 1;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
             background-color: #08080a;
             display: flex;
             justify-content: center;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="35" r="12" fill="rgb(40,40,50)"/><path d="M50 53c-15 0-25 8-25 20h50c0-12-10-20-25-20z" fill="rgb(40,40,50)"/></svg>');
+            background-repeat: repeat;
         }
+        
+        .frame-item-preview.layout-strip {
+            background-size: 100% 25%;
+        }
+        
+        .frame-item-preview.layout-grid {
+            background-size: 50% 50%;
+        }
+        
+        .frame-item-preview.layout-postcard {
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+        }
+        
         .frame-item-preview img {
             height: 100%;
             width: auto;
             object-fit: contain;
+            position: relative;
+            z-index: 2;
         }
 
         .frame-item-name {
-            font-size: 0.55rem;
+            font-size: 0.7rem;
             text-align: center;
             font-weight: bold;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text-main);
+            padding: 2px 0;
         }
 
         /* Glowing red capture button */
@@ -569,7 +589,7 @@ $isRemoteMode = !empty($sessionId);
                     };
                     
                     card.innerHTML = `
-                        <div class="frame-item-preview">
+                        <div class="frame-item-preview layout-${selectedLayout}">
                             <img src="../${f.image_url}" onerror="this.src='https://placehold.co/50x120/121212/ffffff?text=${encodeURIComponent(f.name)}'">
                         </div>
                         <div class="frame-item-name">${f.name}</div>
