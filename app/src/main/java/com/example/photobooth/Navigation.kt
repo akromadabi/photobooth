@@ -75,8 +75,9 @@ fun MainNavigation() {
                 PreviewResultScreen(
                     photoPaths = key.photoPaths,
                     frameId = key.frameId,
+                    eventId = key.eventId,
                     onRetakeClick = { backStack.removeLastOrNull() },
-                    onConfirmClick = { path, print -> backStack.add(SharePrint(path, print, key.frameId, key.eventId, key.sessionId, key.packageId)) }
+                    onConfirmClick = { path, print, finalFrameId -> backStack.add(SharePrint(path, print, finalFrameId, key.eventId, key.sessionId, key.packageId)) }
                 )
             }
             

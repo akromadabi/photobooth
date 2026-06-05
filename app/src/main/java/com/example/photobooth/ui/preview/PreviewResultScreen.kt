@@ -13,11 +13,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,23 +55,56 @@ enum class PhotoFilter {
     NORMAL, MONO, WARM, COOL
 }
 
+enum class PreviewTab {
+    FRAME, FILTER, STICKER, CORETAN
+}
+
+data class Sticker(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val emoji: String,
+    val x: Float,          // Relative X (0f to 1f)
+    val y: Float,          // Relative Y (0f to 1f)
+    val scale: Float = 1.0f,
+    val rotation: Float = 0f
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewResultScreen(
     photoPaths: List<String>,
     frameId: String,
+    eventId: String = "general",
     onRetakeClick: () -> Unit,
-    onConfirmClick: (String, Boolean) -> Unit, // finalPath, shouldPrint
+    onConfirmClick: (String, Boolean, String) -> Unit, // finalPath, shouldPrint, finalFrameId
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
     
-    // Resolve frame configuration
-    val frame = remember(frameId) {
-        val allFrames = getFramesForLayout(context, "strip", configManager) + getFramesForLayout(context, "grid", configManager)
-        allFrames.firstOrNull { it.id == frameId } ?: allFrames.first()
+    // Resolve configurations and compatible frames
+    val allFrames = remember {
+        getFramesForLayout(context, "strip", configManager, eventId) +
+        getFramesForLayout(context, "grid", configManager, eventId) +
+        getFramesForLayout(context, "postcard", configManager, eventId)
+    }
+
+    var activeFrame by remember(frameId) {
+        val initialFrame = allFrames.firstOrNull { it.id == frameId } ?: allFrames.firstOrNull() ?: Frame(
+            id = "classic_strip_black",
+            name = "Classic Black",
+            type = "strip",
+            width = 600,
+            height = 2000,
+            backgroundColor = "#121212",
+            imageUrl = "frames/classic_strip_black.png",
+            slots = emptyList()
+        )
+        mutableStateOf(initialFrame)
+    }
+
+    val compatibleFrames = remember(activeFrame.type) {
+        allFrames.filter { it.type.equals(activeFrame.type, ignoreCase = true) }
     }
 
     var selectedFilter by remember { mutableStateOf(PhotoFilter.NORMAL) }
@@ -81,11 +125,18 @@ fun PreviewResultScreen(
     var activeStrokeWidth by remember { mutableFloatStateOf(5f) }
     var isProcessingConfirm by remember { mutableStateOf(false) }
 
-    // Re-stitch when filter changes
-    LaunchedEffect(selectedFilter) {
+    // Sticker states
+    val stickers = remember { mutableStateListOf<Sticker>() }
+    var selectedStickerId by remember { mutableStateOf<String?>(null) }
+    
+    // Customization panel tab
+    var activeTab by remember { mutableStateOf(PreviewTab.FRAME) }
+
+    // Re-stitch when filter or frame changes
+    LaunchedEffect(selectedFilter, activeFrame) {
         isStitching = true
         withContext(Dispatchers.Default) {
-            val outputPath = stitchPhotos(context, photoPaths, frame, selectedFilter, emptyList())
+            val outputPath = stitchPhotos(context, photoPaths, activeFrame, selectedFilter, emptyList(), emptyList())
             withContext(Dispatchers.Main) {
                 stitchedPhotoPath = outputPath
                 isStitching = false
@@ -93,10 +144,17 @@ fun PreviewResultScreen(
         }
     }
 
+    val frameAspectRatio = remember(activeFrame) {
+        activeFrame.width.toFloat() / activeFrame.height.toFloat()
+    }
+
+    val configuration = LocalConfiguration.current
+    val isPortrait = configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("PRATINJAU & TANDA TANGAN", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
+                title = { Text("PRATINJAU & EDIT FOTO", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color(0xFF0F0F12),
                     titleContentColor = Color.White
@@ -122,229 +180,209 @@ fun PreviewResultScreen(
                 }
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                
-                // Photo Strip & Doodle canvas split row
-                Row(
+            // Content Layout based on Orientation
+            if (isPortrait) {
+                // Portrait Layout
+                Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Left: The Photo Strip scrollable preview with Doodle Overlay
+                    // Preview Photo Container
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .width(180.dp)
-                            .border(2.dp, Color(0xFFE63946), RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.Black)
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        AsyncImage(
-                            model = File(stitchedPhotoPath),
-                            contentDescription = "Preview Strip",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        
-                        // Hand drawings layer
-                        DoodleCanvas(
-                            lines = doodleLines,
-                            onLinesChanged = { newList ->
-                                doodleLines.clear()
-                                doodleLines.addAll(newList)
-                            },
-                            activeColor = activePenColor,
+                        PreviewPhotoContainer(
+                            stitchedPhotoPath = stitchedPhotoPath,
+                            frameAspectRatio = frameAspectRatio,
+                            doodleLines = doodleLines,
+                            activePenColor = activePenColor,
                             activeStrokeWidth = activeStrokeWidth,
-                            modifier = Modifier.fillMaxSize()
+                            activeTab = activeTab,
+                            stickers = stickers,
+                            selectedStickerId = selectedStickerId,
+                            onStickerSelected = { selectedStickerId = it }
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // Right: Floating Doodle Controls Card
-                    Card(
+                    // Panel Tabs + Content
+                    Column(
                         modifier = Modifier
-                            .width(80.dp)
-                            .fillMaxHeight()
-                            .padding(vertical = 8.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-                        border = BorderStroke(1.dp, Color(0xFF2A2A35))
+                            .fillMaxWidth()
+                            .height(230.dp)
+                            .background(Color(0xFF18181F), RoundedCornerShape(20.dp))
+                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(20.dp))
+                            .padding(12.dp)
                     ) {
-                        Column(
+                        HorizontalTabRow(
+                            activeTab = activeTab,
+                            onTabSelected = { activeTab = it }
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(vertical = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.SpaceBetween
+                                .weight(1f)
+                                .fillMaxWidth()
                         ) {
-                            // Undo button
-                            IconButton(
-                                onClick = {
-                                    if (doodleLines.isNotEmpty()) {
-                                        doodleLines.removeAt(doodleLines.size - 1)
+                            when (activeTab) {
+                                PreviewTab.FRAME -> FrameSelectorPanel(
+                                    compatibleFrames = compatibleFrames,
+                                    activeFrame = activeFrame,
+                                    onFrameSelected = { activeFrame = it }
+                                )
+                                PreviewTab.FILTER -> FilterSelectorPanel(
+                                    selectedFilter = selectedFilter,
+                                    onFilterSelected = { selectedFilter = it }
+                                )
+                                PreviewTab.STICKER -> StickerSelectorPanel(
+                                    onAddSticker = { emoji ->
+                                        stickers.add(Sticker(emoji = emoji, x = 0.5f, y = 0.5f))
+                                        activeTab = PreviewTab.STICKER // stay on sticker tab
                                     }
-                                },
-                                enabled = doodleLines.isNotEmpty()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Undo,
-                                    contentDescription = "Undo",
-                                    tint = if (doodleLines.isNotEmpty()) Color.White else Color.DarkGray
+                                )
+                                PreviewTab.CORETAN -> DoodleSelectorPanel(
+                                    doodleLines = doodleLines,
+                                    activePenColor = activePenColor,
+                                    onColorSelected = { activePenColor = it },
+                                    activeStrokeWidth = activeStrokeWidth,
+                                    onStrokeWidthSelected = { activeStrokeWidth = it },
+                                    penColors = penColors
                                 )
                             }
+                        }
+                    }
 
-                            // Delete/Clear button
-                            IconButton(
-                                onClick = { doodleLines.clear() },
-                                enabled = doodleLines.isNotEmpty()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Clear All",
-                                    tint = if (doodleLines.isNotEmpty()) Color(0xFFE63946) else Color.DarkGray
-                                )
-                            }
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                            HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(horizontal = 8.dp))
-
-                            // Stroke weight selector
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("PENA", color = Color.Gray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                listOf(3f, 6f, 10f).forEach { size ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .clip(CircleShape)
-                                            .background(if (activeStrokeWidth == size) Color(0xFFE63946).copy(alpha = 0.3f) else Color.Transparent)
-                                            .clickable { activeStrokeWidth = size },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size((size * 1.2f).dp)
-                                                .clip(CircleShape)
-                                                .background(Color.White)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
+                    // Buttons Row
+                    ActionsRow(
+                        isProcessingConfirm = isProcessingConfirm,
+                        onRetakeClick = onRetakeClick,
+                        onConfirmClick = {
+                            isProcessingConfirm = true
+                            scope.launch {
+                                val finalPath = withContext(Dispatchers.Default) {
+                                    stitchPhotos(context, photoPaths, activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
                                 }
+                                isProcessingConfirm = false
+                                val shouldPrint = configManager.printerType != "NONE"
+                                onConfirmClick(finalPath, shouldPrint, activeFrame.id)
                             }
+                        }
+                    )
+                }
+            } else {
+                // Landscape Layout
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left Side: Preview Photo Container
+                    Box(
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PreviewPhotoContainer(
+                            stitchedPhotoPath = stitchedPhotoPath,
+                            frameAspectRatio = frameAspectRatio,
+                            doodleLines = doodleLines,
+                            activePenColor = activePenColor,
+                            activeStrokeWidth = activeStrokeWidth,
+                            activeTab = activeTab,
+                            stickers = stickers,
+                            selectedStickerId = selectedStickerId,
+                            onStickerSelected = { selectedStickerId = it }
+                        )
+                    }
 
-                            HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(horizontal = 8.dp))
+                    // Right Side: Control Panels & Action Buttons
+                    Column(
+                        modifier = Modifier
+                            .weight(1.8f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .background(Color(0xFF18181F), RoundedCornerShape(20.dp))
+                                .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(20.dp))
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Vertical Tabs Column
+                            VerticalTabColumn(
+                                activeTab = activeTab,
+                                onTabSelected = { activeTab = it }
+                            )
 
-                            // Color palettes
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            // Active Panel Content
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
                             ) {
-                                penColors.forEach { color ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                            .border(
-                                                width = if (activePenColor == color) 2.dp else 1.dp,
-                                                color = if (activePenColor == color) Color.White else Color(0xFF2A2A35),
-                                                shape = CircleShape
-                                            )
-                                            .clickable { activePenColor = color }
+                                when (activeTab) {
+                                    PreviewTab.FRAME -> FrameSelectorPanel(
+                                        compatibleFrames = compatibleFrames,
+                                        activeFrame = activeFrame,
+                                        onFrameSelected = { activeFrame = it }
+                                    )
+                                    PreviewTab.FILTER -> FilterSelectorPanel(
+                                        selectedFilter = selectedFilter,
+                                        onFilterSelected = { selectedFilter = it }
+                                    )
+                                    PreviewTab.STICKER -> StickerSelectorPanel(
+                                        onAddSticker = { emoji ->
+                                            stickers.add(Sticker(emoji = emoji, x = 0.5f, y = 0.5f))
+                                        }
+                                    )
+                                    PreviewTab.CORETAN -> DoodleSelectorPanel(
+                                        doodleLines = doodleLines,
+                                        activePenColor = activePenColor,
+                                        onColorSelected = { activePenColor = it },
+                                        activeStrokeWidth = activeStrokeWidth,
+                                        onStrokeWidthSelected = { activeStrokeWidth = it },
+                                        penColors = penColors
                                     )
                                 }
                             }
                         }
-                    }
-                }
 
-                // Filter Selector Section
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "Pilih Filter Estetik:",
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(PhotoFilter.values()) { filter ->
-                            FilterItem(
-                                filter = filter,
-                                isSelected = filter == selectedFilter,
-                                onClick = { selectedFilter = filter }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Bottom Action buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Retake Button
-                    OutlinedButton(
-                        onClick = onRetakeClick,
-                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
-                        enabled = !isProcessingConfirm
-                    ) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Retake")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Retake")
-                    }
-
-                    // Confirm and print/share Button with overlay baking
-                    Button(
-                        onClick = {
-                            isProcessingConfirm = true
-                            scope.launch {
-                                // Bake drawings into the high-res bitmap
-                                val finalPath = withContext(Dispatchers.Default) {
-                                    stitchPhotos(context, photoPaths, frame, selectedFilter, doodleLines.toList())
+                        // Bottom Actions
+                        ActionsRow(
+                            isProcessingConfirm = isProcessingConfirm,
+                            onRetakeClick = onRetakeClick,
+                            onConfirmClick = {
+                                isProcessingConfirm = true
+                                scope.launch {
+                                    val finalPath = withContext(Dispatchers.Default) {
+                                        stitchPhotos(context, photoPaths, activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
+                                    }
+                                    isProcessingConfirm = false
+                                    val shouldPrint = configManager.printerType != "NONE"
+                                    onConfirmClick(finalPath, shouldPrint, activeFrame.id)
                                 }
-                                isProcessingConfirm = false
-                                val shouldPrint = configManager.printerType != "NONE"
-                                onConfirmClick(finalPath, shouldPrint)
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .weight(1.5f)
-                            .height(56.dp),
-                        enabled = !isProcessingConfirm
-                    ) {
-                        if (isProcessingConfirm) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        } else {
-                            Icon(imageVector = Icons.Default.Check, contentDescription = "Confirm")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Cetak & Download", fontWeight = FontWeight.Bold)
-                        }
+                        )
                     }
                 }
             }
@@ -394,10 +432,13 @@ private fun stitchPhotos(
     photoPaths: List<String>,
     frame: Frame,
     filter: PhotoFilter,
-    doodleLines: List<DoodleLine>
+    doodleLines: List<DoodleLine>,
+    stickers: List<Sticker>
 ): String {
-    // Create base template Bitmap
-    val template = Bitmap.createBitmap(frame.width, frame.height, Bitmap.Config.ARGB_8888)
+    val multiplier = if (frame.width < 800) 3 else 2
+    
+    // Create base template Bitmap with higher resolution
+    val template = Bitmap.createBitmap(frame.width * multiplier, frame.height * multiplier, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(template)
     
     // Draw background color
@@ -439,7 +480,7 @@ private fun stitchPhotos(
         }
     }
 
-    // Stitch each photo into its corresponding slot coordinates
+    // Stitch each photo into its corresponding slot coordinates scaled up
     for (i in frame.slots.indices) {
         if (i >= photoPaths.size) break
         
@@ -447,13 +488,20 @@ private fun stitchPhotos(
         val photoFile = File(photoPaths[i])
         if (!photoFile.exists()) continue
         
-        // Decode photo and crop to match slot dimensions (Center-Crop)
+        // Decode photo and crop to match scaled slot dimensions (Center-Crop)
         val srcBmp = BitmapFactory.decodeFile(photoFile.absolutePath)
         if (srcBmp != null) {
-            val cropped = getCenterCroppedBitmap(srcBmp, slot.width, slot.height)
+            val targetW = slot.width * multiplier
+            val targetH = slot.height * multiplier
+            val cropped = getCenterCroppedBitmap(srcBmp, targetW, targetH)
             
             // Draw photo to canvas
-            val rectDest = Rect(slot.x, slot.y, slot.x + slot.width, slot.y + slot.height)
+            val rectDest = Rect(
+                slot.x * multiplier,
+                slot.y * multiplier,
+                (slot.x + slot.width) * multiplier,
+                (slot.y + slot.height) * multiplier
+            )
             canvas.drawBitmap(cropped, null, rectDest, paint)
             
             srcBmp.recycle()
@@ -466,7 +514,8 @@ private fun stitchPhotos(
     if (frameFile.exists()) {
         val overlayBmp = BitmapFactory.decodeFile(frameFile.absolutePath)
         if (overlayBmp != null) {
-            canvas.drawBitmap(overlayBmp, 0f, 0f, null)
+            val destRect = Rect(0, 0, frame.width * multiplier, frame.height * multiplier)
+            canvas.drawBitmap(overlayBmp, null, destRect, null)
             overlayBmp.recycle()
         }
     } else {
@@ -474,22 +523,22 @@ private fun stitchPhotos(
         paint.colorFilter = null
         paint.color = android.graphics.Color.WHITE
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 6f
+        paint.strokeWidth = 6f * multiplier
         for (slot in frame.slots) {
             canvas.drawRect(
-                slot.x.toFloat(),
-                slot.y.toFloat(),
-                (slot.x + slot.width).toFloat(),
-                (slot.y + slot.height).toFloat(),
+                (slot.x * multiplier).toFloat(),
+                (slot.y * multiplier).toFloat(),
+                ((slot.x + slot.width) * multiplier).toFloat(),
+                ((slot.y + slot.height) * multiplier).toFloat(),
                 paint
             )
         }
         
         // Procedural text
         paint.style = Paint.Style.FILL
-        paint.textSize = 36f
+        paint.textSize = 36f * multiplier
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        canvas.drawText("CREATIVE STUDIO", 150f, 1720f, paint)
+        canvas.drawText("CREATIVE STUDIO", 150f * multiplier, 1720f * multiplier, paint)
     }
 
     // Bake relative doodles directly onto final high-resolution Canvas
@@ -502,13 +551,16 @@ private fun stitchPhotos(
         
         doodleLines.forEach { line ->
             doodlePaint.color = line.color.toArgb()
-            val scaleFactor = frame.width.toFloat() / 180f
+            val scaleFactor = (frame.width * multiplier).toFloat() / 180f
+            
+            val canvasW = frame.width * multiplier
+            val canvasH = frame.height * multiplier
             
             if (line.points.size == 1) {
                 val p = line.points[0]
                 doodlePaint.style = Paint.Style.FILL
-                val x = p.x * frame.width
-                val y = p.y * frame.height
+                val x = p.x * canvasW
+                val y = p.y * canvasH
                 val radius = (p.strokeWidth / 2f) * scaleFactor
                 canvas.drawCircle(x, y, radius, doodlePaint)
             } else if (line.points.size > 1) {
@@ -517,10 +569,10 @@ private fun stitchPhotos(
                     val p1 = line.points[j - 1]
                     val p2 = line.points[j]
                     
-                    val x1 = p1.x * frame.width
-                    val y1 = p1.y * frame.height
-                    val x2 = p2.x * frame.width
-                    val y2 = p2.y * frame.height
+                    val x1 = p1.x * canvasW
+                    val y1 = p1.y * canvasH
+                    val x2 = p2.x * canvasW
+                    val y2 = p2.y * canvasH
                     
                     val segmentWidth = ((p1.strokeWidth + p2.strokeWidth) / 2f) * scaleFactor
                     doodlePaint.strokeWidth = segmentWidth
@@ -528,6 +580,36 @@ private fun stitchPhotos(
                     canvas.drawLine(x1, y1, x2, y2, doodlePaint)
                 }
             }
+        }
+    }
+
+    // Bake relative stickers directly onto final high-resolution Canvas
+    if (stickers.isNotEmpty()) {
+        val stickerPaint = Paint().apply {
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+        }
+        
+        stickers.forEach { sticker ->
+            val scaleFactor = (frame.width * multiplier).toFloat() / 180f
+            
+            val canvasW = frame.width * multiplier
+            val canvasH = frame.height * multiplier
+            
+            canvas.save()
+            val x = sticker.x * canvasW
+            val y = sticker.y * canvasH
+            canvas.translate(x, y)
+            canvas.rotate(sticker.rotation)
+            
+            // Render text emoji
+            stickerPaint.textSize = 32f * sticker.scale * scaleFactor
+            val fm = stickerPaint.fontMetrics
+            val dy = (fm.bottom - fm.top) / 2f - fm.bottom
+            canvas.drawText(sticker.emoji, 0f, dy, stickerPaint)
+            
+            canvas.restore()
         }
     }
 
@@ -573,4 +655,610 @@ private fun getCenterCroppedBitmap(src: Bitmap, targetW: Int, targetH: Int): Bit
         cropped.recycle()
     }
     return scaled
+}
+
+@Composable
+fun PreviewPhotoContainer(
+    stitchedPhotoPath: String,
+    frameAspectRatio: Float,
+    doodleLines: SnapshotStateList<DoodleLine>,
+    activePenColor: Color,
+    activeStrokeWidth: Float,
+    activeTab: PreviewTab,
+    stickers: SnapshotStateList<Sticker>,
+    selectedStickerId: String?,
+    onStickerSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .aspectRatio(frameAspectRatio)
+            .border(2.dp, Color(0xFFE63946), RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        if (stitchedPhotoPath.isNotEmpty()) {
+            AsyncImage(
+                model = File(stitchedPhotoPath),
+                contentDescription = "Preview Strip",
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        
+        // Doodle canvas
+        DoodleCanvas(
+            lines = doodleLines,
+            onLinesChanged = { newList ->
+                doodleLines.clear()
+                doodleLines.addAll(newList)
+            },
+            activeColor = activePenColor,
+            activeStrokeWidth = activeStrokeWidth,
+            enabled = activeTab == PreviewTab.CORETAN,
+            modifier = Modifier.fillMaxSize()
+        )
+        
+        // Sticker overlay
+        StickerOverlay(
+            stickers = stickers,
+            selectedStickerId = selectedStickerId,
+            onStickerSelected = onStickerSelected,
+            onStickerUpdated = { updated ->
+                val index = stickers.indexOfFirst { it.id == updated.id }
+                if (index >= 0) {
+                    stickers[index] = updated
+                }
+            },
+            onStickerDelete = { id ->
+                stickers.removeAll { it.id == id }
+                if (selectedStickerId == id) onStickerSelected(null)
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+fun StickerOverlay(
+    stickers: SnapshotStateList<Sticker>,
+    selectedStickerId: String?,
+    onStickerSelected: (String?) -> Unit,
+    onStickerUpdated: (Sticker) -> Unit,
+    onStickerDelete: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(
+        modifier = modifier
+            .pointerInput(Unit) {
+                detectTapGestures {
+                    onStickerSelected(null)
+                }
+            }
+    ) {
+        val containerWidth = maxWidth
+        val containerHeight = maxHeight
+
+        stickers.forEach { sticker ->
+            val isSelected = sticker.id == selectedStickerId
+
+            Box(
+                modifier = Modifier
+                    .offset(
+                        x = (sticker.x * containerWidth.value).dp - 40.dp,
+                        y = (sticker.y * containerHeight.value).dp - 40.dp
+                    )
+                    .size(80.dp)
+                    .pointerInput(sticker.id) {
+                        detectTransformGestures { _, pan, zoom, rotation ->
+                            onStickerSelected(sticker.id)
+                            val newX = (sticker.x + pan.x / containerWidth.toPx()).coerceIn(0f, 1f)
+                            val newY = (sticker.y + pan.y / containerHeight.toPx()).coerceIn(0f, 1f)
+                            val newScale = (sticker.scale * zoom).coerceIn(0.5f, 3.0f)
+                            val newRotation = sticker.rotation + rotation
+                            onStickerUpdated(
+                                sticker.copy(
+                                    x = newX,
+                                    y = newY,
+                                    scale = newScale,
+                                    rotation = newRotation
+                                )
+                            )
+                        }
+                    }
+                    .pointerInput(sticker.id + "_click") {
+                        detectTapGestures {
+                            onStickerSelected(sticker.id)
+                        }
+                    }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = sticker.scale,
+                            scaleY = sticker.scale,
+                            rotationZ = sticker.rotation
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .border(1.5.dp, Color(0xFFE63946), RoundedCornerShape(8.dp))
+                        )
+                    }
+
+                    Text(
+                        text = sticker.emoji,
+                        fontSize = 40.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                if (isSelected) {
+                    IconButton(
+                        onClick = { onStickerDelete(sticker.id) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 6.dp, y = (-6).dp)
+                            .size(24.dp)
+                            .background(Color(0xFFE63946), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Hapus Stiker",
+                            tint = Color.White,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+val emojiList = listOf(
+    "😎", "❤️", "✨", "👑", "🌟", "🎈", "🎉", "🎀", "🍕", "🧁",
+    "📸", "🎧", "🧸", "🐱", "🐶", "🌸", "⚡", "🍀", "🎃", "👻", "👽"
+)
+
+@Composable
+fun HorizontalTabRow(
+    activeTab: PreviewTab,
+    onTabSelected: (PreviewTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color(0xFF0F0F12), RoundedCornerShape(12.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        PreviewTab.values().forEach { tab ->
+            val isSelected = tab == activeTab
+            val (title, icon) = when (tab) {
+                PreviewTab.FRAME -> Pair("Bingkai", Icons.Default.Photo)
+                PreviewTab.FILTER -> Pair("Filter", Icons.Default.AutoAwesome)
+                PreviewTab.STICKER -> Pair("Stiker", Icons.Default.Face)
+                PreviewTab.CORETAN -> Pair("Coretan", Icons.Default.Gesture)
+            }
+            
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isSelected) Color(0xFFE63946) else Color.Transparent)
+                    .clickable { onTabSelected(tab) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(imageVector = icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = title, color = Color.White, fontSize = 10.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun VerticalTabColumn(
+    activeTab: PreviewTab,
+    onTabSelected: (PreviewTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .width(80.dp)
+            .fillMaxHeight()
+            .background(Color(0xFF0F0F12), RoundedCornerShape(16.dp))
+            .padding(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        PreviewTab.values().forEach { tab ->
+            val isSelected = tab == activeTab
+            val (title, icon) = when (tab) {
+                PreviewTab.FRAME -> Pair("Bingkai", Icons.Default.Photo)
+                PreviewTab.FILTER -> Pair("Filter", Icons.Default.AutoAwesome)
+                PreviewTab.STICKER -> Pair("Stiker", Icons.Default.Face)
+                PreviewTab.CORETAN -> Pair("Coretan", Icons.Default.Gesture)
+            }
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) Color(0xFFE63946) else Color.Transparent)
+                    .clickable { onTabSelected(tab) }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(imageVector = icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = title, color = Color.White, fontSize = 9.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FrameSelectorPanel(
+    compatibleFrames: List<Frame>,
+    activeFrame: Frame,
+    onFrameSelected: (Frame) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Pilih Desain Bingkai Baru:",
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(compatibleFrames) { frame ->
+                MiniFrameCard(
+                    frame = frame,
+                    isSelected = frame.id == activeFrame.id,
+                    onClick = { onFrameSelected(frame) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FilterSelectorPanel(
+    selectedFilter: PhotoFilter,
+    onFilterSelected: (PhotoFilter) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Pilih Filter Estetik:",
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(PhotoFilter.values()) { filter ->
+                FilterItem(
+                    filter = filter,
+                    isSelected = filter == selectedFilter,
+                    onClick = { onFilterSelected(filter) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StickerSelectorPanel(
+    onAddSticker: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Sentuh Stiker untuk Menambahkan ke Foto:",
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(emojiList) { emoji ->
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2A2A35))
+                        .clickable { onAddSticker(emoji) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = emoji, fontSize = 28.sp)
+                }
+            }
+        }
+        
+        Text(
+            text = "Tips: Geser dengan 1 jari untuk memindahkan. Gunakan 2 jari (cubit) untuk memutar atau memperbesar.",
+            color = Color.Gray,
+            fontSize = 10.sp,
+            lineHeight = 14.sp
+        )
+    }
+}
+
+@Composable
+fun DoodleSelectorPanel(
+    doodleLines: SnapshotStateList<DoodleLine>,
+    activePenColor: Color,
+    onColorSelected: (Color) -> Unit,
+    activeStrokeWidth: Float,
+    onStrokeWidthSelected: (Float) -> Unit,
+    penColors: List<Color>
+) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Left part: Undo and Clear buttons
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            IconButton(
+                onClick = { if (doodleLines.isNotEmpty()) doodleLines.removeAt(doodleLines.size - 1) },
+                enabled = doodleLines.isNotEmpty(),
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color(0xFF2A2A35), CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Undo,
+                    contentDescription = "Undo",
+                    tint = if (doodleLines.isNotEmpty()) Color.White else Color.DarkGray
+                )
+            }
+            
+            IconButton(
+                onClick = { doodleLines.clear() },
+                enabled = doodleLines.isNotEmpty(),
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color(0xFF2A2A35), CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Clear All",
+                    tint = if (doodleLines.isNotEmpty()) Color(0xFFE63946) else Color.DarkGray
+                )
+            }
+        }
+        
+        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color(0xFF2A2A35)))
+        
+        // Middle part: Stroke widths
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("PENA", color = Color.Gray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(3f, 6f, 10f).forEach { size ->
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(if (activeStrokeWidth == size) Color(0xFFE63946).copy(alpha = 0.3f) else Color.Transparent)
+                            .clickable { onStrokeWidthSelected(size) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size((size * 1.2f).dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                    }
+                }
+            }
+        }
+        
+        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color(0xFF2A2A35)))
+        
+        // Right part: Colors
+        Column(
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("WARNA", color = Color.Gray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(penColors) { color ->
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .border(
+                                width = if (activePenColor == color) 2.dp else 1.dp,
+                                color = if (activePenColor == color) Color.White else Color(0xFF2A2A35),
+                                shape = CircleShape
+                            )
+                            .clickable { onColorSelected(color) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MiniFrameCard(
+    frame: Frame,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val frameFile = remember(frame.id) { File(context.cacheDir, "frames/${frame.id}.png") }
+    val parsedColor = remember(frame.backgroundColor) {
+        try {
+            Color(android.graphics.Color.parseColor(frame.backgroundColor))
+        } catch (e: Exception) {
+            Color.DarkGray
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .width(80.dp)
+            .height(120.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(parsedColor)
+            .border(
+                width = if (isSelected) 3.dp else 1.dp,
+                color = if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp)
+        ) {
+            val frameWidth = frame.width.coerceAtLeast(1).toFloat()
+            val frameHeight = frame.height.coerceAtLeast(1).toFloat()
+            
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val previewWidth = maxWidth
+                val previewHeight = maxHeight
+                
+                frame.slots.forEach { slot ->
+                    val slotLeft = (slot.x.toFloat() / frameWidth * previewWidth.value).dp
+                    val slotTop = (slot.y.toFloat() / frameHeight * previewHeight.value).dp
+                    val slotWidth = (slot.width.toFloat() / frameWidth * previewWidth.value).dp
+                    val slotHeight = (slot.height.toFloat() / frameHeight * previewHeight.value).dp
+                    
+                    Box(
+                        modifier = Modifier
+                            .offset(x = slotLeft, y = slotTop)
+                            .size(slotWidth, slotHeight)
+                            .background(Color.White.copy(alpha = 0.2f))
+                    )
+                }
+                
+                if (frameFile.exists()) {
+                    AsyncImage(
+                        model = frameFile,
+                        contentDescription = frame.name,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+        
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .padding(vertical = 2.dp)
+        ) {
+            Text(
+                text = frame.name,
+                color = Color.White,
+                fontSize = 8.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun ActionsRow(
+    isProcessingConfirm: Boolean,
+    onRetakeClick: () -> Unit,
+    onConfirmClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Retake Button
+        OutlinedButton(
+            onClick = onRetakeClick,
+            border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp),
+            enabled = !isProcessingConfirm
+        ) {
+            Icon(imageVector = Icons.Default.Refresh, contentDescription = "Retake")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Ulangi Foto")
+        }
+
+        // Confirm and print/share Button
+        Button(
+            onClick = onConfirmClick,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .weight(1.5f)
+                .height(56.dp),
+            enabled = !isProcessingConfirm
+        ) {
+            if (isProcessingConfirm) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Icon(imageVector = Icons.Default.Check, contentDescription = "Confirm")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Cetak & Download", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
 }
