@@ -9,6 +9,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -327,26 +330,26 @@ fun PreviewResultScreen(
                             .fillMaxHeight(),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
                                 .background(Color(0xFF18181F), RoundedCornerShape(20.dp))
                                 .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(20.dp))
                                 .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Vertical Tabs Column
-                            VerticalTabColumn(
+                            // Horizontal Tabs at the top
+                            HorizontalTabRow(
                                 activeTab = activeTab,
                                 onTabSelected = { activeTab = it }
                             )
 
-                            // Active Panel Content
+                            // Active Panel Content below tabs
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .fillMaxHeight()
+                                    .fillMaxWidth()
                             ) {
                                 when (activeTab) {
                                     PreviewTab.FRAME -> FrameSelectorPanel(
@@ -623,8 +626,15 @@ private fun stitchPhotos(
         }
     }
 
-    // Save final composite strip
-    val outputFile = File(context.cacheDir, "final_stitched_strip.png")
+    // Clean up old stitched files in cache to avoid clutter
+    context.cacheDir.listFiles()?.forEach { file ->
+        if (file.name.startsWith("final_stitched_strip_") && file.name.endsWith(".png")) {
+            try { file.delete() } catch(e: Exception) {}
+        }
+    }
+    
+    // Save final composite strip with a unique timestamp to bypass caching
+    val outputFile = File(context.cacheDir, "final_stitched_strip_${System.currentTimeMillis()}.png")
     if (outputFile.exists()) outputFile.delete()
     
     FileOutputStream(outputFile).use { out ->
@@ -954,9 +964,11 @@ fun FrameSelectorPanel(
             fontWeight = FontWeight.SemiBold
         )
         
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 85.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(compatibleFrames) { frame ->
@@ -986,9 +998,11 @@ fun FilterSelectorPanel(
             fontWeight = FontWeight.SemiBold
         )
         
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 100.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(PhotoFilter.values()) { filter ->
@@ -1017,9 +1031,11 @@ fun StickerSelectorPanel(
             fontWeight = FontWeight.SemiBold
         )
         
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 58.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(emojiList) { emoji ->

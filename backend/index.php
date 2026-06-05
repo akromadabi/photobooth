@@ -271,15 +271,29 @@ if ($sessionId) {
     }
 }
 
-// Load event name from config.json
-if ($eventId && $eventId !== 'general') {
-    $configPath = __DIR__ . '/frames/config.json';
-    if (file_exists($configPath)) {
-        $config = json_decode(file_get_contents($configPath), true);
-        if (isset($config['events'])) {
+// Load event name and frame details from config.json
+$frameWidth = 600;
+$frameHeight = 2000;
+$frameSlots = [];
+
+$configPath = __DIR__ . '/frames/config.json';
+if (file_exists($configPath)) {
+    $config = json_decode(file_get_contents($configPath), true);
+    if (is_array($config)) {
+        if ($eventId && $eventId !== 'general' && isset($config['events'])) {
             foreach ($config['events'] as $evt) {
                 if ($evt['id'] === $eventId) {
                     $eventName = $evt['name'];
+                    break;
+                }
+            }
+        }
+        if (isset($config['frames']) && is_array($config['frames'])) {
+            foreach ($config['frames'] as $frm) {
+                if ($frm['id'] === $frameId) {
+                    $frameWidth = isset($frm['width']) ? intval($frm['width']) : 600;
+                    $frameHeight = isset($frm['height']) ? intval($frm['height']) : 2000;
+                    $frameSlots = isset($frm['slots']) ? $frm['slots'] : [];
                     break;
                 }
             }
@@ -310,6 +324,13 @@ $found = !empty($photoFile);
             --border-color: #2a2a35;
         }
 
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -325,8 +346,19 @@ $found = !empty($photoFile);
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            padding: 20px;
-            overflow-x: hidden;
+            padding: 20px 12px 100px 12px;
+            box-sizing: border-box;
+        }
+
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .background-glow {
@@ -337,7 +369,6 @@ $found = !empty($photoFile);
             width: 600px;
             height: 600px;
             background: radial-gradient(circle, rgba(230, 57, 70, 0.15) 0%, rgba(15, 15, 18, 0) 70%);
-            z-index: -1;
             pointer-events: none;
         }
 
@@ -546,8 +577,7 @@ $found = !empty($photoFile);
 
         /* Animated Effects CSS */
 
-        /* 1. Film Scratches & Moving Dust (Newspaper / Black Strip) */
-        .media-container.effect-classic_strip_black::after,
+        /* 1. Film Scratches & Moving Dust (Newspaper strip only) */
         .media-container.effect-newspaper_strip::after {
             content: "";
             position: absolute;
@@ -719,10 +749,93 @@ $found = !empty($photoFile);
                 border-radius: 12px;
             }
         }
+
+        /* Floating Actions Bar */
+        .floating-actions-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 480px;
+            background: rgba(24, 24, 31, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            box-sizing: border-box;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .floating-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: inherit;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            border: none;
+            color: white;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .floating-btn-strip {
+            background: linear-gradient(135deg, #e63946 0%, #b32431 100%);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+
+        .floating-btn-strip:hover {
+            background: linear-gradient(135deg, #f84f5c 0%, #d62d3a 100%);
+            transform: translateY(-1px);
+        }
+
+        .floating-btn-gif {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3);
+        }
+
+        .floating-btn-gif:hover {
+            background: linear-gradient(135deg, #33f5ff 0%, #66b5ff 100%);
+            transform: translateY(-1px);
+        }
+
+        .floating-btn-sticker {
+            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+
+        .floating-btn-sticker:hover {
+            background: linear-gradient(135deg, #3df77d 0%, #17a898 100%);
+            transform: translateY(-1px);
+        }
+
+        .floating-btn:active {
+            transform: scale(0.95) translateY(0);
+        }
     </style>
 </head>
 <body>
-    <div class="background-glow"></div>
+    <div class="bg-container">
+        <div class="background-glow"></div>
+    </div>
 
     <header>
         <?php if ($eventName): ?>
@@ -745,7 +858,7 @@ $found = !empty($photoFile);
 
             <div class="media-container effect-<?php echo htmlspecialchars($frameId); ?>" id="photo-wrapper">
                 <img src="<?php echo htmlspecialchars($photoFile); ?>" class="photo-img" alt="Your Photo Strip">
-                <?php if ($frameId === 'classic_strip_black' || $frameId === 'newspaper_strip'): ?>
+                <?php if ($frameId === 'newspaper_strip'): ?>
                     <div class="scratches-overlay">
                         <div class="scratch"></div>
                         <div class="scratch"></div>
@@ -830,6 +943,11 @@ $found = !empty($photoFile);
     <footer class="footer-text">
         &copy; <?php echo date('Y'); ?> Creative Studio. All Rights Reserved.
     </footer>    <script>
+        const activeFrameConfig = <?php echo json_encode([
+            'width' => $frameWidth,
+            'height' => $frameHeight,
+            'slots' => $frameSlots
+        ]); ?>;
         function switchTab(type) {
             const photoTab = document.querySelector('.tab-btn:nth-child(1)');
             const timelapseTab = document.querySelector('.tab-btn:nth-child(2)');
@@ -942,8 +1060,8 @@ $found = !empty($photoFile);
                     ctx.clearRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // Draw effects based on frameId
-                    if (frameId === 'classic_strip_black' || frameId === 'newspaper_strip') {
+                    // Draw effects
+                    if (frameId === 'newspaper_strip') {
                         // Draw film grain noise
                         const noiseData = ctx.createImageData(width, height);
                         const buffer = new Uint32Array(noiseData.data.buffer);
@@ -1052,22 +1170,18 @@ $found = !empty($photoFile);
                     await new Promise(resolve => img.onload = resolve);
                 }
 
-                // Slices coordinates based on frameId
-                let slots = [
+                // Slices coordinates based on frame configurations
+                const defaultSlots = [
                     { x: 50, y: 50, width: 500, height: 375 },
                     { x: 50, y: 455, width: 500, height: 375 },
                     { x: 50, y: 860, width: 500, height: 375 },
                     { x: 50, y: 1265, width: 500, height: 375 }
                 ];
+                const slots = (activeFrameConfig.slots && activeFrameConfig.slots.length > 0) 
+                    ? activeFrameConfig.slots 
+                    : defaultSlots;
 
-                if (frameId === 'retro_film_strip') {
-                    slots = [
-                        { x: 80, y: 80, width: 440, height: 330 },
-                        { x: 80, y: 475, width: 440, height: 330 },
-                        { x: 80, y: 870, width: 440, height: 330 },
-                        { x: 80, y: 1265, width: 440, height: 330 }
-                    ];
-                }
+                const scaleFactor = img.naturalWidth / (activeFrameConfig.width || 600);
 
                 // Slicing and drawing to separate canvases with custom polaroid frames
                 const frameImages = [];
@@ -1077,6 +1191,14 @@ $found = !empty($photoFile);
                 for (let i = 0; i < slots.length; i++) {
                     const slot = slots[i];
                     
+                    // Scale slot coordinates to natural image dimensions
+                    const actualSlot = {
+                        x: slot.x * scaleFactor,
+                        y: slot.y * scaleFactor,
+                        width: slot.width * scaleFactor,
+                        height: slot.height * scaleFactor
+                    };
+
                     // Create polaroid canvas
                     const pCanvas = document.createElement('canvas');
                     pCanvas.width = slot.width + padding * 2;
@@ -1090,8 +1212,8 @@ $found = !empty($photoFile);
                     // 2. Draw photo cropped from original strip
                     pCtx.drawImage(
                         img, 
-                        slot.x, slot.y, slot.width, slot.height, // source
-                        padding, padding, slot.width, slot.height // destination
+                        actualSlot.x, actualSlot.y, actualSlot.width, actualSlot.height, // source (scaled)
+                        padding, padding, slot.width, slot.height // destination (1x)
                     );
 
                     // 3. Draw a shadow border around the photo slot
@@ -1221,33 +1343,35 @@ $found = !empty($photoFile);
                     await new Promise(resolve => img.onload = resolve);
                 }
 
-                // Slices coordinates based on frameId and poseIndex
-                let slots = [
+                // Slices coordinates based on frame configurations
+                const defaultSlots = [
                     { x: 50, y: 50, width: 500, height: 375 },
                     { x: 50, y: 455, width: 500, height: 375 },
                     { x: 50, y: 860, width: 500, height: 375 },
                     { x: 50, y: 1265, width: 500, height: 375 }
                 ];
-
-                if (frameId === 'retro_film_strip') {
-                    slots = [
-                        { x: 80, y: 80, width: 440, height: 330 },
-                        { x: 80, y: 475, width: 440, height: 330 },
-                        { x: 80, y: 870, width: 440, height: 330 },
-                        { x: 80, y: 1265, width: 440, height: 330 }
-                    ];
-                }
+                const slots = (activeFrameConfig.slots && activeFrameConfig.slots.length > 0) 
+                    ? activeFrameConfig.slots 
+                    : defaultSlots;
 
                 const slot = slots[poseIndex];
 
-                // 1. Crop original pose to a temporary canvas
+                const scaleFactor = img.naturalWidth / (activeFrameConfig.width || 600);
+                const actualSlot = {
+                    x: slot.x * scaleFactor,
+                    y: slot.y * scaleFactor,
+                    width: slot.width * scaleFactor,
+                    height: slot.height * scaleFactor
+                };
+
+                // 1. Crop original pose to a temporary canvas (at 1x destination resolution)
                 const cropCanvas = document.createElement('canvas');
                 cropCanvas.width = slot.width;
                 cropCanvas.height = slot.height;
                 const cropCtx = cropCanvas.getContext('2d');
                 cropCtx.drawImage(
                     img,
-                    slot.x, slot.y, slot.width, slot.height,
+                    actualSlot.x, actualSlot.y, actualSlot.width, actualSlot.height,
                     0, 0, slot.width, slot.height
                 );
 
@@ -1266,7 +1390,7 @@ $found = !empty($photoFile);
                 const theme = themes[poseIndex] || themes[0];
 
                 const cX = 256;
-                const cY = 220; // Center offset vertically for person sticker space
+                const cYVal = 220; // Center offset vertically for emojis reference
 
                 // If MediaPipe model loaded, cut out person and make a cool outline sticker
                 if (isMediaPipeLoaded && selfieSegmentation) {
@@ -1278,7 +1402,8 @@ $found = !empty($photoFile);
                     let destH = maxDim / (slot.width / slot.height);
                     
                     const destX = cX - destW / 2;
-                    const destY = cY - destH / 2;
+                    // Make the bottom of the person overlap the text badge by 15px to sit on top of it cleanly
+                    const destY = 425 - destH;
 
                     // Draw segmented person scaled to a helper canvas to facilitate silhouette creation
                     const personCanvas = document.createElement('canvas');
@@ -1310,38 +1435,39 @@ $found = !empty($photoFile);
                 } else {
                     // Fallback to circular badge outline style if MediaPipe is not ready
                     const radius = 170;
+                    const currentCY = 255; // Touch text badge with 15px overlap
 
                     // Sticker white background glow/offset
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
-                    ctx.arc(cX, cY, radius + 12, 0, Math.PI * 2);
+                    ctx.arc(cX, currentCY, radius + 12, 0, Math.PI * 2);
                     ctx.fill();
 
                     // Clip path for the photo
                     ctx.save();
                     ctx.beginPath();
-                    ctx.arc(cX, cY, radius, 0, Math.PI * 2);
+                    ctx.arc(cX, currentCY, radius, 0, Math.PI * 2);
                     ctx.clip();
 
-                    // Draw photo scaled to fit circle
-                    const sAspect = slot.width / slot.height;
-                    let sWidth = slot.width;
-                    let sHeight = slot.height;
-                    let sx = slot.x;
-                    let sy = slot.y;
+                    // Draw photo scaled to fit circle directly from cropCanvas
+                    const sAspect = cropCanvas.width / cropCanvas.height;
+                    let sWidth = cropCanvas.width;
+                    let sHeight = cropCanvas.height;
+                    let sx = 0;
+                    let sy = 0;
 
                     if (sAspect > 1) { // Landscape
-                        sWidth = slot.height;
-                        sx = slot.x + (slot.width - sWidth) / 2;
+                        sWidth = cropCanvas.height;
+                        sx = (cropCanvas.width - sWidth) / 2;
                     } else {
-                        sHeight = slot.width;
-                        sy = slot.y + (slot.height - sHeight) / 2;
+                        sHeight = cropCanvas.width;
+                        sy = (cropCanvas.height - sHeight) / 2;
                     }
 
                     ctx.drawImage(
-                        img,
+                        cropCanvas,
                         sx, sy, sWidth, sHeight,
-                        cX - radius, cY - radius, radius * 2, radius * 2
+                        cX - radius, currentCY - radius, radius * 2, radius * 2
                     );
                     ctx.restore();
 
@@ -1349,7 +1475,7 @@ $found = !empty($photoFile);
                     ctx.strokeStyle = theme.color;
                     ctx.lineWidth = 6;
                     ctx.beginPath();
-                    ctx.arc(cX, cY, radius, 0, Math.PI * 2);
+                    ctx.arc(cX, currentCY, radius, 0, Math.PI * 2);
                     ctx.stroke();
                 }
 
@@ -1357,10 +1483,10 @@ $found = !empty($photoFile);
                 ctx.font = '36px Arial';
                 ctx.textAlign = 'center';
                 
-                ctx.fillText(theme.emojis[0], cX - 180, cY - 130);
-                ctx.fillText(theme.emojis[1], cX + 180, cY - 130);
-                ctx.fillText(theme.emojis[2], cX - 180, cY + 120);
-                ctx.fillText(theme.emojis[3], cX + 180, cY + 120);
+                ctx.fillText(theme.emojis[0], cX - 180, cYVal - 130);
+                ctx.fillText(theme.emojis[1], cX + 180, cYVal - 130);
+                ctx.fillText(theme.emojis[2], cX - 180, cYVal + 120);
+                ctx.fillText(theme.emojis[3], cX + 180, cYVal + 120);
 
                 // 6. Draw Sticker Text Badge at the bottom
                 const textWidth = 320;
@@ -1415,6 +1541,43 @@ $found = !empty($photoFile);
             ctx.quadraticCurveTo(x, y, x + radius, y);
             ctx.closePath();
         }
+
+        function scrollToStickers() {
+            const container = document.querySelector('.sticker-buttons-container');
+            if (container) {
+                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                container.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                container.style.transform = 'scale(1.03)';
+                setTimeout(() => {
+                    container.style.transform = 'scale(1)';
+                }, 300);
+            }
+        }
     </script>
+
+    <?php if ($found): ?>
+        <div class="floating-actions-bar">
+            <?php if ($packageFeatures['download']): ?>
+                <a href="<?php echo htmlspecialchars($photoFile); ?>" download="CreativeStudio_Photo.png" class="floating-btn floating-btn-strip">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Unduh Strip
+                </a>
+            <?php endif; ?>
+
+            <?php if ($packageFeatures['gif']): ?>
+                <button onclick="generateGifSlideshow()" class="floating-btn floating-btn-gif">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2z"></path><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    Unduh GIF
+                </button>
+            <?php endif; ?>
+
+            <?php if ($packageFeatures['sticker']): ?>
+                <button onclick="scrollToStickers()" class="floating-btn floating-btn-sticker">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                    Stiker WA
+                </button>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </body>
 </html>

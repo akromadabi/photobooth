@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,6 +45,17 @@ fun FrameSelectScreen(
     val context = LocalContext.current
     val configManager = remember { ConfigManager(context) }
     
+    val configuration = LocalConfiguration.current
+    val isPortrait = configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+    
+    val columns = remember(layoutType, isPortrait) {
+        if (layoutType.equals("strip", ignoreCase = true)) {
+            if (isPortrait) GridCells.Fixed(2) else GridCells.Fixed(5)
+        } else {
+            if (isPortrait) GridCells.Fixed(1) else GridCells.Fixed(2)
+        }
+    }
+
     // Load synced frames or get fallbacks
     val frames = remember(layoutType, eventId) {
         getFramesForLayout(context, layoutType, configManager, eventId)
@@ -96,7 +108,7 @@ fun FrameSelectScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = columns,
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.weight(1f)
@@ -131,19 +143,23 @@ fun FrameCard(
         }
     }
 
+    val isStrip = remember(frame.type) { frame.type.equals("strip", ignoreCase = true) }
+    val cardAspectRatio = if (isStrip) 0.5f else 1.2f
+    val padding = if (isStrip) 8.dp else 16.dp
+
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
         border = BorderStroke(1.dp, Color(0xFF2A2A35)),
         modifier = modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .aspectRatio(cardAspectRatio)
             .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -152,7 +168,7 @@ fun FrameCard(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = padding)
                     .clip(RoundedCornerShape(8.dp))
                     .background(parsedColor)
                     .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
