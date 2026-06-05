@@ -132,14 +132,24 @@ fun PreviewResultScreen(
     // Customization panel tab
     var activeTab by remember { mutableStateOf(PreviewTab.FRAME) }
 
+    var isFirstStitch by remember { mutableStateOf(true) }
+
+    // Clear sticker selection when switching tabs
+    LaunchedEffect(activeTab) {
+        selectedStickerId = null
+    }
+
     // Re-stitch when filter or frame changes
     LaunchedEffect(selectedFilter, activeFrame) {
-        isStitching = true
+        if (stitchedPhotoPath.isEmpty()) {
+            isStitching = true
+        }
         withContext(Dispatchers.Default) {
             val outputPath = stitchPhotos(context, photoPaths, activeFrame, selectedFilter, emptyList(), emptyList())
             withContext(Dispatchers.Main) {
                 stitchedPhotoPath = outputPath
                 isStitching = false
+                isFirstStitch = false
             }
         }
     }
@@ -164,7 +174,7 @@ fun PreviewResultScreen(
         containerColor = Color(0xFF0F0F12),
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
-        if (isStitching) {
+        if (isStitching && isFirstStitch) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -715,6 +725,7 @@ fun PreviewPhotoContainer(
                 stickers.removeAll { it.id == id }
                 if (selectedStickerId == id) onStickerSelected(null)
             },
+            enabled = activeTab == PreviewTab.STICKER,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -727,38 +738,46 @@ fun StickerOverlay(
     onStickerSelected: (String?) -> Unit,
     onStickerUpdated: (Sticker) -> Unit,
     onStickerDelete: (String) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(
-        modifier = modifier
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    onStickerSelected(null)
-                }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    
+    val tapModifier = if (enabled) {
+        Modifier.pointerInput(Unit) {
+            detectTapGestures {
+                onStickerSelected(null)
             }
+        }
+    } else {
+        Modifier
+    }
+
+    BoxWithConstraints(
+        modifier = modifier.then(tapModifier)
     ) {
         val containerWidth = maxWidth
         val containerHeight = maxHeight
+        val containerWidthPx = with(density) { containerWidth.toPx() }
+        val containerHeightPx = with(density) { containerHeight.toPx() }
 
         stickers.forEach { sticker ->
             val isSelected = sticker.id == selectedStickerId
+            val currentStickerState = rememberUpdatedState(sticker)
 
-            Box(
-                modifier = Modifier
-                    .offset(
-                        x = (sticker.x * containerWidth.value).dp - 40.dp,
-                        y = (sticker.y * containerHeight.value).dp - 40.dp
-                    )
-                    .size(80.dp)
-                    .pointerInput(sticker.id) {
-                        detectTransformGestures { _, pan, zoom, rotation ->
-                            onStickerSelected(sticker.id)
-                            val newX = (sticker.x + pan.x / containerWidth.toPx()).coerceIn(0f, 1f)
-                            val newY = (sticker.y + pan.y / containerHeight.toPx()).coerceIn(0f, 1f)
-                            val newScale = (sticker.scale * zoom).coerceIn(0.5f, 3.0f)
-                            val newRotation = sticker.rotation + rotation
+            val stickerDragModifier = if (enabled) {
+                Modifier.pointerInput(sticker.id) {
+                    detectTransformGestures { _, pan, zoom, rotation ->
+                        val currentSticker = currentStickerState.value
+                        onStickerSelected(currentSticker.id)
+                        
+                        if (pan != androidx.compose.ui.geometry.Offset.Zero || zoom != 1f || rotation != 0f) {
+                            val newX = (currentSticker.x + pan.x / containerWidthPx).coerceIn(0f, 1f)
+                            val newY = (currentSticker.y + pan.y / containerHeightPx).coerceIn(0f, 1f)
+                            val newScale = (currentSticker.scale * zoom).coerceIn(0.5f, 3.0f)
+                            val newRotation = currentSticker.rotation + rotation
                             onStickerUpdated(
-                                sticker.copy(
+                                currentSticker.copy(
                                     x = newX,
                                     y = newY,
                                     scale = newScale,
@@ -767,11 +786,19 @@ fun StickerOverlay(
                             )
                         }
                     }
-                    .pointerInput(sticker.id + "_click") {
-                        detectTapGestures {
-                            onStickerSelected(sticker.id)
-                        }
-                    }
+                }
+            } else {
+                Modifier
+            }
+
+            Box(
+                modifier = Modifier
+                    .offset(
+                        x = (sticker.x * containerWidth.value).dp - 40.dp,
+                        y = (sticker.y * containerHeight.value).dp - 40.dp
+                    )
+                    .size(80.dp)
+                    .then(stickerDragModifier)
             ) {
                 Box(
                     modifier = Modifier
@@ -798,7 +825,7 @@ fun StickerOverlay(
                     )
                 }
 
-                if (isSelected) {
+                if (isSelected && enabled) {
                     IconButton(
                         onClick = { onStickerDelete(sticker.id) },
                         modifier = Modifier

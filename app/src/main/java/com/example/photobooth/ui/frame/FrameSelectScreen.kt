@@ -285,6 +285,30 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     slots = stripSlots
                 )
             )
+            framesList.add(
+                Frame(
+                    id = "creative_strip_blue",
+                    name = "Modern Blue",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#1d3557",
+                    imageUrl = "frames/creative_strip_blue.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "creative_strip_pink",
+                    name = "Sweet Pink",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#ffb7b2",
+                    imageUrl = "frames/creative_strip_pink.png",
+                    slots = stripSlots
+                )
+            )
         } else if (layoutType.equals("grid", ignoreCase = true)) {
             // Default 2x2 grid fallback
             val gridSlots = listOf(
@@ -305,6 +329,42 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     slots = gridSlots
                 )
             )
+            framesList.add(
+                Frame(
+                    id = "grid_red",
+                    name = "Grid Creative Red",
+                    type = "grid",
+                    width = 1000,
+                    height = 800,
+                    backgroundColor = "#e63946",
+                    imageUrl = "frames/grid_red.png",
+                    slots = gridSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "grid_blue",
+                    name = "Grid Modern Blue",
+                    type = "grid",
+                    width = 1000,
+                    height = 800,
+                    backgroundColor = "#1d3557",
+                    imageUrl = "frames/grid_blue.png",
+                    slots = gridSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "grid_pink",
+                    name = "Grid Sweet Pink",
+                    type = "grid",
+                    width = 1000,
+                    height = 800,
+                    backgroundColor = "#ffb7b2",
+                    imageUrl = "frames/grid_pink.png",
+                    slots = gridSlots
+                )
+            )
         } else if (layoutType.equals("postcard", ignoreCase = true)) {
             // Default 1-shot postcard fallback
             val postcardSlots = listOf(
@@ -319,6 +379,42 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     height = 900,
                     backgroundColor = "#121212",
                     imageUrl = "frames/postcard_black.png",
+                    slots = postcardSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "postcard_red",
+                    name = "Postcard Creative Red",
+                    type = "postcard",
+                    width = 1200,
+                    height = 900,
+                    backgroundColor = "#e63946",
+                    imageUrl = "frames/postcard_red.png",
+                    slots = postcardSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "postcard_blue",
+                    name = "Postcard Modern Blue",
+                    type = "postcard",
+                    width = 1200,
+                    height = 900,
+                    backgroundColor = "#1d3557",
+                    imageUrl = "frames/postcard_blue.png",
+                    slots = postcardSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "postcard_pink",
+                    name = "Postcard Sweet Pink",
+                    type = "postcard",
+                    width = 1200,
+                    height = 900,
+                    backgroundColor = "#ffb7b2",
+                    imageUrl = "frames/postcard_pink.png",
                     slots = postcardSlots
                 )
             )
