@@ -5,6 +5,12 @@ $configData = ['events' => [], 'frames' => []];
 if (file_exists($configPath)) {
     $configData = json_decode(file_get_contents($configPath), true);
 }
+
+$packagesFile = __DIR__ . '/packages.json';
+$packagesList = [];
+if (file_exists($packagesFile)) {
+    $packagesList = json_decode(file_get_contents($packagesFile), true);
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -1514,6 +1520,22 @@ if (file_exists($configPath)) {
                 </select>
             </div>
 
+            <!-- Active Package Configuration -->
+            <div class="section-box">
+                <div class="section-title">Pilih Paket Simulasi</div>
+                <select id="kioskPackageSelect" onchange="onPackageSelectChange()">
+                    <?php
+                    if (!empty($packagesList)) {
+                        foreach ($packagesList as $pkg) {
+                            echo '<option value="' . htmlspecialchars($pkg['id']) . '">' . htmlspecialchars($pkg['name']) . '</option>';
+                        }
+                    } else {
+                        echo '<option value="">Tidak ada paket kustom</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+
             <!-- Admin credentials -->
             <div class="section-box">
                 <div class="section-title">Kredensial / Sinkronisasi</div>
@@ -1781,11 +1803,18 @@ if (file_exists($configPath)) {
     <script>
         // Server Configuration Injected from PHP
         const serverConfig = <?php echo json_encode($configData); ?>;
+        const packagesList = <?php echo json_encode($packagesList); ?>;
         
         // Local variables
         let kioskMode = 'MULTI_EVENT'; // 'MULTI_EVENT' or 'DEDICATED'
         let activeEventId = 'general'; // Resolved Event ID
         let currentSessionEventId = 'general'; // Session event mapping
+        
+        let activePackageId = packagesList.length > 0 ? packagesList[0].id : '';
+        
+        function onPackageSelectChange() {
+            activePackageId = document.getElementById('kioskPackageSelect').value;
+        }
         
         let logoTaps = 0;
         let logoTapsTimeout;
@@ -2315,6 +2344,104 @@ if (file_exists($configPath)) {
             startCameraPreview();
         }
 
+        // Generate ID Card Canvas with character image, name, license ID, and license page QR code
+        function generateIdCardCanvas(photoImg, sessionId, callback) {
+            const cardCanvas = document.createElement('canvas');
+            cardCanvas.width = 638;
+            cardCanvas.height = 1011;
+            const ctx = cardCanvas.getContext('2d');
+
+            // 1. Draw elegant background gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, 1011);
+            grad.addColorStop(0, '#13131c');
+            grad.addColorStop(0.5, '#0c0c10');
+            grad.addColorStop(1, '#050508');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 638, 1011);
+
+            // Neon glowing border
+            ctx.strokeStyle = '#e63946';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(3, 3, 632, 1005);
+            ctx.strokeStyle = '#f7b801';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(8, 8, 622, 995);
+
+            // Header Brand
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 28px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('CREATIVE STUDIO', 319, 60);
+
+            ctx.fillStyle = '#f7b801';
+            ctx.font = '700 14px Outfit, sans-serif';
+            ctx.fillText('OFFICIAL CHARACTER CARD', 319, 85);
+
+            // Photo Frame background
+            ctx.fillStyle = '#1e1e26';
+            ctx.fillRect(119, 130, 400, 500);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(119, 130, 400, 500);
+
+            // Draw photo inside frame (clip to round corners optionally, or draw direct)
+            ctx.drawImage(photoImg, 121, 132, 396, 496);
+
+            // Name & Description
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 32px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            const charName = selectedFrame ? selectedFrame.name : 'Custom Character';
+            ctx.fillText(charName.toUpperCase(), 319, 680);
+
+            // License Key
+            ctx.fillStyle = '#f7b801';
+            ctx.font = 'bold 18px monospace';
+            const hashPart = md5 ? md5(sessionId).substring(0, 4).toUpperCase() : sessionId.substring(4, 8).toUpperCase();
+            const licKey = 'LIC-' + sessionId.substring(0,4).toUpperCase() + '-' + hashPart;
+            ctx.fillText(licKey, 319, 715);
+
+            // Verification text
+            ctx.fillStyle = '#8d8d9f';
+            ctx.font = '400 13px Outfit, sans-serif';
+            ctx.fillText('Verified AI generated character by Creative Studio Kiosk', 319, 740);
+
+            // Load and Draw QR Code linking to verification page
+            const protocol = window.location.protocol;
+            const host = window.location.host;
+            const pathParts = window.location.pathname.split('/');
+            pathParts.pop(); // remove kiosk_sim.php
+            const baseDir = pathParts.join('/');
+            const verifyUrl = `${protocol}//${host}${baseDir}/license.php?id=${sessionId}`;
+
+            const tempQr = new QRious({
+                value: verifyUrl,
+                size: 140,
+                background: 'white',
+                foreground: '#0c0c0f',
+                level: 'H'
+            });
+
+            const qrImg = new Image();
+            qrImg.src = tempQr.toDataURL();
+            qrImg.onload = () => {
+                // Draw QR on bottom center
+                ctx.drawImage(qrImg, 249, 775, 140, 140);
+
+                // Add verified badge text
+                ctx.fillStyle = '#39ff14';
+                ctx.font = '900 14px Outfit, sans-serif';
+                ctx.fillText('✓ VERIFIED LICENSE', 319, 945);
+                
+                callback(cardCanvas.toDataURL('image/png'), verifyUrl);
+            };
+        }
+
+        // MD5 mock fallback helper in case not loaded
+        function md5(string) {
+            return string; // Simplified for basic fallback, but QRious and simple hash is standard
+        }
+
         // Uploads final session combined photo strip to local upload.php
         function finishAndUploadSession() {
             // Stitch drawing canvas layers into one unified bitmap image
@@ -2327,17 +2454,10 @@ if (file_exists($configPath)) {
             finalCtx.drawImage(drawCanvas, 0, 0);
             
             const dataUrl = finalCanvas.toDataURL('image/png');
-            
-            // Display visual printing animation modal (illustrated pop-up)
-            document.getElementById('printingPaperImg').src = dataUrl;
-            document.getElementById('printerModal').style.display = 'flex';
-            
-            // Reset paper animation height
-            const paper = document.getElementById('printingPaper');
-            paper.style.animation = 'none';
-            paper.offsetHeight; // trigger reflow
-            paper.style.animation = null;
 
+            // Resolve active package
+            const activePackage = packagesList.find(p => p.id === activePackageId) || (packagesList.length > 0 ? packagesList[0] : null);
+            
             // Prepare multipart files
             finalCanvas.toBlob((blob) => {
                 const formData = new FormData();
@@ -2345,7 +2465,7 @@ if (file_exists($configPath)) {
                 
                 // Add query parameter bindings for dynamic events metadata resolving
                 let eventIdValue = kioskMode === 'DEDICATED' ? activeEventId : currentSessionEventId;
-                let uploadUrl = `upload.php?frame_id=${selectedFrame.id}&event_id=${eventIdValue}`;
+                let uploadUrl = `upload.php?frame_id=${selectedFrame.id}&event_id=${eventIdValue}&package_id=${activePackage ? activePackage.id : ''}`;
 
                 fetch(uploadUrl, {
                     method: 'POST',
@@ -2361,10 +2481,59 @@ if (file_exists($configPath)) {
                             size: 160
                         });
 
-                        document.getElementById('finalStitchedImage').src = dataUrl;
                         document.getElementById('btnOpenWebPortal').href = data.download_url;
                         
                         console.log("Uploaded successfully!", data);
+
+                        // Handle printing simulation based on print flow setting
+                        if (activePackage && activePackage.print_flow === 'ID_CARD') {
+                            const photoImg = new Image();
+                            photoImg.src = dataUrl;
+                            photoImg.onload = () => {
+                                generateIdCardCanvas(photoImg, data.session_id, (idCardDataUrl, verifyUrl) => {
+                                    document.getElementById('printingPaperImg').src = idCardDataUrl;
+                                    document.getElementById('finalStitchedImage').src = idCardDataUrl;
+                                    document.getElementById('printerModal').style.display = 'flex';
+                                    
+                                    // Reset paper animation height
+                                    const paper = document.getElementById('printingPaper');
+                                    paper.style.animation = 'none';
+                                    paper.offsetHeight; // trigger reflow
+                                    paper.style.animation = null;
+                                });
+                            };
+                        } else {
+                            // Standard Receipt or Color Print sizing mapping
+                            let printWidth = activePackage ? activePackage.print_width_mm : 58;
+                            let printHeight = activePackage ? activePackage.print_height_mm : 200;
+                            
+                            const printCanvas = document.createElement('canvas');
+                            printCanvas.width = printWidth * 4;
+                            printCanvas.height = printHeight * 4;
+                            const printCtx = printCanvas.getContext('2d');
+                            
+                            const photoImg = new Image();
+                            photoImg.src = dataUrl;
+                            photoImg.onload = () => {
+                                const ratio = printCanvas.width / photoImg.width;
+                                const drawH = photoImg.height * ratio;
+                                printCtx.fillStyle = '#ffffff';
+                                printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+                                printCtx.drawImage(photoImg, 0, 0, printCanvas.width, drawH);
+                                
+                                const printDataUrl = printCanvas.toDataURL('image/png');
+                                
+                                document.getElementById('printingPaperImg').src = printDataUrl;
+                                document.getElementById('finalStitchedImage').src = printDataUrl;
+                                document.getElementById('printerModal').style.display = 'flex';
+                                
+                                // Reset paper animation height
+                                const paper = document.getElementById('printingPaper');
+                                paper.style.animation = 'none';
+                                paper.offsetHeight; // trigger reflow
+                                paper.style.animation = null;
+                            };
+                        }
                     } else {
                         alert("❌ Gagal mengunggah foto ke server: " + data.message);
                     }

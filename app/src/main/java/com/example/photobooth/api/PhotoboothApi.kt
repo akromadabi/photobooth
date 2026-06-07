@@ -61,6 +61,17 @@ data class GenericResponse(
     val message: String
 )
 
+@Keep
+data class PackageDto(
+    @SerializedName("id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("price") val price: Int,
+    @SerializedName("features") val features: Map<String, Boolean>,
+    @SerializedName("print_flow") val printFlow: String? = null,
+    @SerializedName("print_width_mm") val printWidthMm: Int? = null,
+    @SerializedName("print_height_mm") val printHeightMm: Int? = null
+)
+
 interface PhotoboothApi {
 
     @GET
@@ -95,6 +106,9 @@ interface PhotoboothApi {
 
     @GET("settings.json")
     suspend fun getKioskSettings(): Response<KioskConfigDto>
+
+    @GET("packages.json")
+    suspend fun getPackages(): Response<List<PackageDto>>
 
     @GET("kiosk_control.php?action=get_command")
     suspend fun getKioskCommand(): Response<KioskCommandResponse>

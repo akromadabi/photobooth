@@ -1,24 +1,44 @@
 [
   {
-    "id": "paket_hemat",
-    "name": "Paket Hemat",
+    "id": "paket_receipt",
+    "name": "Cetak Receipt",
     "price": 15000,
     "features": {
       "print": true,
-      "download": false,
+      "download": true,
       "gif": false,
       "sticker": false
-    }
+    },
+    "print_flow": "RECEIPT",
+    "print_width_mm": 58,
+    "print_height_mm": 200
   },
   {
-    "id": "paket_best_deal",
-    "name": "Paket Best Deal",
-    "price": 30000,
+    "id": "paket_warna",
+    "name": "Paket Cetak Warna",
+    "price": 25000,
+    "features": {
+      "print": true,
+      "download": true,
+      "gif": true,
+      "sticker": false
+    },
+    "print_flow": "COLOR_PRINT",
+    "print_width_mm": 102,
+    "print_height_mm": 152
+  },
+  {
+    "id": "paket_idcard",
+    "name": "Paket ID Card",
+    "price": 35000,
     "features": {
       "print": true,
       "download": true,
       "gif": true,
       "sticker": true
-    }
+    },
+    "print_flow": "ID_CARD",
+    "print_width_mm": 54,
+    "print_height_mm": 86
   }
 ]

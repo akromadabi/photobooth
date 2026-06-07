@@ -403,6 +403,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_packages') {
         $pkg['features']['download'] = isset($_POST["feature_download_$id"]) ? true : false;
         $pkg['features']['gif'] = isset($_POST["feature_gif_$id"]) ? true : false;
         $pkg['features']['sticker'] = isset($_POST["feature_sticker_$id"]) ? true : false;
+        
+        if (isset($_POST["print_flow_$id"])) {
+            $pkg['print_flow'] = $_POST["print_flow_$id"];
+        }
+        if (isset($_POST["print_width_mm_$id"])) {
+            $pkg['print_width_mm'] = intval($_POST["print_width_mm_$id"]);
+        }
+        if (isset($_POST["print_height_mm_$id"])) {
+            $pkg['print_height_mm'] = intval($_POST["print_height_mm_$id"]);
+        }
     }
     
     file_put_contents($packagesFile, json_encode($packages, JSON_PRETTY_PRINT));
@@ -2331,6 +2341,37 @@ foreach ($weeklyStats as $date => $cnt) {
                                                 <span class="checkbox-label"><i class="fa-brands fa-whatsapp"></i> Koleksi Stiker WA</span>
                                             </label>
                                         </div>
+
+                                        <div class="form-group" style="margin-top: 14px;">
+                                            <label>Alur Pencetakan & Profil Ukuran</label>
+                                            <select name="print_flow_<?php echo $pkg['id']; ?>" id="print_flow_<?php echo $pkg['id']; ?>" class="form-input" style="background-color: white;">
+                                                <option value="RECEIPT" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'RECEIPT') ? 'selected' : ''; ?>>RECEIPT (Cetak Receipt Termal)</option>
+                                                <option value="COLOR_PRINT" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'COLOR_PRINT') ? 'selected' : ''; ?>>COLOR_PRINT (Cetak Foto Warna)</option>
+                                                <option value="ID_CARD" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'ID_CARD') ? 'selected' : ''; ?>>ID_CARD (Cetak ID Card Lisensi)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group" style="margin-top: 10px;">
+                                            <label>Template Ukuran Cetak (Preset)</label>
+                                            <select class="form-input" style="background-color: white;" onchange="applyPreset('<?php echo $pkg['id']; ?>', this.value)">
+                                                <option value="">-- Pilih Template Ukuran --</option>
+                                                <option value="cr80">ID Card Standar (54 x 86 mm)</option>
+                                                <option value="r4">Cetak Foto Warna 4R (102 x 152 mm)</option>
+                                                <option value="thermal58">Struk Termal 58mm (58 x 200 mm)</option>
+                                                <option value="thermal80">Struk Termal 80mm (80 x 200 mm)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                                            <div class="form-group">
+                                                <label>Lebar Cetak (mm)</label>
+                                                <input type="number" name="print_width_mm_<?php echo $pkg['id']; ?>" id="print_width_mm_<?php echo $pkg['id']; ?>" class="form-input" value="<?php echo isset($pkg['print_width_mm']) ? intval($pkg['print_width_mm']) : 58; ?>" required style="background-color: white;">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Tinggi Cetak (mm)</label>
+                                                <input type="number" name="print_height_mm_<?php echo $pkg['id']; ?>" id="print_height_mm_<?php echo $pkg['id']; ?>" class="form-input" value="<?php echo isset($pkg['print_height_mm']) ? intval($pkg['print_height_mm']) : 200; ?>" required style="background-color: white;">
+                                            </div>
+                                        </div>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -2342,6 +2383,32 @@ foreach ($weeklyStats as $date => $cnt) {
                             </div>
                         </form>
                     </div>
+                    
+                    <script>
+                    function applyPreset(pkgId, preset) {
+                        const widthInput = document.getElementById('print_width_mm_' + pkgId);
+                        const heightInput = document.getElementById('print_height_mm_' + pkgId);
+                        const flowSelect = document.getElementById('print_flow_' + pkgId);
+                        
+                        if (preset === 'cr80') {
+                            widthInput.value = 54;
+                            heightInput.value = 86;
+                            flowSelect.value = 'ID_CARD';
+                        } else if (preset === 'r4') {
+                            widthInput.value = 102;
+                            heightInput.value = 152;
+                            flowSelect.value = 'COLOR_PRINT';
+                        } else if (preset === 'thermal58') {
+                            widthInput.value = 58;
+                            heightInput.value = 200;
+                            flowSelect.value = 'RECEIPT';
+                        } else if (preset === 'thermal80') {
+                            widthInput.value = 80;
+                            heightInput.value = 200;
+                            flowSelect.value = 'RECEIPT';
+                        }
+                    }
+                    </script>
                 </div>
 
                 <!-- TAB: Frames (Manajemen Bingkai & Visual Editor) -->

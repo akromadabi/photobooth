@@ -53,6 +53,9 @@ fun SharePrintScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
+    val finalSessionId = remember {
+        if (sessionId.isNotEmpty()) sessionId else java.util.UUID.randomUUID().toString().replace("-", "").take(16)
+    }
     
     var uploadStatus by remember { 
         mutableStateOf(
@@ -111,7 +114,7 @@ fun SharePrintScreen(
                         photo = photoPart,
                         characterId = characterId,
                         eventId = if (eventId.isNotEmpty() && eventId != "general") eventId else null,
-                        sessionId = if (sessionId.isNotEmpty()) sessionId else null,
+                        sessionId = finalSessionId,
                         packageId = if (packageId.isNotEmpty()) packageId else null
                     )
                 } else {
@@ -119,7 +122,7 @@ fun SharePrintScreen(
                         photo = photoPart,
                         frameId = if (frameId.isNotEmpty()) frameId else null,
                         eventId = if (eventId.isNotEmpty() && eventId != "general") eventId else null,
-                        sessionId = if (sessionId.isNotEmpty()) sessionId else null,
+                        sessionId = finalSessionId,
                         packageId = if (packageId.isNotEmpty()) packageId else null
                     )
                 }
@@ -134,13 +137,11 @@ fun SharePrintScreen(
                         uploadStatus = if (characterId.isNotEmpty()) "Wajah berhasil diproses AI!" else "Foto berhasil diunggah!"
                         isUploading = false
                         
-                        if (sessionId.isNotEmpty()) {
-                            scope.launch(Dispatchers.IO) {
-                                try {
-                                    api.completeSession(sessionId)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                api.completeSession(finalSessionId)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
                         }
                     } else {
@@ -161,8 +162,36 @@ fun SharePrintScreen(
         if (shouldPrint) {
             scope.launch(Dispatchers.IO) {
                 try {
-                    val bitmap = BitmapFactory.decodeFile(finalPhotoPath)
+                    val api = NetworkClient.getApi(configManager.backendUrl)
+                    var activePackage: com.example.photobooth.api.PackageDto? = null
+                    try {
+                        val pkgRes = api.getPackages()
+                        if (pkgRes.isSuccessful && pkgRes.body() != null) {
+                            activePackage = pkgRes.body()!!.find { it.id == packageId }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+
+                    var bitmap = BitmapFactory.decodeFile(finalPhotoPath)
                     if (bitmap != null) {
+                        val flow = activePackage?.printFlow ?: "RECEIPT"
+                        if (flow == "ID_CARD") {
+                            val verifyUrl = "${configManager.backendUrl}/license.php?id=$finalSessionId"
+                            val charName = characterId.replace('_', ' ').replaceFirstChar { 
+                                if (it.isLowerCase()) it.titlecase() else it.toString() 
+                            }
+                            bitmap = generateIdCardBitmap(bitmap, finalSessionId, verifyUrl, charName)
+                        } else {
+                            // Standard Receipt or Color Print sizing
+                            val printWidthMm = activePackage?.printWidthMm ?: 58
+                            val printHeightMm = activePackage?.printHeightMm ?: 200
+                            // Map mm to pixels (e.g. 10 pixels per mm for printable output)
+                            val targetW = printWidthMm * 10
+                            val targetH = printHeightMm * 10
+                            bitmap = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+                        }
+
                         val driver: com.example.photobooth.print.PrinterManager = when (configManager.printerType) {
                             "THERMAL" -> ThermalPrinterDriver()
                             "COLOR" -> ColorPrinterDriver()
@@ -335,6 +364,107 @@ fun SharePrintScreen(
             Text(buttonText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
+}
+
+// Helper to generate ID Card layout bitmap dynamically
+private fun generateIdCardBitmap(
+    photo: Bitmap,
+    sessionId: String,
+    verifyUrl: String,
+    characterName: String
+): Bitmap {
+    // Standard CR80 aspect ratio: 54x86 -> 600 x 956 pixels
+    val cardW = 600
+    val cardH = 956
+    val bitmap = Bitmap.createBitmap(cardW, cardH, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+
+    // Draw elegant dark gradient background
+    val gradient = android.graphics.LinearGradient(
+        0f, 0f, 0f, cardH.toFloat(),
+        android.graphics.Color.parseColor("#13131c"),
+        android.graphics.Color.parseColor("#050508"),
+        android.graphics.Shader.TileMode.CLAMP
+    )
+    paint.shader = gradient
+    canvas.drawRect(0f, 0f, cardW.toFloat(), cardH.toFloat(), paint)
+    paint.shader = null // reset
+
+    // Outer glowing borders
+    paint.style = android.graphics.Paint.Style.STROKE
+    paint.strokeWidth = 10f
+    paint.color = android.graphics.Color.parseColor("#E63946") // red border
+    canvas.drawRect(5f, 5f, cardW.toFloat() - 5f, cardH.toFloat() - 5f, paint)
+
+    paint.strokeWidth = 2f
+    paint.color = android.graphics.Color.parseColor("#F7B801") // gold inner border
+    canvas.drawRect(12f, 12f, cardW.toFloat() - 12f, cardH.toFloat() - 12f, paint)
+
+    // Draw Header Texts
+    paint.style = android.graphics.Paint.Style.FILL
+    paint.textAlign = android.graphics.Paint.Align.CENTER
+    
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 28f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+    canvas.drawText("CREATIVE STUDIO", cardW / 2f, 60f, paint)
+
+    paint.color = android.graphics.Color.parseColor("#F7B801")
+    paint.textSize = 14f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+    canvas.drawText("OFFICIAL CHARACTER LICENSE CARD", cardW / 2f, 85f, paint)
+
+    // Draw Photo Frame
+    paint.color = android.graphics.Color.parseColor("#1E1E26")
+    val frameL = 100f
+    val frameT = 125f
+    val frameR = 500f
+    val frameB = 625f
+    canvas.drawRect(frameL, frameT, frameR, frameB, paint)
+
+    // Draw user's generated photo inside the frame
+    val srcRect = android.graphics.Rect(0, 0, photo.width, photo.height)
+    val destRect = android.graphics.Rect(frameL.toInt() + 4, frameT.toInt() + 4, frameR.toInt() - 4, frameB.toInt() - 4)
+    canvas.drawBitmap(photo, srcRect, destRect, paint)
+
+    // Character Name
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 32f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+    canvas.drawText(characterName.uppercase(), cardW / 2f, 675f, paint)
+
+    // License Serial Key
+    paint.color = android.graphics.Color.parseColor("#F7B801")
+    paint.textSize = 18f
+    paint.typeface = android.graphics.Typeface.MONOSPACE
+    val sessionPart = sessionId.take(4).uppercase()
+    val hashPart = Integer.toHexString(sessionId.hashCode()).take(4).uppercase()
+    val licenseKey = "LIC-$sessionPart-$hashPart"
+    canvas.drawText(licenseKey, cardW / 2f, 715f, paint)
+
+    // Verification small note
+    paint.color = android.graphics.Color.parseColor("#8D8D9F")
+    paint.textSize = 12f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+    canvas.drawText("Verified AI generated character by Creative Studio Kiosk", cardW / 2f, 740f, paint)
+
+    // Generate and Draw License Page QR Code
+    try {
+        val qrSize = 130
+        val qrBmp = generateQrCode(verifyUrl, qrSize, qrSize)
+        canvas.drawBitmap(qrBmp, (cardW - qrSize) / 2f, 765f, paint)
+    } catch (e: java.lang.Exception) {
+        e.printStackTrace()
+    }
+
+    // Draw verified badge status text
+    paint.color = android.graphics.Color.parseColor("#39FF14") // neon green
+    paint.textSize = 14f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+    canvas.drawText("✓ VERIFIED LICENSE", cardW / 2f, 925f, paint)
+
+    return bitmap
 }
 
 // Helper to generate QR code bitmap via ZXing

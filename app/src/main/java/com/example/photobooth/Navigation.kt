@@ -61,8 +61,8 @@ fun MainNavigation() {
                     eventId = key.eventId,
                     onBackClick = { backStack.removeLastOrNull() },
                     onCharacterSelected = { charId -> 
-                        // For AI Character mode, we capture 1 shot. We use a default frameId "classic_strip_black" which is always present in general events.
-                        backStack.add(CameraCapture(frameId = "classic_strip_black", eventId = key.eventId, characterId = charId))
+                        // For AI Character mode, we capture 1 shot. We use a default frameId "postcard_black" which has 1 slot instead of 4 slots.
+                        backStack.add(CameraCapture(frameId = "postcard_black", eventId = key.eventId, characterId = charId))
                     }
                 )
             }

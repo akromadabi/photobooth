@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumen Integrasi Midtrans - Flow Transaksi & Customer Journey</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --text-main: #334155;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+            --border: #e2e8f0;
+            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            background-color: #f1f5f9;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .document-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            padding: 50px;
+            position: relative;
+        }
+
+        /* Header Style */
+        header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .header-title-area h1 {
+            font-size: 1.8rem;
+            color: var(--text-dark);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title-area h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .meta-info {
+            display: flex;
+            gap: 16px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .meta-info span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-system {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .logo-placeholder {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            border: 2px solid var(--text-dark);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-transform: uppercase;
+        }
+        .logo-placeholder span {
+            color: var(--danger);
+        }
+
+        /* Section Styles */
+        section {
+            margin-bottom: 45px;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            border-left: 4px solid var(--accent);
+            padding-left: 12px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        p {
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            text-align: justify;
+        }
+
+        /* Table design */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+
+        table th, table td {
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+
+        /* Flowchart styles */
+        .diagram-container {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 20px;
+            margin: 25px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            overflow-x: auto;
+        }
+
+        .flow-node {
+            background: white;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 12px 20px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            position: relative;
+        }
+
+        .flow-node.highlight {
+            border-left-color: var(--success);
+            background-color: #f0fdf4;
+        }
+
+        .flow-node.midtrans {
+            border-left-color: #1e1b4b;
+            background-color: #e0e7ff;
+        }
+
+        .node-step {
+            font-size: 0.75rem;
+            font-weight: 800;
+            background-color: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .flow-node.highlight .node-step {
+            background-color: var(--success);
+        }
+
+        .flow-node.midtrans .node-step {
+            background-color: #4338ca;
+        }
+
+        .node-info {
+            flex-grow: 1;
+        }
+
+        .node-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .node-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        .node-actor {
+            font-size: 0.7rem;
+            font-weight: 700;
+            background-color: rgba(0,0,0,0.06);
+            padding: 2px 8px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dark);
+        }
+
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            line-height: 1;
+            font-weight: bold;
+        }
+
+        /* Mockup screens styles */
+        .mockups-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .mockups-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .phone-mockup {
+            border: 8px solid #1e293b;
+            border-radius: 28px;
+            background-color: #0f0f13;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            aspect-ratio: 9/16;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .phone-header {
+            background-color: #1e293b;
+            padding: 8px 16px;
+            font-size: 0.65rem;
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .phone-screen {
+            flex-grow: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+
+        /* App specific mockups */
+        .app-logo {
+            font-weight: 800;
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+        .app-logo span { color: #ef4444; }
+
+        .app-card {
+            background-color: #1e1e24;
+            border: 1px solid #2e2e38;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .app-card.selected {
+            border-color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        .app-btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-weight: 700;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: auto;
+            text-transform: uppercase;
+        }
+
+        /* Midtrans popup mockup */
+        .snap-modal {
+            background-color: white;
+            color: #334155;
+            border-radius: 16px 16px 0 0;
+            margin-top: auto;
+            padding: 16px;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .snap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #0f172a;
+        }
+
+        .snap-logo {
+            font-weight: 800;
+            color: #1e1b4b;
+            font-size: 0.8rem;
+        }
+        .snap-logo span { color: #2563eb; }
+
+        .pay-channel-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .pay-channel-row.active {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+
+        .channel-name-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .channel-badge-shopeepay {
+            background-color: #ee4d2d;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .channel-badge-qris {
+            background-color: #1e1b4b;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .qr-placeholder-box {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qr-image {
+            width: 100px;
+            height: 100px;
+            background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+            border: 4px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mockup-caption {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 8px;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .alert-info-doc {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--accent);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        .alert-info-doc strong {
+            color: var(--text-dark);
+        }
+
+        /* Printing styling */
+        @media print {
+            body {
+                background-color: white;
+                color: black;
+                padding: 0;
+            }
+            .document-container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .phone-mockup {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                border-color: #334155;
+            }
+            .diagram-container {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .page-break {
+                page-break-before: always;
+                break-before: page;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="document-container">
+        
+        <header>
+            <div class="header-title-area">
+                <h1>Dokumen Integrasi Midtrans</h1>
+                <h2>Customer Journey & Flow Transaksi Pembayaran</h2>
+                <div class="meta-info">
+                    <span><strong>Merchant:</strong> Creative Studio Photobooth</span>
+                    <span><strong>Tanggal:</strong> 7 Juni 2026</span>
+                    <span><strong>Status:</strong> Siap Produksi</span>
+                </div>
+            </div>
+            <div class="logo-placeholder">
+                Creative<span>Studio</span>
+            </div>
+        </header>
+
+        <!-- PENGANTAR -->
+        <section>
+            <h3>1. Ringkasan Eksekutif & Informasi Merchant</h3>
+            <p>
+                Dokumen ini disusun sebagai bagian dari pemenuhan syarat kelayakan pendaftaran dan verifikasi akun merchant <strong>Midtrans</strong> untuk aplikasi <strong>Creative Studio Kiosk Photobooth</strong>. Aplikasi ini merupakan sistem Kiosk Photobooth <i>self-service</i> berbasis Android dan Web Portal yang memungkinkan pengguna membeli sesi foto secara mandiri, mengendalikan kamera kiosk via smartphone mereka (remote controller), memotret secara otomatis, serta mengunduh hasil foto digital dan file timelapse (GIF) langsung ke ponsel mereka.
+            </p>
+            <p>
+                Untuk memfasilitasi transaksi pembayaran nontunai yang cepat, otomatis, dan aman di area kiosk, Creative Studio mengintegrasikan <strong>Midtrans Snap API</strong> dengan mode pembayaran utama berupa <strong>QRIS</strong> dan dompet digital <strong>ShopeePay</strong>. Proses pembukuan antrean dan sinkronisasi hardware kiosk dilakukan secara real-time berdasarkan notifikasi status sukses dari server Midtrans.
+            </p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Informasi Sistem</th>
+                        <th>Detail Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Nama Aplikasi</strong></td>
+                        <td>Creative Studio Kiosk Photobooth</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Platform Aplikasi</strong></td>
+                        <td>Web Mobile (Pemesanan & Remote Controller) & Android (Aset Kios Fisik)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Model Integrasi</strong></td>
+                        <td>Midtrans Snap API (Redirect / Popup JS Library)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Saluran Pembayaran Utama</strong></td>
+                        <td>ShopeePay, QRIS (mendukung e-wallet ShopeePay, GoPay, OVO, Dana, LinkAja)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>URL Callback Webhook</strong></td>
+                        <td><code>http://&lt;domain-merchant&gt;/backend/payment_gateway.php</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- DIAGRAM ALIR TRANSAKSI -->
+        <section>
+            <h3>2. Diagram Alir Transaksi (Transaction Flow Diagram)</h3>
+            <p>
+                Diagram berikut menggambarkan interaksi end-to-end antara <strong>Customer (Browser)</strong>, <strong>Server Merchant (Backend PHP)</strong>, dan <strong>Gateway Midtrans (Snap Engine)</strong> mulai dari pemilihan paket, proses otorisasi ShopeePay, hingga sinkronisasi antrean pemotretan:
+            </p>
+
+            <div class="diagram-container">
+                
+                <div class="flow-node">
+                    <div class="node-step">1</div>
+                    <div class="node-info">
+                        <div class="node-title">Akses Halaman Pemesanan (order.php)</div>
+                        <div class="node-desc">Customer memilih paket foto di browser mobile/kiosk dan menekan tombol pesan.</div>
+                    </div>
+                    <div class="node-actor">Customer</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node">
+                    <div class="node-step">2</div>
+                    <div class="node-info">
+                        <div class="node-title">Pembuatan Transaksi & Antrean</div>
+                        <div class="node-desc">Server merchant mencatat transaksi baru dengan status UNPAID di database antrean.</div>
+                    </div>
+                    <div class="node-actor">Server Merchant</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node">
+                    <div class="node-step">3</div>
+                    <div class="node-info">
+                        <div class="node-title">Inisiasi Snap Token ke Midtrans</div>
+                        <div class="node-desc">Server melakukan post request ke Midtrans Snap API menggunakan Server Key Merchant.</div>
+                    </div>
+                    <div class="node-actor">Server Merchant</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node midtrans">
+                    <div class="node-step">4</div>
+                    <div class="node-info">
+                        <div class="node-title">Mengembalikan Snap Token</div>
+                        <div class="node-desc">Midtrans memverifikasi request dan merespon dengan token Snap & Redirect URL.</div>
+                    </div>
+                    <div class="node-actor">Midtrans</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node">
+                    <div class="node-step">5</div>
+                    <div class="node-info">
+                        <div class="node-title">Menampilkan Midtrans Snap UI</div>
+                        <div class="node-desc">Checkout page memanggil Snap JS SDK dan menampilkan popup pilihan channel pembayaran.</div>
+                    </div>
+                    <div class="node-actor">Customer</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node highlight">
+                    <div class="node-step">6</div>
+                    <div class="node-info">
+                        <div class="node-title">Pemilihan ShopeePay / QRIS & Pembayaran</div>
+                        <div class="node-desc">Customer dialihkan ke aplikasi ShopeePay (Deeplink) atau memindai QR code QRIS di layar.</div>
+                    </div>
+                    <div class="node-actor">ShopeePay / QRIS</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node midtrans">
+                    <div class="node-step">7</div>
+                    <div class="node-info">
+                        <div class="node-title">Notifikasi Webhook & Settlement</div>
+                        <div class="node-desc">Setelah otorisasi PIN sukses, Midtrans mengirim webhook POST ke server merchant.</div>
+                    </div>
+                    <div class="node-actor">Midtrans</div>
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-node highlight">
+                    <div class="node-step">8</div>
+                    <div class="node-info">
+                        <div class="node-title">Aktivasi Sesi Kamera & Remote Kiosk</div>
+                        <div class="node-desc">Server mengonfirmasi status antrean lunas. Customer dialihkan ke Remote Controller.</div>
+                    </div>
+                    <div class="node-actor">Server Merchant</div>
+                </div>
+
+            </div>
+        </section>
+
+        <div class="page-break"></div>
+
+        <!-- CUSTOMER JOURNEY STEP-BY-STEP -->
+        <section>
+            <h3>3. Penjelasan Langkah-Langkah Customer Journey (End-to-End)</h3>
+            <p>Berikut adalah rincian detail operasional dari langkah-langkah yang dilalui oleh customer:</p>
+            
+            <ol style="margin-left: 20px; margin-bottom: 20px; padding-left: 10px; font-size: 0.95rem;">
+                <li style="margin-bottom: 12px;">
+                    <strong>Membuka Halaman Pemesanan (Pilih Paket):</strong>
+                    Customer membuka portal pemesanan Creative Studio (`order.php`) melalui peramban web ponsel atau layar tablet Kiosk. Mereka melihat katalog paket foto yang tersedia, antara lain: <i>Cetak Receipt (Rp 15.000)</i>, <i>Paket Cetak Warna (Rp 25.000)</i>, dan <i>Paket ID Card (Rp 35.000)</i>. Setelah memilih salah satu paket, customer menekan tombol <strong>PESAN SEKARANG</strong>.
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Pembuatan Antrean di Database Lokal:</strong>
+                    Sistem backend memproses input formulir, menghasilkan pengenal sesi unik sepanjang 16 karakter acak (`session_id`), dan menetapkan nomor antrean berikutnya. Data transaksi dicatat ke file antrean server (`queue.json`) dengan status <code>UNPAID</code>. Selanjutnya, halaman dialihkan ke halaman gerbang pembayaran (`payment_gateway.php`).
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Pemuatan Halaman Checkout & Pemanggilan Snap API:</strong>
+                    Halaman `payment_gateway.php` memuat data transaksi. Jika metode pembayaran diset menggunakan Midtrans, server merchant secara otomatis melakukan panggilan HTTP POST (cURL) ke server Midtrans Snap API dengan payload berisi ID Transaksi (Order ID), nominal pembayaran, serta detail item paket. Panggilan ini terotentikasi secara aman menggunakan **Midtrans Server Key**.
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Interaksi Antarmuka Pembayaran Midtrans Snap (Pilihan ShopeePay):</strong>
+                    Sistem menerima respon berupa token transaksi dari Midtrans. Di sisi client, perpustakaan JavaScript Midtrans Snap (`snap.js`) mendeteksi token tersebut dan membuka modal popup secara otomatis. Customer dapat melihat berbagai saluran pembayaran yang aktif. Untuk melakukan pembayaran dengan ShopeePay, customer dapat menekan opsi <strong>QRIS (GoPay, ShopeePay, LinkAja)</strong> atau opsi langsung <strong>ShopeePay</strong>.
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Eksekusi Pembayaran ShopeePay:</strong>
+                    <ul>
+                        <li><strong>Mobile Flow (Smartphone):</strong> Snap secara otomatis membuka aplikasi Shopee di ponsel customer melalui tautan dalam (deeplink). Aplikasi Shopee akan menampilkan halaman konfirmasi pembayaran Creative Studio dengan nominal yang sesuai. Customer menekan tombol bayar dan memasukkan PIN ShopeePay mereka.</li>
+                        <li><strong>Desktop/Tablet Flow (Layar Kiosk):</strong> Layar menampilkan kode QR dinamis (QRIS/ShopeePay). Customer membuka aplikasi Shopee di ponsel mereka, menekan tombol Scan, memindai kode QR di layar, mengonfirmasi nominal, dan memasukkan PIN ShopeePay.</li>
+                    </ul>
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Penerimaan Webhook Notifikasi & Validasi Signature Key:</strong>
+                    Seketika setelah PIN ShopeePay berhasil diverifikasi di server Shopee/Midtrans, Midtrans mengirimkan notifikasi callback HTTP POST secara asynchronous ke server merchant. Backend PHP merchant menerima payload notifikasi, menghitung hash SHA-512 (Signature Key) lokal menggunakan Server Key untuk menjamin keaslian data, dan memverifikasi status transaksi. Jika status transaksi bernilai <code>settlement</code> atau <code>capture</code>, status pesanan di database lokal diubah menjadi <code>WAITING</code> (siap antre) atau <code>ACTIVE</code> (mulai sesi foto).
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Polling Status & Pengalihan Halaman (Redirection):</strong>
+                    Secara paralel, halaman checkout customer melakukan polling AJAX ke server merchant setiap 4 detik untuk memeriksa pembaruan antrean. Begitu notifikasi sukses terverifikasi, halaman checkout customer akan menampilkan konfirmasi sukses dan mengalihkan halaman secara otomatis ke <strong>Halaman Remote Controller Kiosk</strong> (`order.php?session_id=<session_id>`).
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Penggunaan Kiosk Kios Foto (Mulai Sesi):</strong>
+                    Di halaman remote controller, customer kini dapat memilih layout foto (Strip/Grid/Postcard) dan memilih tema bingkai (frame). Ketika customer menekan tombol merah besar <strong>MULAI FOTO</strong>, server mengirim perintah tangkap (`START_CAPTURE`) ke kamera kiosk. Kamera kiosk mengambil pose, menggabungkan foto dengan bingkai pilihan, dan mengunggah hasilnya. Customer dialihkan ke portal unduhan (`index.php?id=<session_id>`) untuk menyimpan berkas foto strip berkualitas tinggi ke perangkat mereka.
+                </li>
+            </ol>
+        </section>
+
+        <div class="page-break"></div>
+
+        <!-- SIMULASI ANTARMUKA (UI MOCKUPS) -->
+        <section>
+            <h3>4. Antarmuka Pengguna & Tampilan Pembayaran (UI Mockups)</h3>
+            <p>
+                Visualisasi berikut menggambarkan antarmuka pengguna pada langkah-langkah kritis dalam proses transaksi pembayaran menggunakan Midtrans Snap:
+            </p>
+
+            <div class="mockups-grid">
+                
+                <!-- Mockup 1: Pemilihan Paket -->
+                <div>
+                    <div class="phone-mockup">
+                        <div class="phone-header">
+                            <span>10:00 AM</span>
+                            <span>📶 🔋 100%</span>
+                        </div>
+                        <div class="phone-screen" style="background-color: #0c0c0f;">
+                            <div class="app-logo">Creative<span>Studio</span></div>
+                            <div style="font-size: 0.65rem; color: #8d8d9f; text-align: center; text-transform: uppercase; margin-bottom: 8px;">Pilih Paket Foto Kiosk</div>
+                            
+                            <div class="app-card">
+                                <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                                    <span>Cetak Receipt</span>
+                                    <span style="color: #ef4444;">Rp 15.000</span>
+                                </div>
+                                <div style="font-size: 0.65rem; color: #8d8d9f;">✓ Cetak Struk Fisik<br>✓ Download Digital</div>
+                            </div>
+                            
+                            <div class="app-card selected">
+                                <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                                    <span>Paket Cetak Warna</span>
+                                    <span style="color: #ef4444;">Rp 25.000</span>
+                                </div>
+                                <div style="font-size: 0.65rem; color: #8d8d9f;">✓ Cetak Foto Warna Premium<br>✓ Download Digital Strip<br>✓ Live Animated GIF</div>
+                            </div>
+                            
+                            <div class="app-card">
+                                <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                                    <span>Paket ID Card</span>
+                                    <span style="color: #ef4444;">Rp 35.000</span>
+                                </div>
+                                <div style="font-size: 0.65rem; color: #8d8d9f;">✓ Cetak Bahan ID Card<br>✓ Download Digital Strip<br>✓ Live Animated GIF & Sticker</div>
+                            </div>
+
+                            <button class="app-btn">PESAN SEKARANG</button>
+                        </div>
+                    </div>
+                    <div class="mockup-caption">Gbr 4.1 Halaman Pemilihan Paket (order.php)</div>
+                </div>
+
+                <!-- Mockup 2: Checkout & Rincian Tagihan -->
+                <div>
+                    <div class="phone-mockup">
+                        <div class="phone-header">
+                            <span>10:01 AM</span>
+                            <span>📶 🔋 100%</span>
+                        </div>
+                        <div class="phone-screen" style="background-color: #0c0c0f;">
+                            <div class="app-logo">Creative<span>Studio</span></div>
+                            <div style="font-size: 0.65rem; color: #8d8d9f; text-align: center; text-transform: uppercase; margin-bottom: 8px;">💳 Secure Checkout</div>
+                            
+                            <div class="app-card" style="background-color: #08080a;">
+                                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8d8d9f;">
+                                    <span>Paket Dipilih:</span>
+                                    <span style="font-weight:700; color:#fff;">Paket Cetak Warna</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8d8d9f; margin-top: 4px;">
+                                    <span>Nomor Antrean:</span>
+                                    <span style="font-weight:700; color:#ef4444;">#12</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8d8d9f; margin-top: 4px;">
+                                    <span>ID Transaksi:</span>
+                                    <span style="font-family:monospace; font-size:0.6rem;">f3a8b2c9d10e5f</span>
+                                </div>
+                                <hr style="border:0; border-top:1px solid #222; margin:8px 0;">
+                                <div style="text-align:center; font-size: 1.1rem; font-weight: 800; color:#ef4444;">
+                                    Rp 25.000
+                                </div>
+                            </div>
+
+                            <div style="font-size: 0.65rem; color: #8d8d9f; text-align: center; line-height: 1.3;">
+                                Klik tombol di bawah untuk meluncurkan metode pembayaran Midtrans.
+                            </div>
+
+                            <button class="app-btn" style="background-color: #4f46e5;">BAYAR SEKARANG</button>
+                        </div>
+                    </div>
+                    <div class="mockup-caption">Gbr 4.2 Rincian Tagihan Sebelum Bayar (payment_gateway.php)</div>
+                </div>
+
+                <!-- Mockup 3: Midtrans Snap UI (Daftar Channel) -->
+                <div>
+                    <div class="phone-mockup">
+                        <div class="phone-header">
+                            <span>10:02 AM</span>
+                            <span>📶 🔋 100%</span>
+                        </div>
+                        <div class="phone-screen" style="background-color: rgba(0,0,0,0.6); padding: 0;">
+                            <div style="flex-grow:1;"></div>
+                            
+                            <!-- Snap Modal -->
+                            <div class="snap-modal">
+                                <div class="snap-header">
+                                    <div class="snap-logo">Mid<span>trans</span></div>
+                                    <div style="font-size: 0.7rem;">Total: <span style="font-weight:800; color:#000;">Rp 25.000</span></div>
+                                </div>
+                                <div style="font-size: 0.65rem; font-weight: 700; color:#64748b; text-transform:uppercase; margin-top:4px;">Pilih Metode Pembayaran</div>
+                                
+                                <div class="pay-channel-row active">
+                                    <div class="channel-name-logo">
+                                        <span class="channel-badge-shopeepay">S</span>
+                                        <span>ShopeePay / E-Wallet</span>
+                                    </div>
+                                    <span style="color:#2563eb; font-size:0.8rem;">✓</span>
+                                </div>
+
+                                <div class="pay-channel-row">
+                                    <div class="channel-name-logo">
+                                        <span class="channel-badge-qris">Q</span>
+                                        <span>QRIS (GoPay, OVO, ShopeePay)</span>
+                                    </div>
+                                    <span>›</span>
+                                </div>
+
+                                <div class="pay-channel-row">
+                                    <div class="channel-name-logo">
+                                        <span style="background-color:#0284c7; color:white; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:4px;">VA</span>
+                                        <span>Virtual Account Bank</span>
+                                    </div>
+                                    <span>›</span>
+                                </div>
+
+                                <button class="app-btn" style="background-color: #2563eb; width: 100%;">Lanjutkan Ke ShopeePay</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mockup-caption">Gbr 4.3 Pilihan Channel Pembayaran Midtrans Snap (Pilihan ShopeePay Aktif)</div>
+                </div>
+
+                <!-- Mockup 4: Otorisasi ShopeePay (Pembayaran Sukses) -->
+                <div>
+                    <div class="phone-mockup">
+                        <div class="phone-header">
+                            <span>10:03 AM</span>
+                            <span>📶 🔋 100%</span>
+                        </div>
+                        <div class="phone-screen" style="background-color: #0c0c0f;">
+                            <div class="app-logo">Creative<span>Studio</span></div>
+                            
+                            <div style="text-align:center; margin: 20px 0; display:flex; flex-direction:column; align-items:center; gap: 12px;">
+                                <div style="background-color: rgba(22, 163, 74, 0.1); border: 2px solid #16a34a; width: 50px; height: 50px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#16a34a; font-size: 1.5rem; font-weight:bold;">
+                                    ✓
+                                </div>
+                                <div style="font-weight: 800; font-size: 1rem; color: #fff;">PEMBAYARAN SUKSES!</div>
+                                <div style="font-size: 0.7rem; color:#8d8d9f; line-height: 1.4; max-width: 200px;">
+                                    Status pembayaran ShopeePay Anda telah berhasil terverifikasi oleh server Midtrans.
+                                </div>
+                            </div>
+
+                            <div class="app-card" style="background-color: rgba(22, 163, 74, 0.05); border-color: rgba(22, 163, 74, 0.2); text-align: center; font-size: 0.75rem;">
+                                <span>Nomor Antrean Anda:</span>
+                                <span style="font-size: 1.4rem; font-weight:900; color:#16a34a; display:block; margin: 4px 0;">#12</span>
+                                <span>Silakan menghadap ke kamera Kiosk. Sesi Anda akan aktif secara otomatis.</span>
+                            </div>
+
+                            <button class="app-btn" style="background-color: #16a34a; margin-top: auto;">MASUK REMOTE KIOSK</button>
+                        </div>
+                    </div>
+                    <div class="mockup-caption">Gbr 4.4 Layar Sukses & Konfirmasi Aktivasi Antrean (payment_gateway.php)</div>
+                </div>
+
+            </div>
+        </section>
+
+        <div class="page-break"></div>
+
+        <!-- VALIDASI KEAMANAN & SIGNATURE KEY -->
+        <section>
+            <h3>5. Mekanisme Verifikasi Keamanan Notifikasi (Signature Key)</h3>
+            <p>
+                Untuk menjamin keamanan pertukaran data transaksi dan mencegah penipuan manipulasi status pembayaran (seperti parameter status pembayaran palsu), server Creative Studio menerapkan validasi ketat terhadap setiap callback/notifikasi webhook yang dikirim oleh Midtrans menggunakan algoritma hashing SHA-512.
+            </p>
+            <p>
+                Setiap kali status pembayaran diperbarui, server Midtrans akan mengirimkan payload JSON ke url callback merchant. Server PHP merchant akan menangkap parameter <code>order_id</code>, <code>status_code</code>, <code>gross_amount</code>, dan <code>signature_key</code>. Server kemudian melakukan kalkulasi mandiri menggunakan kunci rahasia (Server Key) yang hanya diketahui oleh merchant dan Midtrans:
+            </p>
+            
+            <div style="background-color: var(--bg-light); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 0.8rem; margin: 15px 0; overflow-x: auto;">
+                $localSignature = hash("sha512", $orderId . $statusCode . $grossAmount . $serverKey);
+            </div>
+            
+            <p>
+                Jika nilai hash <code>$localSignature</code> yang dihitung di sisi merchant cocok secara identik dengan <code>signature_key</code> yang dikirim oleh Midtrans di dalam header/body callback, maka transaksi dianggap valid dan aman. Sistem akan mengubah status pembayaran menjadi lunas. Sebaliknya, apabila tanda tangan digital tidak cocok, server merchant akan menolak callback dengan kode HTTP <code>403 Forbidden</code> dan membatalkan aktivasi antrean sesi foto.
+            </p>
+
+            <div class="alert-info-doc">
+                <strong>💡 Catatan Keandalan Sistem:</strong><br>
+                Selain callback asinkron dari Midtrans, checkout page Creative Studio juga dilengkapi sistem pemantau berkala (client polling) yang memanggil status transaksi langsung ke API Midtrans Status endpoint: <code>https://api.sandbox.midtrans.com/v2/{order_id}/status</code>. Metode ganda ini menjamin pengguna mendapatkan respon instan (real-time redirect) begitu mereka menyelesaikan otorisasi ShopeePay.
+            </div>
+        </section>
+
+        <!-- KELAYAKAN DAN KEPATUHAN -->
+        <section>
+            <h3>6. Pernyataan Kepatuhan Merchant</h3>
+            <p>
+                Creative Studio menjamin bahwa seluruh data pelanggan dan proses otorisasi dompet digital ShopeePay dilakukan secara terenkripsi menggunakan protokol HTTPS aman. Sistem merchant tidak menyimpan data kredensial pembayaran sensitif seperti PIN e-wallet, nomor kartu kredit, atau data autentikasi langsung pengguna. Seluruh proses checkout didelegasikan secara penuh ke infrastruktur pembayaran Midtrans yang telah tersertifikasi PCI-DSS Level 1.
+            </p>
+            
+            <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.85rem;">
+                <div>
+                    <p>Disiapkan Oleh,</p>
+                    <br><br>
+                    <p><strong>Tim Pengembang Creative Studio</strong></p>
+                    <p style="color: var(--text-muted);">Lead Engineer</p>
+                </div>
+                <div style="text-align: right;">
+                    <p>Disetujui Oleh,</p>
+                    <br><br>
+                    <p><strong>Creative Studio Management</strong></p>
+                    <p style="color: var(--text-muted);">Merchant Owner</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="no-print" style="margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center;">
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 15px;">
+                Anda dapat mencetak halaman ini langsung ke format <strong>PDF</strong> menggunakan fitur print peramban Anda.
+            </p>
+            <button onclick="window.print()" style="background-color: var(--accent); color: white; border: none; padding: 12px 24px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: background 0.2s;">
+                Cetak ke PDF (Print / Save as PDF)
+            </button>
+        </div>
+
+    </div>
+
+</body>
+</html>
