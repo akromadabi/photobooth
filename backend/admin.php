@@ -17,7 +17,8 @@ function loadSettings($file) {
         "payment_mode" => "dummy",
         "midtrans_server_key" => "",
         "midtrans_client_key" => "",
-        "midtrans_environment" => "sandbox"
+        "midtrans_environment" => "sandbox",
+        "fal_key" => ""
     ];
     if (file_exists($file)) {
         $loaded = json_decode(file_get_contents($file), true);
@@ -354,6 +355,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $midtransServerKey = isset($_POST['midtrans_server_key']) ? trim($_POST['midtrans_server_key']) : '';
     $midtransClientKey = isset($_POST['midtrans_client_key']) ? trim($_POST['midtrans_client_key']) : '';
     $midtransEnv = isset($_POST['midtrans_environment']) ? $_POST['midtrans_environment'] : 'sandbox';
+    $falKey = isset($_POST['fal_key']) ? trim($_POST['fal_key']) : '';
     
     $settings = [
         "admin_pin" => $newPin ? $newPin : '1234',
@@ -364,7 +366,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         "payment_mode" => $paymentMode,
         "midtrans_server_key" => $midtransServerKey,
         "midtrans_client_key" => $midtransClientKey,
-        "midtrans_environment" => $midtransEnv
+        "midtrans_environment" => $midtransEnv,
+        "fal_key" => $falKey
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -2170,7 +2173,19 @@ foreach ($weeklyStats as $date => $cnt) {
                                 });
                             </script>
 
-                            <div style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 24px; text-align: right;">
+                            <!-- Fal.ai AI Configuration Section -->
+                            <div id="fal-settings-section" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 24px;">
+                                <h4 style="margin-bottom: 16px; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Pengaturan AI Generation (Fal.ai)</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="fal_key">Fal.ai API Key</label>
+                                        <input type="password" id="fal_key" name="fal_key" class="form-input" value="<?php echo htmlspecialchars(isset($settings['fal_key']) ? $settings['fal_key'] : ''); ?>" placeholder="fal_key_...">
+                                        <small style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; display: block;">API Key dari fal.ai diperlukan untuk fitur face-swap katalog karakter.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 24px; text-align: right;">
                                 <button type="submit" class="btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Simpan & Sinkronisasi Kiosk
                                 </button>

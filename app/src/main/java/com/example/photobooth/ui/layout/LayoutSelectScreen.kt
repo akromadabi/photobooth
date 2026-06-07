@@ -148,6 +148,30 @@ fun LayoutSelectScreen(
                     onClick = { onLayoutSelected("postcard") },
                     modifier = Modifier.weight(1f)
                 )
+
+                // Layout 4: AI Character Catalog
+                LayoutCard(
+                    title = "AI Karakter",
+                    description = "Foto wajah Anda akan diubah menjadi karakter seru pilihan secara ajaib!",
+                    iconContent = {
+                        Box(
+                            modifier = Modifier
+                                .width(70.dp)
+                                .height(70.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(
+                                    androidx.compose.ui.graphics.Brush.linearGradient(
+                                        colors = listOf(Color(0xFF8A2387), Color(0xFFE94057), Color(0xFFF27121))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("✨", fontSize = 36.sp)
+                        }
+                    },
+                    onClick = { onLayoutSelected("character_select") },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }

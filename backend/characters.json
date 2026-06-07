@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cyberpunk_samurai",
+    "name": "Cyberpunk Samurai",
+    "description": "Menjadi ksatria samurai futuristik dengan pakaian baja neon di masa depan.",
+    "template_filename": "cyberpunk.png"
+  },
+  {
+    "id": "cosmic_astronaut",
+    "name": "Cosmic Astronaut",
+    "description": "Melayang di luar angkasa yang megah dengan pakaian astronot lengkap.",
+    "template_filename": "astronaut.png"
+  }
+]

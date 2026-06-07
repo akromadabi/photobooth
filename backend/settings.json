@@ -7,5 +7,6 @@
     "payment_mode": "midtrans",
     "midtrans_server_key": "",
     "midtrans_client_key": "",
-    "midtrans_environment": "sandbox"
+    "midtrans_environment": "sandbox",
+    "fal_key": ""
 }

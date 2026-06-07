@@ -11,6 +11,7 @@ import com.example.photobooth.ui.frame.FrameSelectScreen
 import com.example.photobooth.ui.camera.CameraCaptureScreen
 import com.example.photobooth.ui.preview.PreviewResultScreen
 import com.example.photobooth.ui.share.SharePrintScreen
+import com.example.photobooth.ui.character.CharacterSelectScreen
 
 @Composable
 fun MainNavigation() {
@@ -28,7 +29,7 @@ fun MainNavigation() {
                     onStartClick = { eventId -> backStack.add(LayoutSelect(eventId)) },
                     onAdminNavigate = { backStack.add(Admin) },
                     onRemoteStartClick = { frameId, eventId, packageId, sessionId ->
-                        backStack.add(CameraCapture(frameId, eventId, sessionId, packageId))
+                        backStack.add(CameraCapture(frameId = frameId, eventId = eventId, sessionId = sessionId, packageId = packageId))
                     }
                 )
             }
@@ -44,7 +45,25 @@ fun MainNavigation() {
             entry<LayoutSelect> { key ->
                 LayoutSelectScreen(
                     onBackClick = { backStack.removeLastOrNull() },
-                    onLayoutSelected = { type -> backStack.add(FrameSelect(type, key.eventId)) }
+                    onLayoutSelected = { type -> 
+                        if (type == "character_select") {
+                            backStack.add(CharacterSelect(key.eventId))
+                        } else {
+                            backStack.add(FrameSelect(type, key.eventId))
+                        }
+                    }
+                )
+            }
+            
+            // Character Selector Screen
+            entry<CharacterSelect> { key ->
+                CharacterSelectScreen(
+                    eventId = key.eventId,
+                    onBackClick = { backStack.removeLastOrNull() },
+                    onCharacterSelected = { charId -> 
+                        // For AI Character mode, we capture 1 shot. We use a default frameId "classic_strip_black" which is always present in general events.
+                        backStack.add(CameraCapture(frameId = "classic_strip_black", eventId = key.eventId, characterId = charId))
+                    }
                 )
             }
             
@@ -54,7 +73,7 @@ fun MainNavigation() {
                     layoutType = key.layoutType,
                     eventId = key.eventId,
                     onBackClick = { backStack.removeLastOrNull() },
-                    onFrameSelected = { fId -> backStack.add(CameraCapture(fId, key.eventId)) }
+                    onFrameSelected = { fId -> backStack.add(CameraCapture(frameId = fId, eventId = key.eventId)) }
                 )
             }
             
@@ -65,8 +84,11 @@ fun MainNavigation() {
                     eventId = key.eventId,
                     sessionId = key.sessionId,
                     packageId = key.packageId,
+                    characterId = key.characterId,
                     onBackClick = { backStack.removeLastOrNull() },
-                    onCaptureComplete = { paths -> backStack.add(PreviewResult(paths, key.frameId, key.eventId, key.sessionId, key.packageId)) }
+                    onCaptureComplete = { paths -> 
+                        backStack.add(PreviewResult(photoPaths = paths, frameId = key.frameId, eventId = key.eventId, sessionId = key.sessionId, packageId = key.packageId, characterId = key.characterId)) 
+                    }
                 )
             }
             
@@ -77,7 +99,9 @@ fun MainNavigation() {
                     frameId = key.frameId,
                     eventId = key.eventId,
                     onRetakeClick = { backStack.removeLastOrNull() },
-                    onConfirmClick = { path, print, finalFrameId -> backStack.add(SharePrint(path, print, finalFrameId, key.eventId, key.sessionId, key.packageId)) }
+                    onConfirmClick = { path, print, finalFrameId -> 
+                        backStack.add(SharePrint(finalPhotoPath = path, shouldPrint = print, frameId = finalFrameId, eventId = key.eventId, sessionId = key.sessionId, packageId = key.packageId, characterId = key.characterId)) 
+                    }
                 )
             }
             
@@ -90,6 +114,7 @@ fun MainNavigation() {
                     eventId = key.eventId,
                     sessionId = key.sessionId,
                     packageId = key.packageId,
+                    characterId = key.characterId,
                     onFinishClick = {
                         // Clear the backstack and return back to Home
                         while (backStack.size > 1) {

@@ -66,7 +66,8 @@ fun CameraCaptureScreen(
     modifier: Modifier = Modifier,
     eventId: String = "general",
     sessionId: String = "",
-    packageId: String = ""
+    packageId: String = "",
+    characterId: String = ""
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -131,7 +132,8 @@ fun CameraCaptureScreen(
             onCaptureComplete = onCaptureComplete,
             modifier = modifier,
             sessionId = sessionId,
-            packageId = packageId
+            packageId = packageId,
+            characterId = characterId
         )
     }
 }
@@ -145,13 +147,14 @@ fun CameraCaptureLayout(
     onCaptureComplete: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
     sessionId: String = "",
-    packageId: String = ""
+    packageId: String = "",
+    characterId: String = ""
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     
-    val totalShots = frame.slots.size
+    val totalShots = if (characterId.isNotEmpty()) 1 else frame.slots.size
     var currentShotIndex by remember { mutableIntStateOf(0) }
     val capturedPaths = remember { mutableStateListOf<String>() }
 
@@ -260,13 +263,17 @@ fun CameraCaptureLayout(
             countdownValue = configManager.countdownSeconds
             
             // Speak friendly studio preparation voice cue
-            val poseIndexStr = when (currentShotIndex) {
-                0 -> "pertama"
-                1 -> "kedua"
-                2 -> "ketiga"
-                else -> "terakhir"
+            if (characterId.isNotEmpty()) {
+                voiceManager.speak("Bersiap untuk foto AI wajah Anda!")
+            } else {
+                val poseIndexStr = when (currentShotIndex) {
+                    0 -> "pertama"
+                    1 -> "kedua"
+                    2 -> "ketiga"
+                    else -> "terakhir"
+                }
+                voiceManager.speak("Bersiap untuk pose ke $poseIndexStr!")
             }
-            voiceManager.speak("Bersiap untuk pose ke $poseIndexStr!")
             
             while (countdownValue > 0) {
                 if (countdownValue > 0) {

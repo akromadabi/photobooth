@@ -47,6 +47,15 @@ data class KioskCommandResponse(
 )
 
 @Keep
+data class CharacterDto(
+    @SerializedName("id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("description") val description: String,
+    @SerializedName("template_filename") val templateFilename: String,
+    @SerializedName("template_url") val templateUrl: String
+)
+
+@Keep
 data class GenericResponse(
     val success: Boolean,
     val message: String
@@ -63,6 +72,19 @@ interface PhotoboothApi {
         @Part photo: MultipartBody.Part,
         @Part timelapse: MultipartBody.Part? = null,
         @retrofit2.http.Query("frame_id") frameId: String? = null,
+        @retrofit2.http.Query("event_id") eventId: String? = null,
+        @retrofit2.http.Query("session_id") sessionId: String? = null,
+        @retrofit2.http.Query("package_id") packageId: String? = null
+    ): Response<UploadResponse>
+
+    @GET("get_characters.php")
+    suspend fun getCharacters(): Response<List<CharacterDto>>
+
+    @Multipart
+    @POST("generate_ai.php")
+    suspend fun generateAiPhoto(
+        @Part photo: MultipartBody.Part,
+        @retrofit2.http.Query("character_id") characterId: String,
         @retrofit2.http.Query("event_id") eventId: String? = null,
         @retrofit2.http.Query("session_id") sessionId: String? = null,
         @retrofit2.http.Query("package_id") packageId: String? = null

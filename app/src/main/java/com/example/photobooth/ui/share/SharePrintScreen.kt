@@ -47,13 +47,18 @@ fun SharePrintScreen(
     frameId: String = "",
     eventId: String = "general",
     sessionId: String = "",
-    packageId: String = ""
+    packageId: String = "",
+    characterId: String = ""
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
     
-    var uploadStatus by remember { mutableStateOf("Mengunggah foto ke server...") }
+    var uploadStatus by remember { 
+        mutableStateOf(
+            if (characterId.isNotEmpty()) "Menghubungi AI Generator..." else "Mengunggah foto ke server..."
+        ) 
+    }
     var printStatus by remember { mutableStateOf(if (shouldPrint) "Menyiapkan pencetakan..." else "Cetak dinonaktifkan") }
     
     var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -92,14 +97,32 @@ fun SharePrintScreen(
                 val requestFile = file.asRequestBody("image/png".toMediaTypeOrNull())
                 val photoPart = MultipartBody.Part.createFormData("photo", file.name, requestFile)
                 
+                withContext(Dispatchers.Main) {
+                    uploadStatus = if (characterId.isNotEmpty()) {
+                        "Sedang memproses AI Face Swap (3-5 detik)..."
+                    } else {
+                        "Mengunggah foto ke server..."
+                    }
+                }
+                
                 val api = NetworkClient.getApi(configManager.backendUrl)
-                val response = api.uploadPhotos(
-                    photo = photoPart,
-                    frameId = if (frameId.isNotEmpty()) frameId else null,
-                    eventId = if (eventId.isNotEmpty() && eventId != "general") eventId else null,
-                    sessionId = if (sessionId.isNotEmpty()) sessionId else null,
-                    packageId = if (packageId.isNotEmpty()) packageId else null
-                )
+                val response = if (characterId.isNotEmpty()) {
+                    api.generateAiPhoto(
+                        photo = photoPart,
+                        characterId = characterId,
+                        eventId = if (eventId.isNotEmpty() && eventId != "general") eventId else null,
+                        sessionId = if (sessionId.isNotEmpty()) sessionId else null,
+                        packageId = if (packageId.isNotEmpty()) packageId else null
+                    )
+                } else {
+                    api.uploadPhotos(
+                        photo = photoPart,
+                        frameId = if (frameId.isNotEmpty()) frameId else null,
+                        eventId = if (eventId.isNotEmpty() && eventId != "general") eventId else null,
+                        sessionId = if (sessionId.isNotEmpty()) sessionId else null,
+                        packageId = if (packageId.isNotEmpty()) packageId else null
+                    )
+                }
                 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null && response.body()!!.success) {
@@ -108,7 +131,7 @@ fun SharePrintScreen(
                         if (downloadUrl.isNotEmpty()) {
                             qrCodeBitmap = generateQrCode(downloadUrl, 400, 400)
                         }
-                        uploadStatus = "Foto berhasil diunggah!"
+                        uploadStatus = if (characterId.isNotEmpty()) "Wajah berhasil diproses AI!" else "Foto berhasil diunggah!"
                         isUploading = false
                         
                         if (sessionId.isNotEmpty()) {
@@ -121,7 +144,7 @@ fun SharePrintScreen(
                             }
                         }
                     } else {
-                        val msg = response.body()?.message ?: "Gagal mengunggah foto."
+                        val msg = response.body()?.message ?: "Gagal memproses foto."
                         uploadStatus = "Gagal: $msg"
                         isUploading = false
                     }
