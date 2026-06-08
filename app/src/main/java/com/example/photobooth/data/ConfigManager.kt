@@ -21,6 +21,7 @@ class ConfigManager(context: Context) {
         private const val KEY_PAPER_WIDTH = "printer_paper_width"
         private const val KEY_PRINT_DENSITY = "print_density"
         private const val KEY_AUTO_CUT = "printer_auto_cut"
+        private const val KEY_LAST_REMOTE_SESSION_ID = "last_remote_session_id"
     }
 
     var printerPaperWidth: Int
@@ -81,4 +82,8 @@ class ConfigManager(context: Context) {
     var useBiometric: Boolean
         get() = prefs.getBoolean(KEY_USE_BIOMETRIC, true)
         set(value) = prefs.edit().putBoolean(KEY_USE_BIOMETRIC, value).apply()
+
+    var lastRemoteSessionId: String
+        get() = prefs.getString(KEY_LAST_REMOTE_SESSION_ID, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_LAST_REMOTE_SESSION_ID, value).apply()
 }

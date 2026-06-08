@@ -191,7 +191,8 @@ fun HomeScreen(
                             val sessionId = cmdRes.session_id ?: ""
                             val packageId = cmdRes.package_id ?: ""
                             val eventId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
-                            if (frameId.isNotEmpty()) {
+                            if (frameId.isNotEmpty() && sessionId.isNotEmpty() && sessionId != configManager.lastRemoteSessionId) {
+                                configManager.lastRemoteSessionId = sessionId
                                 onRemoteStartClick(frameId, eventId, packageId, sessionId)
                             }
                         }
