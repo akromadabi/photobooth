@@ -371,6 +371,7 @@ fun AdminScreen(
                                         text = when (printerType) {
                                             "THERMAL" -> "XP-420B"
                                             "COLOR" -> "COLOR PDF"
+                                            "AUTO" -> "AUTO (THERMAL & COLOR)"
                                             else -> "NONE"
                                         },
                                         color = Color.White,
@@ -733,7 +734,7 @@ fun AdminScreen(
                                  }
                              }
 
-                            if (printerType == "THERMAL") {
+                            if (printerType == "THERMAL" || printerType == "AUTO") {
                                 HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
                                 
                                 Text("Pilih Protokol Printer Thermal:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -979,20 +980,56 @@ fun AdminScreen(
                                     CircularProgressIndicator(color = Color(0xFFE63946))
                                 }
                             } else {
-                                Button(
-                                    onClick = {
-                                        isTestingPrint = true
-                                        scope.launch {
-                                            val success = testPrintJob(context, configManager)
-                                            isTestingPrint = false
-                                            Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                if (printerType == "AUTO") {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                isTestingPrint = true
+                                                scope.launch {
+                                                    val success = testPrintJob(context, configManager, "THERMAL")
+                                                    isTestingPrint = false
+                                                    Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("TEST THERMAL (XP)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                         }
-                                    },
-                                    enabled = printerType != "NONE",
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("UJI CETAK STRIP COBA (TEST PRINT)", fontWeight = FontWeight.Bold)
+                                        Button(
+                                            onClick = {
+                                                isTestingPrint = true
+                                                scope.launch {
+                                                    val success = testPrintJob(context, configManager, "COLOR")
+                                                    isTestingPrint = false
+                                                    Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("TEST COLOR (EPSON)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        }
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            isTestingPrint = true
+                                            scope.launch {
+                                                val success = testPrintJob(context, configManager)
+                                                isTestingPrint = false
+                                                Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                            }
+                                        },
+                                        enabled = printerType != "NONE",
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("UJI CETAK STRIP COBA (TEST PRINT)", fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -1298,7 +1335,7 @@ private suspend fun syncFramesFromBackend(context: Context, baseUrl: String, con
 }
 
 // Run test print job
-private suspend fun testPrintJob(context: Context, configManager: ConfigManager): String {
+private suspend fun testPrintJob(context: Context, configManager: ConfigManager, forceType: String? = null): String {
     // Generate a simple test Bitmap card (width 600, height 800)
     val width = 600
     val height = 800
@@ -1346,7 +1383,8 @@ private suspend fun testPrintJob(context: Context, configManager: ConfigManager)
     canvas.drawText("Tingkat Hitam-Putih Floyd-Steinberg", 60f, 680f, paint)
     canvas.drawText("Selesai! Printer siap digunakan.", 100f, 740f, paint)
 
-    val driver: com.example.photobooth.print.PrinterManager = when (configManager.printerType) {
+    val printerTypeToUse = forceType ?: configManager.printerType
+    val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
         "THERMAL" -> ThermalPrinterDriver()
         "COLOR" -> ColorPrinterDriver()
         else -> return "Tipe printer terkonfigurasi: Tidak Ada"
@@ -1363,12 +1401,6 @@ private suspend fun testPrintJob(context: Context, configManager: ConfigManager)
 private suspend fun runReprintFromHistory(context: Context, photoUrl: String, configManager: ConfigManager): String {
     return withContext(Dispatchers.IO) {
         try {
-            val driver: com.example.photobooth.print.PrinterManager = when (configManager.printerType) {
-                "THERMAL" -> ThermalPrinterDriver()
-                "COLOR" -> ColorPrinterDriver()
-                else -> return@withContext "Tipe printer aktif: Tidak Ada"
-            }
-            
             // Download the photo strip bitmap from server
             val url = URL(photoUrl)
             val connection = url.openConnection()
@@ -1381,6 +1413,22 @@ private suspend fun runReprintFromHistory(context: Context, photoUrl: String, co
             
             if (bitmap == null) {
                 return@withContext "Gagal mengunduh berkas gambar untuk cetak."
+            }
+            
+            val printerTypeToUse = if (configManager.printerType == "AUTO") {
+                if (bitmap.height.toFloat() / bitmap.width.toFloat() >= 2.0f) {
+                    "THERMAL"
+                } else {
+                    "COLOR"
+                }
+            } else {
+                configManager.printerType
+            }
+
+            val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
+                "THERMAL" -> ThermalPrinterDriver()
+                "COLOR" -> ColorPrinterDriver()
+                else -> return@withContext "Tipe printer aktif: Tidak Ada"
             }
             
             val result = driver.printBitmap(bitmap, context)
@@ -1731,6 +1779,7 @@ fun DashboardTab(
                         text = when (printerType) {
                             "THERMAL" -> "THERMAL (XP-420B)"
                             "COLOR" -> "COLOR (PDF/SYSTEM)"
+                            "AUTO" -> "OTOMATIS (THERMAL & WARNA)"
                             else -> "NONE"
                         },
                         color = Color.White,

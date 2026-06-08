@@ -348,7 +348,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'clear_all') {
 if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $newPin = isset($_POST['admin_pin']) ? preg_replace('/[^0-9]/', '', $_POST['admin_pin']) : '1234';
     $countdown = isset($_POST['countdown_seconds']) ? intval($_POST['countdown_seconds']) : 5;
-    $shots = isset($_POST['total_shots']) ? intval($_POST['total_shots']) : 4;
+    $existingSettings = loadSettings($settingsFile);
+    $shots = isset($existingSettings['total_shots']) ? intval($existingSettings['total_shots']) : 4;
     $printer = isset($_POST['printer_type']) ? $_POST['printer_type'] : 'NONE';
     $biometric = isset($_POST['use_biometric']) && $_POST['use_biometric'] == '1';
     $paymentMode = isset($_POST['payment_mode']) ? $_POST['payment_mode'] : 'dummy';
@@ -2105,10 +2106,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                     <input type="number" id="countdown_seconds" name="countdown_seconds" class="form-input" value="<?php echo intval($settings['countdown_seconds']); ?>" min="2" max="15" required>
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="total_shots">Jumlah Jepretan Sesi</label>
-                                    <input type="number" id="total_shots" name="total_shots" class="form-input" value="<?php echo intval($settings['total_shots']); ?>" min="1" max="8" required>
-                                </div>
+
 
                                 <div class="form-group">
                                     <label for="printer_type">Mode Pencetakan</label>
@@ -2116,6 +2114,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <option value="NONE" <?php echo $settings['printer_type'] === 'NONE' ? 'selected' : ''; ?>>NONE (Mode Digital Saja)</option>
                                         <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>THERMAL (Printer XP-420B)</option>
                                         <option value="COLOR" <?php echo $settings['printer_type'] === 'COLOR' ? 'selected' : ''; ?>>COLOR (Printer Warna Sistem)</option>
+                                        <option value="AUTO" <?php echo $settings['printer_type'] === 'AUTO' ? 'selected' : ''; ?>>AUTO (Dynamic: Thermal & Color)</option>
                                     </select>
                                 </div>
 

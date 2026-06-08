@@ -60,7 +60,11 @@ class ThermalPrinterDriver : PrinterManager {
     }
 
     private fun generateTsplData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
-        val targetWidth = if (configManager.printerPaperWidth == 58) 384 else 576
+        val targetWidth = when (configManager.printerPaperWidth) {
+            50 -> 320
+            58 -> 384
+            else -> 576
+        }
         val targetHeight = (bitmap.height * targetWidth) / bitmap.width
         val scaledBitmap = if (bitmap.width == targetWidth) bitmap else Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
 
@@ -118,7 +122,11 @@ class ThermalPrinterDriver : PrinterManager {
     }
 
     private fun generateEscPosData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
-        val targetWidth = if (configManager.printerPaperWidth == 58) 384 else 576
+        val targetWidth = when (configManager.printerPaperWidth) {
+            50 -> 320
+            58 -> 384
+            else -> 576
+        }
         val targetHeight = (bitmap.height * targetWidth) / bitmap.width
         val scaledBitmap = if (bitmap.width == targetWidth) bitmap else Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
 

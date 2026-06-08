@@ -192,7 +192,12 @@ fun SharePrintScreen(
                             bitmap = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
                         }
 
-                        val driver: com.example.photobooth.print.PrinterManager = when (configManager.printerType) {
+                        val printerTypeToUse = when (configManager.printerType) {
+                            "AUTO" -> if (flow == "RECEIPT") "THERMAL" else "COLOR"
+                            else -> configManager.printerType
+                        }
+
+                        val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
                             "THERMAL" -> ThermalPrinterDriver()
                             "COLOR" -> ColorPrinterDriver()
                             else -> null
