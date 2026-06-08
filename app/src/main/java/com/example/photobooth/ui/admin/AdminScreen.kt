@@ -1369,54 +1369,121 @@ private suspend fun syncFramesFromBackend(context: Context, baseUrl: String, con
 
 // Run test print job
 private suspend fun testPrintJob(context: Context, configManager: ConfigManager, forceType: String? = null): String {
-    // Generate a simple test Bitmap card (width 600, height 800)
-    val width = 600
-    val height = 800
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint()
-    
-    // Clear canvas with white background
-    canvas.drawColor(android.graphics.Color.WHITE)
-    
-    // Draw outer box
-    paint.color = android.graphics.Color.BLACK
-    paint.strokeWidth = 10f
-    paint.style = Paint.Style.STROKE
-    canvas.drawRect(20f, 20f, width - 20f, height - 20f, paint)
-    
-    // Draw text
-    paint.strokeWidth = 0f
-    paint.style = Paint.Style.FILL
-    paint.textSize = 40f
-    paint.isAntiAlias = true
-    canvas.drawText("CREATIVE STUDIO", 120f, 150f, paint)
-    
-    paint.textSize = 30f
-    canvas.drawText("Test Print Thermal XP-420B", 100f, 220f, paint)
-    
-    // Draw checkerboard patterns to test printer density
-    paint.color = android.graphics.Color.BLACK
-    for (i in 0..5) {
-        val yPos = 300f + i * 50f
-        for (j in 0..11) {
-            val xPos = 50f + j * 40f
-            if ((i + j) % 2 == 0) {
-                canvas.drawRect(xPos, yPos, xPos + 40f, yPos + 50f, paint)
+    val printerTypeToUse = forceType ?: configManager.printerType
+    if (printerTypeToUse == "NONE") {
+        return "Tipe printer aktif: Tidak Ada"
+    }
+
+    val bitmap = if (printerTypeToUse == "COLOR") {
+        // Generate Color Test Page (width 800, height 1000)
+        val w = 800
+        val h = 1000
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        val paint = Paint().apply { isAntiAlias = true }
+        
+        // Background
+        canvas.drawColor(android.graphics.Color.WHITE)
+        
+        // Outer border
+        paint.color = android.graphics.Color.RED
+        paint.strokeWidth = 8f
+        paint.style = Paint.Style.STROKE
+        canvas.drawRect(20f, 20f, w - 20f, h - 20f, paint)
+        
+        // Title
+        paint.style = Paint.Style.FILL
+        paint.color = android.graphics.Color.BLACK
+        paint.textSize = 40f
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        canvas.drawText("UJI COBA CETAK WARNA", 180f, 100f, paint)
+        
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+        paint.textSize = 28f
+        canvas.drawText("Tipe Printer: COLOR PRINTER (PDF/SYSTEM)", 80f, 200f, paint)
+        canvas.drawText("Pengujian: TEST CETAK WARNA (COLOR TEST)", 80f, 260f, paint)
+        canvas.drawText("Ukuran Kertas: A4 / 4R (Sesuai Setelan Dialog)", 80f, 320f, paint)
+        canvas.drawText("Aplikasi: Creative Studio Kiosk v1.16.0", 80f, 380f, paint)
+        
+        // Draw color bands to test printer colors
+        val colors = intArrayOf(
+            android.graphics.Color.RED,
+            android.graphics.Color.GREEN,
+            android.graphics.Color.BLUE,
+            android.graphics.Color.YELLOW,
+            android.graphics.Color.CYAN,
+            android.graphics.Color.MAGENTA,
+            android.graphics.Color.BLACK
+        )
+        val colorNames = arrayOf("RED (MERAH)", "GREEN (HIJAU)", "BLUE (BIRU)", "YELLOW (KUNING)", "CYAN (BIRU MUDA)", "MAGENTA (MERAH MUDA)", "BLACK (HITAM)")
+        
+        paint.textSize = 22f
+        for (i in colors.indices) {
+            val y = 460f + i * 60f
+            paint.color = colors[i]
+            paint.style = Paint.Style.FILL
+            canvas.drawRect(80f, y, 200f, y + 40f, paint)
+            
+            paint.color = android.graphics.Color.BLACK
+            canvas.drawText(colorNames[i], 230f, y + 28f, paint)
+        }
+        
+        paint.textSize = 26f
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        canvas.drawText("Status: Printer Warna Siap!", 240f, 920f, paint)
+        
+        bmp
+    } else {
+        // Generate Thermal Test Page (width 384, height 600)
+        val w = 384
+        val h = 600
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        val paint = Paint().apply { isAntiAlias = true }
+        
+        canvas.drawColor(android.graphics.Color.WHITE)
+        
+        // Border
+        paint.color = android.graphics.Color.BLACK
+        paint.strokeWidth = 4f
+        paint.style = Paint.Style.STROKE
+        canvas.drawRect(10f, 10f, w - 10f, h - 10f, paint)
+        
+        // Title
+        paint.style = Paint.Style.FILL
+        paint.textSize = 24f
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        canvas.drawText("UJI COBA CETAK STRUK", 60f, 60f, paint)
+        
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+        paint.textSize = 16f
+        canvas.drawText("Tipe Printer: RECEIPT PRINTER (THERMAL)", 30f, 130f, paint)
+        canvas.drawText("Pengujian: TEST CETAK STRUK (THERMAL TEST)", 30f, 180f, paint)
+        canvas.drawText("Ukuran Kertas: ${configManager.printerPaperWidth} mm", 30f, 230f, paint)
+        canvas.drawText("Mode Protokol: ${configManager.thermalMode}", 30f, 280f, paint)
+        canvas.drawText("Port/Alamat: ${configManager.printerAddress}", 30f, 330f, paint)
+        canvas.drawText("Aplikasi: Creative Studio Kiosk v1.16.0", 30f, 380f, paint)
+        
+        // Checkerboard pattern to test thermal printing density
+        paint.color = android.graphics.Color.BLACK
+        val startY = 430f
+        for (i in 0..2) {
+            val yPos = startY + i * 25f
+            for (j in 0..11) {
+                val xPos = 40f + j * 25f
+                if ((i + j) % 2 == 0) {
+                    canvas.drawRect(xPos, yPos, xPos + 25f, yPos + 25f, paint)
+                }
             }
         }
+        
+        paint.textSize = 18f
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        canvas.drawText("Status: Printer Struk Siap!", 65f, 550f, paint)
+        
+        bmp
     }
-    
-    paint.color = android.graphics.Color.BLACK
-    paint.textSize = 24f
-    canvas.drawText("Lebar: ${configManager.printerPaperWidth}mm | Mode: ${configManager.thermalMode}", 65f, 600f, paint)
-    canvas.drawText("Density: ${configManager.printDensity} | AutoCut: ${if (configManager.printerAutoCut) "ON" else "OFF"}", 65f, 630f, paint)
-    
-    paint.textSize = 25f
-    canvas.drawText("Tingkat Hitam-Putih Floyd-Steinberg", 60f, 680f, paint)
-    canvas.drawText("Selesai! Printer siap digunakan.", 100f, 740f, paint)
 
-    val printerTypeToUse = forceType ?: configManager.printerType
     val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
         "THERMAL" -> ThermalPrinterDriver()
         "COLOR" -> ColorPrinterDriver()
