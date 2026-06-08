@@ -3,6 +3,7 @@ package com.example.photobooth.ui.share
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,11 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.print.ColorPrinterDriver
@@ -68,12 +71,14 @@ fun SharePrintScreen(
     var downloadUrl by remember { mutableStateOf("") }
     
     var isUploading by remember { mutableStateOf(true) }
-    var isPrinting by remember { mutableStateOf(shouldPrint) }
+    var isPrinting by remember { mutableStateOf(shouldPrint && packageId.isNotEmpty()) }
+    var showManualPrintOption by remember { mutableStateOf(shouldPrint && packageId.isEmpty()) }
+    var manualPrintFlow by remember { mutableStateOf<String?>(null) }
     
     var autoDismissSeconds by remember { mutableIntStateOf(15) }
 
-    LaunchedEffect(isUploading, isPrinting) {
-        if (!isUploading && !isPrinting) {
+    LaunchedEffect(isUploading, isPrinting, showManualPrintOption) {
+        if (!isUploading && !isPrinting && !showManualPrintOption) {
             autoDismissSeconds = 15
             while (autoDismissSeconds > 0) {
                 delay(1000)
@@ -158,8 +163,8 @@ fun SharePrintScreen(
             }
         }
 
-        // Task 2: Print (if requested)
-        if (shouldPrint) {
+        // Task 2: Print (if requested and package is selected)
+        if (shouldPrint && packageId.isNotEmpty()) {
             scope.launch(Dispatchers.IO) {
                 try {
                     val api = NetworkClient.getApi(configManager.backendUrl)
@@ -175,15 +180,15 @@ fun SharePrintScreen(
 
                     var bitmap = BitmapFactory.decodeFile(finalPhotoPath)
                     if (bitmap != null) {
-                        val flow = activePackage?.printFlow ?: "RECEIPT"
+                        val flow = activePackage?.printFlow ?: "COLOR_PRINT"
                         if (flow == "ID_CARD") {
                             val verifyUrl = "${configManager.backendUrl}/license.php?id=$finalSessionId"
                             val charName = characterId.replace('_', ' ').replaceFirstChar { 
                                 if (it.isLowerCase()) it.titlecase() else it.toString() 
                             }
                             bitmap = generateIdCardBitmap(bitmap, finalSessionId, verifyUrl, charName)
-                        } else {
-                            // Standard Receipt or Color Print sizing
+                        } else if (flow == "RECEIPT") {
+                            // Standard Receipt sizing
                             val printWidthMm = activePackage?.printWidthMm ?: 58
                             val printHeightMm = activePackage?.printHeightMm ?: 200
                             // Map mm to pixels (e.g. 10 pixels per mm for printable output)
@@ -232,11 +237,73 @@ fun SharePrintScreen(
         }
     }
 
+    // Task 3: Manual Print Flow Trigger (if manual kiosk session)
+    LaunchedEffect(manualPrintFlow) {
+        if (shouldPrint && packageId.isEmpty() && manualPrintFlow != null) {
+            isPrinting = true
+            printStatus = "Menyiapkan pencetakan..."
+            scope.launch(Dispatchers.IO) {
+                try {
+                    var bitmap = BitmapFactory.decodeFile(finalPhotoPath)
+                    if (bitmap != null) {
+                        val flow = manualPrintFlow!!
+                        if (flow == "RECEIPT") {
+                            // Manual receipt size fallback
+                            val printWidthMm = 58
+                            val printHeightMm = 200
+                            val targetW = printWidthMm * 10
+                            val targetH = printHeightMm * 10
+                            bitmap = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+                        }
+
+                        val printerTypeToUse = when (configManager.printerType) {
+                            "AUTO" -> if (flow == "RECEIPT") "THERMAL" else "COLOR"
+                            else -> configManager.printerType
+                        }
+
+                        val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
+                            "THERMAL" -> ThermalPrinterDriver()
+                            "COLOR" -> ColorPrinterDriver()
+                            else -> null
+                        } ?: throw Exception("Printer tidak siap")
+                        
+                        val printResult = driver.printBitmap(bitmap, context)
+                        withContext(Dispatchers.Main) {
+                            when (printResult) {
+                                is PrintResult.Success -> {
+                                    printStatus = "Selesai mencetak! Silakan ambil foto Anda."
+                                    isPrinting = false
+                                }
+                                is PrintResult.Error -> {
+                                    printStatus = "Gagal mencetak: ${printResult.message}"
+                                    isPrinting = false
+                                }
+                            }
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            printStatus = "Gagal memproses gambar cetak."
+                            isPrinting = false
+                        }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        printStatus = "Gagal: ${e.localizedMessage}"
+                        isPrinting = false
+                    }
+                }
+            }
+        }
+    }
+
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0F0F12))
-            .padding(24.dp)
+            .padding(16.dp)
     ) {
         // Direct Close Button in the top right corner
         IconButton(
@@ -252,101 +319,213 @@ fun SharePrintScreen(
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            
-            // Header Success icon
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Success",
-                tint = Color(0xFFE63946),
-                modifier = Modifier.size(64.dp)
-            )
-            
-            Text(
-                text = "TERIMA KASIH!",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
-            )
-
-            // Status Card
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-                modifier = Modifier.fillMaxWidth()
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(bottom = 68.dp, top = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Left Column: Success Icon, Thank you, Status Card
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.weight(1.2f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Status Proses:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Success",
+                        tint = Color(0xFFE63946),
+                        modifier = Modifier.size(48.dp)
+                    )
                     
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        text = "TERIMA KASIH!",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    )
+
+                    // Status Card
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Simpan Digital:", color = Color.White, fontSize = 14.sp)
-                        if (isUploading) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
-                        } else {
-                            Text(uploadStatus, color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("Status Proses:", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Simpan Digital:", color = Color.White, fontSize = 13.sp)
+                                if (isUploading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                } else {
+                                    Text(uploadStatus, color = Color.LightGray, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                            
+                            if (shouldPrint) {
+                                Divider(color = Color(0xFF2A2A35))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Cetak Fisik:", color = Color.White, fontSize = 13.sp)
+                                    if (isPrinting) {
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                    } else {
+                                        Text(printStatus, color = Color.LightGray, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
                         }
                     }
-                    
-                    if (shouldPrint) {
-                        Divider(color = Color(0xFF2A2A35))
+                }
+
+                // Right Column: QR Code, Instructions
+                if (qrCodeBitmap != null) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            modifier = Modifier.size(150.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    bitmap = qrCodeBitmap!!.asImageBitmap(),
+                                    contentDescription = "QR Code",
+                                    modifier = Modifier.size(130.dp)
+                                )
+                            }
+                        }
+                        
+                        Text(
+                            text = "Pindai QR Code di atas dengan HP Anda untuk mengunduh foto digital.",
+                            color = Color.LightGray,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
+        } else {
+            // Portrait Layout
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(bottom = 68.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                
+                // Header Success icon
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Success",
+                    tint = Color(0xFFE63946),
+                    modifier = Modifier.size(64.dp)
+                )
+                
+                Text(
+                    text = "TERIMA KASIH!",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
+
+                // Status Card
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Status Proses:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Cetak Fisik:", color = Color.White, fontSize = 14.sp)
-                            if (isPrinting) {
+                            Text("Simpan Digital:", color = Color.White, fontSize = 14.sp)
+                            if (isUploading) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
                             } else {
-                                Text(printStatus, color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text(uploadStatus, color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                        
+                        if (shouldPrint) {
+                            Divider(color = Color(0xFF2A2A35))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Cetak Fisik:", color = Color.White, fontSize = 14.sp)
+                                if (isPrinting) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                } else {
+                                    Text(printStatus, color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // QR Code Scan Card
-            if (qrCodeBitmap != null) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    modifier = Modifier
-                        .size(240.dp)
-                        .padding(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                // QR Code Scan Card
+                if (qrCodeBitmap != null) {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        modifier = Modifier
+                            .size(240.dp)
+                            .padding(8.dp)
                     ) {
-                        Image(
-                            bitmap = qrCodeBitmap!!.asImageBitmap(),
-                            contentDescription = "QR Code",
-                            modifier = Modifier.size(200.dp)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                bitmap = qrCodeBitmap!!.asImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier.size(200.dp)
+                            )
+                        }
                     }
+                    
+                    Text(
+                        text = "Pindai QR Code di atas dengan HP Anda\nuntuk mengunduh file foto digital.",
+                        color = Color.LightGray,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp
+                    )
                 }
-                
-                Text(
-                    text = "Pindai QR Code di atas dengan HP Anda\nuntuk mengunduh file foto digital.",
-                    color = Color.LightGray,
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 18.sp
-                )
             }
         }
 
@@ -361,12 +540,88 @@ fun SharePrintScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
         ) {
-            val buttonText = if (!isUploading && !isPrinting) {
+            val buttonText = if (!isUploading && !isPrinting && !showManualPrintOption) {
                 "SELESAI (${autoDismissSeconds}s)"
             } else {
                 "SELESAI"
             }
             Text(buttonText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        }
+    }
+
+    // Manual print flow selection dialog (if manual session without package)
+    if (shouldPrint && packageId.isEmpty() && showManualPrintOption) {
+        Dialog(onDismissRequest = { 
+            showManualPrintOption = false 
+            isPrinting = false
+        }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    Text("Pilih Tipe Cetakan", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                    
+                    Text(
+                        text = "Kiosk berjalan dalam sesi manual (tanpa paket). Silakan pilih printer tujuan cetak Anda:",
+                        color = Color.Gray,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp
+                    )
+                    
+                    Button(
+                        onClick = {
+                            showManualPrintOption = false
+                            manualPrintFlow = "COLOR_PRINT"
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text("CETAK FOTO WARNA (EPSON)", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                    
+                    Button(
+                        onClick = {
+                            showManualPrintOption = false
+                            manualPrintFlow = "RECEIPT"
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text("CETAK STRUK THERMAL (XPRINTER)", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                    
+                    OutlinedButton(
+                        onClick = {
+                            showManualPrintOption = false
+                            isPrinting = false
+                        },
+                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text("LEWATI TANPA CETAK", color = Color.White)
+                    }
+                }
+            }
         }
     }
 }

@@ -1449,11 +1449,7 @@ private suspend fun runReprintFromHistory(context: Context, photoUrl: String, co
             }
             
             val printerTypeToUse = if (configManager.printerType == "AUTO") {
-                if (bitmap.height.toFloat() / bitmap.width.toFloat() >= 2.0f) {
-                    "THERMAL"
-                } else {
-                    "COLOR"
-                }
+                "COLOR"
             } else {
                 configManager.printerType
             }

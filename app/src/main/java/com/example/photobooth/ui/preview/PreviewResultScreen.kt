@@ -44,6 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
 import coil.compose.AsyncImage
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
@@ -111,8 +113,14 @@ fun PreviewResultScreen(
     }
 
     var selectedFilter by remember { mutableStateOf(PhotoFilter.NORMAL) }
-    var stitchedPhotoPath by remember { mutableStateOf("") }
+    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isStitching by remember { mutableStateOf(true) }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            previewBitmap?.recycle()
+        }
+    }
     
     // Doodle drawing states
     val doodleLines = remember { mutableStateListOf<DoodleLine>() }
@@ -144,13 +152,14 @@ fun PreviewResultScreen(
 
     // Re-stitch when filter or frame changes
     LaunchedEffect(selectedFilter, activeFrame) {
-        if (stitchedPhotoPath.isEmpty()) {
+        if (previewBitmap == null) {
             isStitching = true
         }
         withContext(Dispatchers.Default) {
-            val outputPath = stitchPhotos(context, photoPaths, activeFrame, selectedFilter, emptyList(), emptyList())
+            val bmp = stitchPhotosPreview(context, photoPaths, activeFrame, selectedFilter)
             withContext(Dispatchers.Main) {
-                stitchedPhotoPath = outputPath
+                previewBitmap?.recycle()
+                previewBitmap = bmp
                 isStitching = false
                 isFirstStitch = false
             }
@@ -213,7 +222,7 @@ fun PreviewResultScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         PreviewPhotoContainer(
-                            stitchedPhotoPath = stitchedPhotoPath,
+                            previewBitmap = previewBitmap,
                             frameAspectRatio = frameAspectRatio,
                             doodleLines = doodleLines,
                             activePenColor = activePenColor,
@@ -311,7 +320,7 @@ fun PreviewResultScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         PreviewPhotoContainer(
-                            stitchedPhotoPath = stitchedPhotoPath,
+                            previewBitmap = previewBitmap,
                             frameAspectRatio = frameAspectRatio,
                             doodleLines = doodleLines,
                             activePenColor = activePenColor,
@@ -437,6 +446,120 @@ fun FilterItem(
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
+}
+
+// Optimized preview-stitching running instantly in background thread (no file I/O, optimized downsampling)
+private fun stitchPhotosPreview(
+    context: Context,
+    photoPaths: List<String>,
+    frame: Frame,
+    filter: PhotoFilter
+): Bitmap {
+    val template = Bitmap.createBitmap(frame.width, frame.height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(template)
+    
+    val bgColor = try {
+        android.graphics.Color.parseColor(frame.backgroundColor)
+    } catch (e: Exception) {
+        android.graphics.Color.BLACK
+    }
+    canvas.drawColor(bgColor)
+    
+    val paint = Paint().apply { isAntiAlias = true; isFilterBitmap = true }
+    
+    when (filter) {
+        PhotoFilter.NORMAL -> {}
+        PhotoFilter.MONO -> {
+            val cm = ColorMatrix().apply { setSaturation(0f) }
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+        PhotoFilter.WARM -> {
+            val cm = ColorMatrix(floatArrayOf(
+                1.15f, 0f, 0f, 0f, 0f,
+                0f, 1.05f, 0f, 0f, 0f,
+                0f, 0f, 0.85f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+        PhotoFilter.COOL -> {
+            val cm = ColorMatrix(floatArrayOf(
+                0.9f, 0f, 0f, 0f, 0f,
+                0f, 1.0f, 0f, 0f, 0f,
+                0f, 0f, 1.2f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+    }
+
+    for (i in frame.slots.indices) {
+        if (i >= photoPaths.size) break
+        val slot = frame.slots[i]
+        val photoFile = File(photoPaths[i])
+        if (!photoFile.exists()) continue
+        
+        // Use inSampleSize to decode only what is necessary
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(photoFile.absolutePath, options)
+        val srcW = options.outWidth
+        val srcH = options.outHeight
+        
+        var inSampleSize = 1
+        val reqW = slot.width
+        val reqH = slot.height
+        if (srcH > reqH || srcW > reqW) {
+            val halfHeight = srcH / 2
+            val halfWidth = srcW / 2
+            while (halfHeight / inSampleSize >= reqH && halfWidth / inSampleSize >= reqW) {
+                inSampleSize *= 2
+            }
+        }
+        
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = inSampleSize
+        }
+        val srcBmp = BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
+        if (srcBmp != null) {
+            val cropped = getCenterCroppedBitmap(srcBmp, slot.width, slot.height)
+            val rectDest = Rect(slot.x, slot.y, slot.x + slot.width, slot.y + slot.height)
+            canvas.drawBitmap(cropped, null, rectDest, paint)
+            srcBmp.recycle()
+            cropped.recycle()
+        }
+    }
+
+    // Overlay frame PNG
+    val frameFile = File(context.cacheDir, "frames/${frame.id}.png")
+    if (frameFile.exists()) {
+        val overlayBmp = BitmapFactory.decodeFile(frameFile.absolutePath)
+        if (overlayBmp != null) {
+            val destRect = Rect(0, 0, frame.width, frame.height)
+            canvas.drawBitmap(overlayBmp, null, destRect, null)
+            overlayBmp.recycle()
+        }
+    } else {
+        paint.colorFilter = null
+        paint.color = android.graphics.Color.WHITE
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 6f
+        for (slot in frame.slots) {
+            canvas.drawRect(
+                slot.x.toFloat(),
+                slot.y.toFloat(),
+                (slot.x + slot.width).toFloat(),
+                (slot.y + slot.height).toFloat(),
+                paint
+            )
+        }
+        
+        paint.style = Paint.Style.FILL
+        paint.textSize = 36f
+        paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+        canvas.drawText("CREATIVE STUDIO", 150f, 1720f, paint)
+    }
+
+    return template
 }
 
 // Custom stitching logic running on Background Thread
@@ -679,7 +802,7 @@ private fun getCenterCroppedBitmap(src: Bitmap, targetW: Int, targetH: Int): Bit
 
 @Composable
 fun PreviewPhotoContainer(
-    stitchedPhotoPath: String,
+    previewBitmap: Bitmap?,
     frameAspectRatio: Float,
     doodleLines: SnapshotStateList<DoodleLine>,
     activePenColor: Color,
@@ -699,9 +822,9 @@ fun PreviewPhotoContainer(
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        if (stitchedPhotoPath.isNotEmpty()) {
-            AsyncImage(
-                model = File(stitchedPhotoPath),
+        if (previewBitmap != null) {
+            Image(
+                bitmap = previewBitmap.asImageBitmap(),
                 contentDescription = "Preview Strip",
                 modifier = Modifier.fillMaxSize()
             )
