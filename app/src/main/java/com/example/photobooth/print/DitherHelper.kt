@@ -13,51 +13,77 @@ object DitherHelper {
         val width = src.width
         val height = src.height
         
-        // Create an array representing the grayscale values
+        // 1. Grayscale conversion with Contrast and Brightness Boost
         val grayData = IntArray(width * height)
         val pixels = IntArray(width * height)
         src.getPixels(pixels, 0, width, 0, 0, width, height)
+        
+        val contrast = 1.6
+        val brightness = 15.0
         
         for (i in pixels.indices) {
             val color = pixels[i]
             val r = Color.red(color)
             val g = Color.green(color)
             val b = Color.blue(color)
-            // Luma formula for grayscale conversion
-            grayData[i] = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
+            val luma = 0.299 * r + 0.587 * g + 0.114 * b
+            // Boost contrast and brightness
+            val adjusted = ((luma - 128.0) * contrast + 128.0 + brightness).coerceIn(0.0, 255.0)
+            grayData[i] = adjusted.toInt()
         }
 
-        // Apply Floyd-Steinberg dithering
+        // 2. Apply Laplacian Sharpening Filter (3x3 Kernel)
+        val sharpenedData = IntArray(width * height)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val idx = y * width + x
+                if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+                    sharpenedData[idx] = grayData[idx]
+                    continue
+                }
+                
+                val center = grayData[idx]
+                val top = grayData[idx - width]
+                val bottom = grayData[idx + width]
+                val left = grayData[idx - 1]
+                val right = grayData[idx + 1]
+                
+                val sharpVal = 5 * center - top - bottom - left - right
+                sharpenedData[idx] = sharpVal.coerceIn(0, 255)
+            }
+        }
+
+        // 3. Apply Floyd-Steinberg dithering error diffusion
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val index = y * width + x
-                val oldVal = grayData[index]
+                val oldVal = sharpenedData[index]
                 // Quantize to 0 (black) or 255 (white)
                 val newVal = if (oldVal < 128) 0 else 255
-                grayData[index] = newVal
+                sharpenedData[index] = newVal
                 
                 val error = oldVal - newVal
                 
-                // Distribute error to neighbors
+                // Distribute error to neighbors in sharpenedData
                 if (x + 1 < width) {
-                    grayData[index + 1] += (error * 7 / 16)
+                    sharpenedData[index + 1] = (sharpenedData[index + 1] + error * 7 / 16).coerceIn(0, 255)
                 }
                 if (y + 1 < height) {
                     if (x - 1 >= 0) {
-                        grayData[(y + 1) * width + (x - 1)] += (error * 3 / 16)
+                        sharpenedData[(y + 1) * width + (x - 1)] = (sharpenedData[(y + 1) * width + (x - 1)] + error * 3 / 16).coerceIn(0, 255)
                     }
-                    grayData[(y + 1) * width + x] += (error * 5 / 16)
+                    sharpenedData[(y + 1) * width + x] = (sharpenedData[(y + 1) * width + x] + error * 5 / 16).coerceIn(0, 255)
                     if (x + 1 < width) {
-                        grayData[(y + 1) * width + (x + 1)] += (error * 1 / 16)
+                        sharpenedData[(y + 1) * width + (x + 1)] = (sharpenedData[(y + 1) * width + (x + 1)] + error * 1 / 16).coerceIn(0, 255)
                     }
                 }
             }
         }
         
-        // Re-construct monokrom Bitmap
+        // Re-construct monochrome Bitmap
         val outPixels = IntArray(width * height)
-        for (i in grayData.indices) {
-            val val8 = if (grayData[i] < 128) 0 else 255
+        for (i in sharpenedData.indices) {
+            val val8 = if (sharpenedData[i] < 128) 0 else 255
             outPixels[i] = Color.rgb(val8, val8, val8)
         }
         

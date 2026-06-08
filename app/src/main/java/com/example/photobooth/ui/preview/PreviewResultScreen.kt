@@ -238,9 +238,7 @@ fun PreviewResultScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(230.dp)
-                            .background(Color(0xFF18181F), RoundedCornerShape(20.dp))
-                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(20.dp))
+                            .height(280.dp)
                             .padding(12.dp)
                     ) {
                         HorizontalTabRow(
@@ -343,8 +341,6 @@ fun PreviewResultScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
-                                .background(Color(0xFF18181F), RoundedCornerShape(20.dp))
-                                .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(20.dp))
                                 .padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
@@ -994,7 +990,7 @@ fun HorizontalTabRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF0F0F12), RoundedCornerShape(12.dp))
+            .background(Color(0xFF18181F), RoundedCornerShape(12.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -1088,7 +1084,7 @@ fun FrameSelectorPanel(
         )
         
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 85.dp),
+            columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -1315,13 +1311,13 @@ fun MiniFrameCard(
 
     Box(
         modifier = modifier
-            .width(80.dp)
-            .height(120.dp)
+            .fillMaxWidth()
+            .aspectRatio(0.67f)
             .clip(RoundedCornerShape(12.dp))
             .background(parsedColor)
             .border(
-                width = if (isSelected) 3.dp else 1.dp,
-                color = if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35),
+                width = if (isSelected) 3.dp else 0.dp,
+                color = if (isSelected) Color(0xFFE63946) else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable { onClick() },

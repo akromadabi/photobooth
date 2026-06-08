@@ -106,6 +106,10 @@ if ($response['success']) {
     
     file_put_contents($uploadDir . $sessionId . '_meta.json', json_encode($metaData));
 
+    // Complete session queue on upload success
+    require_once __DIR__ . '/queue_helper.php';
+    completeSessionQueue($sessionId);
+
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
     $host = $_SERVER['HTTP_HOST'];
     $baseDir = dirname($_SERVER['SCRIPT_NAME']);

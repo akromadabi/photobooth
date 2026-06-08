@@ -10,50 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $queueFile = __DIR__ . '/queue.json';
 
-// Safe lock reading
-function getQueueState($file) {
-    if (!file_exists($file)) {
-        return [
-            "active_queue_number" => 0,
-            "active_session_id" => "",
-            "queue_list" => []
-        ];
-    }
-    
-    $fp = fopen($file, 'r');
-    if (!$fp) {
-        return [
-            "active_queue_number" => 0,
-            "active_session_id" => "",
-            "queue_list" => []
-        ];
-    }
-    
-    flock($fp, LOCK_SH);
-    $content = file_get_contents($file);
-    flock($fp, LOCK_UN);
-    fclose($fp);
-    
-    $data = json_decode($content, true);
-    return $data ? $data : [
-        "active_queue_number" => 0,
-        "active_session_id" => "",
-        "queue_list" => []
-    ];
-}
-
-// Safe lock writing
-function saveQueueState($file, $state) {
-    $fp = fopen($file, 'w');
-    if ($fp) {
-        if (flock($fp, LOCK_EX)) {
-            fwrite($fp, json_encode($state, JSON_PRETTY_PRINT));
-            fflush($fp);
-            flock($fp, LOCK_UN);
-        }
-        fclose($fp);
-    }
-}
+require_once __DIR__ . '/queue_helper.php';
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -199,44 +156,10 @@ switch ($action) {
             break;
         }
         
-        $state = getQueueState($queueFile);
-        $completed = false;
-        
-        foreach ($state['queue_list'] as &$item) {
-            if ($item['session_id'] === $sessionId) {
-                $item['status'] = 'FINISHED';
-                $completed = true;
-                break;
-            }
-        }
-        
-        if ($completed) {
-            // Find next queue in list that is WAITING
-            $nextSession = null;
-            usort($state['queue_list'], function($a, $b) {
-                return $a['queue_number'] - $b['queue_number'];
-            });
-            
-            foreach ($state['queue_list'] as &$item) {
-                if ($item['status'] === 'WAITING') {
-                    $item['status'] = 'ACTIVE';
-                    $nextSession = $item;
-                    break;
-                }
-            }
-            
-            if ($nextSession) {
-                $state['active_queue_number'] = $nextSession['queue_number'];
-                $state['active_session_id'] = $nextSession['session_id'];
-            } else {
-                $state['active_queue_number'] = 0;
-                $state['active_session_id'] = "";
-            }
-            
-            saveQueueState($queueFile, $state);
+        if (completeSessionQueue($sessionId)) {
             echo json_encode(['success' => true, 'message' => 'Sesi selesai, bergeser ke antrean berikutnya']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Sesi tidak ditemukan']);
+            echo json_encode(['success' => false, 'message' => 'Sesi tidak ditemukan atau sudah diselesaikan']);
         }
         break;
 

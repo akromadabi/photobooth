@@ -283,43 +283,169 @@ $isRemoteMode = !empty($sessionId);
             text-transform: uppercase;
         }
 
-        .layout-grid-select {
+        /* Layout Selection Cards */
+        .layout-cards-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
+            width: 100%;
+            margin-top: 10px;
         }
 
-        .layout-btn {
+        .layout-card-item {
             background-color: #0c0c0f;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 700;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 14px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
             cursor: pointer;
+            transition: all 0.2s ease;
             text-align: center;
+        }
+
+        .layout-card-item:hover {
+            border-color: var(--primary-red);
+            background-color: rgba(230, 57, 70, 0.04);
+            transform: translateY(-2px);
+        }
+
+        .layout-card-icon {
+            width: 48px;
+            height: 48px;
+            background-color: #14141a;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            border: 1px solid var(--border-color);
             transition: all 0.2s;
         }
 
-        .layout-btn.active {
+        .layout-card-item:hover .layout-card-icon {
             border-color: var(--primary-red);
-            color: white;
-            background-color: rgba(230,57,70,0.05);
+        }
+
+        /* Strip Icon Preview */
+        .strip-preview {
+            flex-direction: column;
+            gap: 3px;
+        }
+        .strip-preview .line {
+            width: 22px;
+            height: 5px;
+            background-color: var(--text-muted);
+            border-radius: 1px;
+            opacity: 0.6;
+        }
+        .layout-card-item:hover .strip-preview .line {
+            background-color: var(--primary-red);
+            opacity: 1;
+        }
+
+        /* Grid Icon Preview */
+        .grid-preview {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+        }
+        .grid-preview .box {
+            width: 14px;
+            height: 14px;
+            background-color: var(--text-muted);
+            border-radius: 2px;
+            opacity: 0.6;
+        }
+        .layout-card-item:hover .grid-preview .box {
+            background-color: var(--primary-red);
+            opacity: 1;
+        }
+
+        /* Postcard Icon Preview */
+        .postcard-preview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .postcard-preview .full-box {
+            width: 32px;
+            height: 22px;
+            background-color: var(--text-muted);
+            border-radius: 2px;
+            opacity: 0.6;
+        }
+        .layout-card-item:hover .postcard-preview .full-box {
+            background-color: var(--primary-red);
+            opacity: 1;
+        }
+
+        .layout-card-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Step Header */
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 4px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .btn-back-step {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-back-step:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .selected-layout-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .selected-layout-badge span {
+            color: var(--primary-gold);
+            background-color: rgba(247, 184, 1, 0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(247, 184, 1, 0.2);
         }
 
         .frame-scroll-select {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             overflow-x: auto;
-            padding-bottom: 12px;
+            padding: 8px 4px 16px 4px;
             width: 100%;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
         }
 
         .frame-item-card {
-            width: 120px;
-            height: 190px;
-            border-radius: 10px;
+            width: 140px;
+            height: 220px;
+            border-radius: 12px;
             border: 2px solid var(--border-color);
             background-color: #0c0c0f;
             overflow: hidden;
@@ -335,6 +461,7 @@ $isRemoteMode = !empty($sessionId);
         .frame-item-card.active {
             border-color: var(--primary-gold);
             transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(247, 184, 1, 0.3);
         }
 
         .frame-item-preview {
@@ -477,25 +604,51 @@ $isRemoteMode = !empty($sessionId);
 
             <!-- Controller Selection Box (Visible only when ACTIVE) -->
             <div class="glass-card" id="remoteControllerBox" style="display:none;">
-                <div class="selector-box">
-                    <span class="selector-label">1. Pilih Layout</span>
-                    <div class="layout-grid-select">
-                        <button class="layout-btn active" id="layout-strip" onclick="setSessionLayout('strip')">Strip</button>
-                        <button class="layout-btn" id="layout-grid" onclick="setSessionLayout('grid')">Grid</button>
-                        <button class="layout-btn" id="layout-postcard" onclick="setSessionLayout('postcard')">Card</button>
+                <!-- STEP 1: SELECT LAYOUT -->
+                <div class="selector-box" id="layoutStepContainer">
+                    <span class="selector-label">1. Pilih Layout Foto</span>
+                    <div class="layout-cards-grid">
+                        <div class="layout-card-item" onclick="selectLayoutStep('strip')">
+                            <div class="layout-card-icon strip-preview">
+                                <div class="line"></div>
+                                <div class="line"></div>
+                                <div class="line"></div>
+                            </div>
+                            <div class="layout-card-name">Strip</div>
+                        </div>
+                        <div class="layout-card-item" onclick="selectLayoutStep('grid')">
+                            <div class="layout-card-icon grid-preview">
+                                <div class="box"></div>
+                                <div class="box"></div>
+                                <div class="box"></div>
+                                <div class="box"></div>
+                            </div>
+                            <div class="layout-card-name">Grid</div>
+                        </div>
+                        <div class="layout-card-item" onclick="selectLayoutStep('postcard')">
+                            <div class="layout-card-icon postcard-preview">
+                                <div class="full-box"></div>
+                            </div>
+                            <div class="layout-card-name">Card</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="selector-box">
-                    <span class="selector-label">2. Pilih Bingkai</span>
+                <!-- STEP 2: SELECT FRAME -->
+                <div class="selector-box" id="frameStepContainer" style="display:none; width: 100%;">
+                    <div class="step-header">
+                        <button class="btn-back-step" onclick="backToLayoutStep()">&larr; Ubah Layout</button>
+                        <div class="selected-layout-badge">Layout: <span id="selectedLayoutLabel">Strip</span></div>
+                    </div>
+                    <span class="selector-label" style="margin-top: 8px;">2. Pilih Bingkai</span>
                     <div class="frame-scroll-select" id="remoteFrameList">
                         <!-- Loaded dynamically via JS -->
                     </div>
+                    
+                    <button class="btn-capture-glowing" id="btnCaptureStart" onclick="sendCaptureCommand()">
+                        MULAI FOTO
+                    </button>
                 </div>
-
-                <button class="btn-capture-glowing" id="btnCaptureStart" onclick="sendCaptureCommand()">
-                    MULAI FOTO
-                </button>
             </div>
 
         </div>
@@ -537,9 +690,13 @@ $isRemoteMode = !empty($sessionId);
                             } 
                             else if (data.status === 'ACTIVE') {
                                 title.innerText = 'GILIRAN ANDA AKTIF';
-                                desc.innerHTML = 'Silakan pilih layout dan frame di bawah, lalu tekan tombol ambil foto untuk memicu kamera tablet!';
+                                desc.innerHTML = 'Silakan pilih layout dan bingkai foto Anda untuk memulai!';
                                 controller.style.display = 'flex';
-                                loadFramesList(data.package_id);
+                                // Show layout step by default if frame step is not yet active
+                                if (document.getElementById('frameStepContainer').style.display !== 'block') {
+                                    document.getElementById('layoutStepContainer').style.display = 'block';
+                                    document.getElementById('frameStepContainer').style.display = 'none';
+                                }
                             }
                             else if (data.status === 'CAPTURING') {
                                 title.innerText = 'PROSES MEMOTRET...';
@@ -598,15 +755,27 @@ $isRemoteMode = !empty($sessionId);
                 });
             }
 
-            function setSessionLayout(layout) {
+            function selectLayoutStep(layout) {
                 selectedLayout = layout;
-                document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
-                document.getElementById('layout-' + layout).classList.add('active');
                 
-                // Reload frames matching this layout
+                const layoutLabels = {
+                    'strip': 'Strip',
+                    'grid': 'Grid',
+                    'postcard': 'Card'
+                };
+                document.getElementById('selectedLayoutLabel').innerText = layoutLabels[layout] || layout;
+                
                 const list = document.getElementById('remoteFrameList');
                 list.innerHTML = "";
                 loadFramesList();
+                
+                document.getElementById('layoutStepContainer').style.display = 'none';
+                document.getElementById('frameStepContainer').style.display = 'block';
+            }
+
+            function backToLayoutStep() {
+                document.getElementById('layoutStepContainer').style.display = 'block';
+                document.getElementById('frameStepContainer').style.display = 'none';
             }
 
             function sendCaptureCommand() {

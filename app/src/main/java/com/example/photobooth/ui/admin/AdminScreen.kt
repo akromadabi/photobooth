@@ -163,8 +163,10 @@ fun AdminScreen(
     var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isReprinting by remember { mutableStateOf(false) }
 
-    // Initial loads
-    LaunchedEffect(Unit) {
+    // Scan function
+    val scanPrinters = {
+        usbDevices.clear()
+        bluetoothDevices.clear()
         // USB
         val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
         usbManager?.deviceList?.values?.forEach { device ->
@@ -193,6 +195,11 @@ fun AdminScreen(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    // Initial loads
+    LaunchedEffect(Unit) {
+        scanPrinters()
     }
 
     // Refresh history when Tab 3 (Riwayat Foto) or Tab 0 (Dashboard) is selected, or when refresh is triggered
@@ -880,7 +887,25 @@ fun AdminScreen(
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text("Pilih Port Printer Thermal Terdeteksi:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Pilih Port Printer Thermal Terdeteksi:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    IconButton(
+                                        onClick = {
+                                            scanPrinters()
+                                            Toast.makeText(context, "Daftar printer diperbarui", Toast.LENGTH_SHORT).show()
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Refresh,
+                                            contentDescription = "Pindai Ulang",
+                                            tint = Color(0xFFE63946)
+                                        )
+                                    }
+                                }
                                 
                                 // USB list
                                 if (usbDevices.isNotEmpty()) {

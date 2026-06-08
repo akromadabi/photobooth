@@ -187,14 +187,6 @@ fun SharePrintScreen(
                                 if (it.isLowerCase()) it.titlecase() else it.toString() 
                             }
                             bitmap = generateIdCardBitmap(bitmap, finalSessionId, verifyUrl, charName)
-                        } else if (flow == "RECEIPT") {
-                            // Standard Receipt sizing
-                            val printWidthMm = activePackage?.printWidthMm ?: 58
-                            val printHeightMm = activePackage?.printHeightMm ?: 200
-                            // Map mm to pixels (e.g. 10 pixels per mm for printable output)
-                            val targetW = printWidthMm * 10
-                            val targetH = printHeightMm * 10
-                            bitmap = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
                         }
 
                         val printerTypeToUse = when (configManager.printerType) {
@@ -261,14 +253,7 @@ fun SharePrintScreen(
                     var bitmap = BitmapFactory.decodeFile(finalPhotoPath)
                     if (bitmap != null) {
                         val flow = manualPrintFlow!!
-                        if (flow == "RECEIPT") {
-                            // Manual receipt size fallback
-                            val printWidthMm = 58
-                            val printHeightMm = 200
-                            val targetW = printWidthMm * 10
-                            val targetH = printHeightMm * 10
-                            bitmap = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
-                        }
+
 
                         val printerTypeToUse = when (configManager.printerType) {
                             "AUTO" -> if (flow == "RECEIPT") "THERMAL" else "COLOR"

@@ -229,6 +229,10 @@ $metaData = [
 ];
 file_put_contents($uploadDir . $sessionId . '_meta.json', json_encode($metaData));
 
+// Complete session queue on AI generation success
+require_once __DIR__ . '/queue_helper.php';
+completeSessionQueue($sessionId);
+
 echo json_encode([
     'success' => true,
     'session_id' => $sessionId,
