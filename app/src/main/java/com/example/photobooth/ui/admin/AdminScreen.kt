@@ -166,7 +166,16 @@ fun AdminScreen(
         // USB
         val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
         usbManager?.deviceList?.values?.forEach { device ->
-            usbDevices.add(device)
+            var isPrinter = false
+            for (i in 0 until device.interfaceCount) {
+                if (device.getInterface(i).interfaceClass == 7) {
+                    isPrinter = true
+                    break
+                }
+            }
+            if (isPrinter) {
+                usbDevices.add(device)
+            }
         }
         
         // Bluetooth
@@ -732,6 +741,29 @@ fun AdminScreen(
                                          Text("Cetak warna penuh menggunakan printer sistem Android.", color = Color.Gray, fontSize = 11.sp)
                                      }
                                  }
+
+                                 // Option 4: AUTO / DYNAMIC
+                                 Row(
+                                     modifier = Modifier
+                                         .fillMaxWidth()
+                                         .clip(RoundedCornerShape(12.dp))
+                                         .background(if (printerType == "AUTO") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                         .border(1.5.dp, if (printerType == "AUTO") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
+                                         .clickable { printerType = "AUTO"; configManager.printerType = "AUTO" }
+                                         .padding(horizontal = 16.dp, vertical = 12.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     RadioButton(
+                                         selected = printerType == "AUTO",
+                                         onClick = { printerType = "AUTO"; configManager.printerType = "AUTO" },
+                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
+                                     )
+                                     Spacer(modifier = Modifier.width(12.dp))
+                                     Column {
+                                         Text("AUTO / DYNAMIC (THERMAL & COLOR)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                         Text("Mendeteksi otomatis: Epson untuk warna & Xprinter untuk receipt.", color = Color.Gray, fontSize = 11.sp)
+                                     }
+                                 }
                              }
 
                             if (printerType == "THERMAL" || printerType == "AUTO") {
@@ -927,7 +959,8 @@ fun AdminScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("Xprinter Label Printer (VID:${device.vendorId} PID:${device.productId})", color = Color.White, fontSize = 13.sp)
+                                            val deviceName = device.productName ?: "Printer USB"
+                                            Text("$deviceName (VID:${device.vendorId} PID:${device.productId})", color = Color.White, fontSize = 13.sp)
                                             RadioButton(
                                                 selected = printerAddress == deviceAddr,
                                                 onClick = {
