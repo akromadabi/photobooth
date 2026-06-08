@@ -22,8 +22,13 @@ git reset --hard origin/main
 
 # Copy backend files to root (optional fallback, but kept for compatibility)
 if [ -d "backend" ]; then
-    echo "--> 2. Syncing backend PHP files..."
-    cp -r backend/* . 2>/dev/null || true
+    echo "--> 2. Syncing backend PHP files (excluding uploads)..."
+    cp backend/*.php . 2>/dev/null || true
+    cp backend/*.json . 2>/dev/null || true
+    cp backend/*.html . 2>/dev/null || true
+    cp backend/*.png . 2>/dev/null || true
+    cp -r backend/characters . 2>/dev/null || true
+    cp -r backend/frames . 2>/dev/null || true
 else
     echo "--> 2. Warning: 'backend' directory not found."
 fi
