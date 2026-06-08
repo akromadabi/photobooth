@@ -108,6 +108,8 @@ fun AdminScreen(
     var countdownSeconds by remember { mutableStateOf(configManager.countdownSeconds.toString()) }
     var totalShots by remember { mutableStateOf(configManager.totalShots.toString()) }
     var printerType by remember { mutableStateOf(configManager.printerType) }
+    val isThermalEnabled = remember(printerType) { printerType == "AUTO" || printerType == "THERMAL" }
+    val isColorEnabled = remember(printerType) { printerType == "AUTO" || printerType == "COLOR" }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
     var thermalMode by remember { mutableStateOf(configManager.thermalMode) }
     var printerPaperWidth by remember { mutableStateOf(configManager.printerPaperWidth) }
@@ -666,107 +668,39 @@ fun AdminScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        AdminCard(title = "Konfigurasi Printer") {
-                            Text("Tipe Driver Printer Terhubung:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            
-                             Column(
-                                 modifier = Modifier.fillMaxWidth(),
-                                 verticalArrangement = Arrangement.spacedBy(10.dp)
-                             ) {
-                                 // Option 1: NONE
-                                 Row(
-                                     modifier = Modifier
-                                         .fillMaxWidth()
-                                         .clip(RoundedCornerShape(12.dp))
-                                         .background(if (printerType == "NONE") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                         .border(1.5.dp, if (printerType == "NONE") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
-                                         .clickable { printerType = "NONE"; configManager.printerType = "NONE" }
-                                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                                     verticalAlignment = Alignment.CenterVertically
-                                 ) {
-                                     RadioButton(
-                                         selected = printerType == "NONE",
-                                         onClick = { printerType = "NONE"; configManager.printerType = "NONE" },
-                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
-                                     )
-                                     Spacer(modifier = Modifier.width(12.dp))
-                                     Column {
-                                         Text("NONE / TANPA PRINTER", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                         Text("Mode digital saja, printer dinonaktifkan.", color = Color.Gray, fontSize = 11.sp)
-                                     }
-                                 }
+                        // Card 1: Printer Struk (Thermal / Kasir)
+                        AdminCard(title = "Printer Struk (Thermal)") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Aktifkan Printer Struk", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text("Gunakan printer thermal untuk mencetak struk jepretan", color = Color.Gray, fontSize = 11.sp)
+                                }
+                                Switch(
+                                    checked = isThermalEnabled,
+                                    onCheckedChange = { checked ->
+                                        val newType = when {
+                                            checked && isColorEnabled -> "AUTO"
+                                            checked -> "THERMAL"
+                                            isColorEnabled -> "COLOR"
+                                            else -> "NONE"
+                                        }
+                                        printerType = newType
+                                        configManager.printerType = newType
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFFE63946),
+                                        uncheckedThumbColor = Color.Gray,
+                                        uncheckedTrackColor = Color(0xFF2A2A35)
+                                    )
+                                )
+                            }
 
-                                 // Option 2: THERMAL
-                                 Row(
-                                     modifier = Modifier
-                                         .fillMaxWidth()
-                                         .clip(RoundedCornerShape(12.dp))
-                                         .background(if (printerType == "THERMAL") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                         .border(1.5.dp, if (printerType == "THERMAL") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
-                                         .clickable { printerType = "THERMAL"; configManager.printerType = "THERMAL" }
-                                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                                     verticalAlignment = Alignment.CenterVertically
-                                 ) {
-                                     RadioButton(
-                                         selected = printerType == "THERMAL",
-                                         onClick = { printerType = "THERMAL"; configManager.printerType = "THERMAL" },
-                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
-                                     )
-                                     Spacer(modifier = Modifier.width(12.dp))
-                                     Column {
-                                         Text("THERMAL PRINTER (XP-420B)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                         Text("Cetak langsung lewat USB/Bluetooth (Dithering Monokrom).", color = Color.Gray, fontSize = 11.sp)
-                                     }
-                                 }
-
-                                 // Option 3: COLOR
-                                 Row(
-                                     modifier = Modifier
-                                         .fillMaxWidth()
-                                         .clip(RoundedCornerShape(12.dp))
-                                         .background(if (printerType == "COLOR") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                         .border(1.5.dp, if (printerType == "COLOR") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
-                                         .clickable { printerType = "COLOR"; configManager.printerType = "COLOR" }
-                                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                                     verticalAlignment = Alignment.CenterVertically
-                                 ) {
-                                     RadioButton(
-                                         selected = printerType == "COLOR",
-                                         onClick = { printerType = "COLOR"; configManager.printerType = "COLOR" },
-                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
-                                     )
-                                     Spacer(modifier = Modifier.width(12.dp))
-                                     Column {
-                                         Text("COLOR PRINTER (PDF/SYSTEM)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                         Text("Cetak warna penuh menggunakan printer sistem Android.", color = Color.Gray, fontSize = 11.sp)
-                                     }
-                                 }
-
-                                 // Option 4: AUTO / DYNAMIC
-                                 Row(
-                                     modifier = Modifier
-                                         .fillMaxWidth()
-                                         .clip(RoundedCornerShape(12.dp))
-                                         .background(if (printerType == "AUTO") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                         .border(1.5.dp, if (printerType == "AUTO") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(12.dp))
-                                         .clickable { printerType = "AUTO"; configManager.printerType = "AUTO" }
-                                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                                     verticalAlignment = Alignment.CenterVertically
-                                 ) {
-                                     RadioButton(
-                                         selected = printerType == "AUTO",
-                                         onClick = { printerType = "AUTO"; configManager.printerType = "AUTO" },
-                                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946), unselectedColor = Color.Gray)
-                                     )
-                                     Spacer(modifier = Modifier.width(12.dp))
-                                     Column {
-                                         Text("AUTO / DYNAMIC (THERMAL & COLOR)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                         Text("Mendeteksi otomatis: Epson untuk warna & Xprinter untuk receipt.", color = Color.Gray, fontSize = 11.sp)
-                                     }
-                                 }
-                             }
-
-                            if (printerType == "THERMAL" || printerType == "AUTO") {
+                            if (isThermalEnabled) {
                                 HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
                                 
                                 Text("Pilih Protokol Printer Thermal:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -999,69 +933,107 @@ fun AdminScreen(
                                 
                                 if (usbDevices.isEmpty() && bluetoothDevices.isEmpty()) {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Tidak ada printer terdeteksi. Colok kabel USB OTG printer ke tablet atau hubungkan Bluetooth printer ke tablet.", color = Color.Gray, fontSize = 12.sp)
+                                    Text("Tidak ada printer terdeteksi. Hubungkan printer struk menggunakan kabel USB OTG atau koneksi Bluetooth.", color = Color.Gray, fontSize = 12.sp)
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            if (isTestingPrint) {
-                                Row(
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    CircularProgressIndicator(color = Color(0xFFE63946))
-                                }
-                            } else {
-                                if (printerType == "AUTO") {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                if (isTestingPrint) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.Center,
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Button(
-                                            onClick = {
-                                                isTestingPrint = true
-                                                scope.launch {
-                                                    val success = testPrintJob(context, configManager, "THERMAL")
-                                                    isTestingPrint = false
-                                                    Toast.makeText(context, success, Toast.LENGTH_LONG).show()
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("TEST THERMAL (XP)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        }
-                                        Button(
-                                            onClick = {
-                                                isTestingPrint = true
-                                                scope.launch {
-                                                    val success = testPrintJob(context, configManager, "COLOR")
-                                                    isTestingPrint = false
-                                                    Toast.makeText(context, success, Toast.LENGTH_LONG).show()
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("TEST COLOR (EPSON)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        }
+                                        CircularProgressIndicator(color = Color(0xFFE63946))
                                     }
                                 } else {
                                     Button(
                                         onClick = {
                                             isTestingPrint = true
                                             scope.launch {
-                                                val success = testPrintJob(context, configManager)
+                                                val success = testPrintJob(context, configManager, "THERMAL")
                                                 isTestingPrint = false
                                                 Toast.makeText(context, success, Toast.LENGTH_LONG).show()
                                             }
                                         },
-                                        enabled = printerType != "NONE",
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("UJI CETAK STRIP COBA (TEST PRINT)", fontWeight = FontWeight.Bold)
+                                        Text("UJI COBA CETAK STRUK", fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Card 2: Printer Foto Warna (Sistem)
+                        AdminCard(title = "Printer Foto Warna (Sistem)") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Aktifkan Printer Warna", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text("Gunakan printer warna sistem Android untuk mencetak hasil foto", color = Color.Gray, fontSize = 11.sp)
+                                }
+                                Switch(
+                                    checked = isColorEnabled,
+                                    onCheckedChange = { checked ->
+                                        val newType = when {
+                                            isThermalEnabled && checked -> "AUTO"
+                                            isThermalEnabled -> "THERMAL"
+                                            checked -> "COLOR"
+                                            else -> "NONE"
+                                        }
+                                        printerType = newType
+                                        configManager.printerType = newType
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFFE63946),
+                                        uncheckedThumbColor = Color.Gray,
+                                        uncheckedTrackColor = Color(0xFF2A2A35)
+                                    )
+                                )
+                            }
+
+                            if (isColorEnabled) {
+                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
+                                
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A35).copy(alpha = 0.4f)),
+                                    border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("Panduan Koneksi Printer Warna:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        Text("1. Hubungkan printer warna Anda ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Color.Gray, fontSize = 12.sp)
+                                        Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda.", color = Color.Gray, fontSize = 12.sp)
+                                        Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Silakan pilih printer Anda di jendela tersebut.", color = Color.Gray, fontSize = 12.sp)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                if (isTestingPrint) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        CircularProgressIndicator(color = Color(0xFFE63946))
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            isTestingPrint = true
+                                            scope.launch {
+                                                val success = testPrintJob(context, configManager, "COLOR")
+                                                isTestingPrint = false
+                                                Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = Color.White)
                                     }
                                 }
                             }

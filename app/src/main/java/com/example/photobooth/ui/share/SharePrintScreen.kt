@@ -199,7 +199,21 @@ fun SharePrintScreen(
 
                         val printerTypeToUse = when (configManager.printerType) {
                             "AUTO" -> if (flow == "RECEIPT") "THERMAL" else "COLOR"
-                            else -> configManager.printerType
+                            "THERMAL" -> if (flow == "RECEIPT") "THERMAL" else "NONE"
+                            "COLOR" -> if (flow != "RECEIPT") "COLOR" else "NONE"
+                            else -> "NONE"
+                        }
+
+                        if (printerTypeToUse == "NONE") {
+                            withContext(Dispatchers.Main) {
+                                printStatus = if (flow == "RECEIPT") {
+                                    "Printer struk (thermal) belum diaktifkan di pengaturan admin."
+                                } else {
+                                    "Printer foto warna belum diaktifkan/terhubung di pengaturan admin."
+                                }
+                                isPrinting = false
+                            }
+                            return@launch
                         }
 
                         val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
@@ -258,7 +272,21 @@ fun SharePrintScreen(
 
                         val printerTypeToUse = when (configManager.printerType) {
                             "AUTO" -> if (flow == "RECEIPT") "THERMAL" else "COLOR"
-                            else -> configManager.printerType
+                            "THERMAL" -> if (flow == "RECEIPT") "THERMAL" else "NONE"
+                            "COLOR" -> if (flow != "RECEIPT") "COLOR" else "NONE"
+                            else -> "NONE"
+                        }
+
+                        if (printerTypeToUse == "NONE") {
+                            withContext(Dispatchers.Main) {
+                                printStatus = if (flow == "RECEIPT") {
+                                    "Printer struk (thermal) belum diaktifkan di pengaturan admin."
+                                } else {
+                                    "Printer foto warna belum diaktifkan/terhubung di pengaturan admin."
+                                }
+                                isPrinting = false
+                            }
+                            return@launch
                         }
 
                         val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
@@ -578,32 +606,39 @@ fun SharePrintScreen(
                         lineHeight = 18.sp
                     )
                     
-                    Button(
-                        onClick = {
-                            showManualPrintOption = false
-                            manualPrintFlow = "COLOR_PRINT"
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text("CETAK FOTO WARNA (EPSON)", fontWeight = FontWeight.Bold, color = Color.White)
+                    val isColorEnabled = configManager.printerType == "AUTO" || configManager.printerType == "COLOR"
+                    val isThermalEnabled = configManager.printerType == "AUTO" || configManager.printerType == "THERMAL"
+
+                    if (isColorEnabled) {
+                        Button(
+                            onClick = {
+                                showManualPrintOption = false
+                                manualPrintFlow = "COLOR_PRINT"
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Text("CETAK FOTO WARNA", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
                     }
                     
-                    Button(
-                        onClick = {
-                            showManualPrintOption = false
-                            manualPrintFlow = "RECEIPT"
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text("CETAK STRUK THERMAL (XPRINTER)", fontWeight = FontWeight.Bold, color = Color.White)
+                    if (isThermalEnabled) {
+                        Button(
+                            onClick = {
+                                showManualPrintOption = false
+                                manualPrintFlow = "RECEIPT"
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Text("CETAK STRUK THERMAL", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
                     }
                     
                     OutlinedButton(

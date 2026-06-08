@@ -36,7 +36,7 @@ class ConfigManager(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_AUTO_CUT, value).apply()
 
     var thermalMode: String
-        get() = prefs.getString(KEY_THERMAL_MODE, "TSPL") ?: "TSPL"
+        get() = prefs.getString(KEY_THERMAL_MODE, "ESC_POS") ?: "ESC_POS"
         set(value) = prefs.edit().putString(KEY_THERMAL_MODE, value).apply()
 
     var activeEventId: String
