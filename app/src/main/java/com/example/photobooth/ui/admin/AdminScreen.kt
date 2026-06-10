@@ -45,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -93,6 +95,8 @@ fun AdminScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val syncedFramesCount = remember(configManager.syncedFramesJson) {
         try {
@@ -308,48 +312,92 @@ fun AdminScreen(
                     )
 
                     // TAB 1: Configurations
-                    1 -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Quick Stats Dashboard Row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            // Stat 1: Server Status
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(90.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF18181F))
-                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
-                                    .padding(12.dp)
+                    1 -> {
+                        // Define blocks inside the tab
+                        val QuickStatsBlock: @Composable () -> Unit = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                                    Text("SERVER STATUS", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(8.dp)
-                                                .clip(RoundedCornerShape(50.dp))
-                                                .background(
-                                                    when (serverOnline) {
-                                                        true -> Color(0xFF52B788)
-                                                        false -> Color(0xFFE63946)
-                                                        else -> Color(0xFFF7B801)
-                                                    }
-                                                )
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                // Stat 1: Server Status
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(90.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFF18181F))
+                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                                        Text("SERVER STATUS", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(RoundedCornerShape(50.dp))
+                                                    .background(
+                                                        when (serverOnline) {
+                                                            true -> Color(0xFF52B788)
+                                                            false -> Color(0xFFE63946)
+                                                            else -> Color(0xFFF7B801)
+                                                        }
+                                                    )
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = when (serverOnline) {
+                                                    true -> "ONLINE"
+                                                    false -> "OFFLINE"
+                                                    else -> "CHECKING"
+                                                },
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Stat 2: Frames Sync
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(90.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFF18181F))
+                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                                        Text("SYNCED FRAMES", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                         Text(
-                                            text = when (serverOnline) {
-                                                true -> "ONLINE"
-                                                false -> "OFFLINE"
-                                                else -> "CHECKING"
+                                            text = "$syncedFramesCount Bingkai",
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                // Stat 3: Printer Driver
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(90.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFF18181F))
+                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+                                        Text("ACTIVE PRINTER", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = when (printerType) {
+                                                "THERMAL" -> "XP-420B"
+                                                "COLOR" -> "COLOR PDF"
+                                                "AUTO" -> "AUTO (THERMAL & COLOR)"
+                                                else -> "NONE"
                                             },
                                             color = Color.White,
                                             fontSize = 12.sp,
@@ -358,446 +406,302 @@ fun AdminScreen(
                                     }
                                 }
                             }
-
-                            // Stat 2: Frames Sync
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(90.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF18181F))
-                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
-                                    .padding(12.dp)
-                            ) {
-                                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                                    Text("SYNCED FRAMES", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        text = "$syncedFramesCount Bingkai",
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-
-                            // Stat 3: Printer Driver
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(90.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF18181F))
-                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
-                                    .padding(12.dp)
-                            ) {
-                                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                                    Text("ACTIVE PRINTER", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        text = when (printerType) {
-                                            "THERMAL" -> "XP-420B"
-                                            "COLOR" -> "COLOR PDF"
-                                            "AUTO" -> "AUTO (THERMAL & COLOR)"
-                                            else -> "NONE"
-                                        },
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
                         }
 
-                        // Section 1: Server Config
-                        AdminCard(title = "Koneksi Backend aaPanel") {
-                            OutlinedTextField(
-                                value = backendUrl,
-                                onValueChange = { backendUrl = it },
-                                label = { Text("Base URL API Server") },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = Color(0xFFE63946)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            OutlinedTextField(
-                                value = adminPin,
-                                onValueChange = { if (it.length <= 6) adminPin = it },
-                                label = { Text("PIN Akses Kiosk") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = Color(0xFFE63946)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Biometric Auth Gate Toggle
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Gunakan Sensor Sidik Jari (Biometrik)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                    Text("Otentikasi biometrik cepat untuk masuk menu admin tanpa PIN", color = Color.Gray, fontSize = 12.sp)
-                                }
-                                Switch(
-                                    checked = useBiometric,
-                                    onCheckedChange = { useBiometric = it },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = Color(0xFFE63946),
-                                        uncheckedThumbColor = Color.Gray,
-                                        uncheckedTrackColor = Color(0xFF2A2A35)
-                                    )
+                        val ServerConfigBlock: @Composable () -> Unit = {
+                            AdminCard(title = "Koneksi Backend aaPanel") {
+                                OutlinedTextField(
+                                    value = backendUrl,
+                                    onValueChange = { backendUrl = it },
+                                    label = { Text("Base URL API Server") },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        focusedBorderColor = Color(0xFFE63946)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = {
-                                    configManager.backendUrl = backendUrl
-                                    configManager.adminPin = adminPin
-                                    configManager.useBiometric = useBiometric
-                                    Toast.makeText(context, "Setelan server disimpan!", Toast.LENGTH_SHORT).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text("Simpan Setelan Server", fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        // Section 2: Sync Templates
-                        AdminCard(title = "Sinkronisasi Bingkai (Dynamic Sync)") {
-                            Text(
-                                text = "Mendownload katalog bingkai (.json) dan ornamen bingkai (.png) dari aaPanel agar aplikasi dapat bekerja 100% offline.",
-                                color = Color.Gray,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            if (isSyncing) {
-                                Row(
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically,
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedTextField(
+                                    value = adminPin,
+                                    onValueChange = { if (it.length <= 6) adminPin = it },
+                                    label = { Text("PIN Akses Kiosk") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        focusedBorderColor = Color(0xFFE63946)
+                                    ),
                                     modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(24.dp))
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text("Menghubungkan & mengunduh...", color = Color.Gray, fontSize = 13.sp)
-                                }
-                            } else {
-                                Button(
-                                    onClick = {
-                                        isSyncing = true
-                                        scope.launch(Dispatchers.IO) {
-                                            val result = syncFramesFromBackend(context, backendUrl, configManager)
-                                            withContext(Dispatchers.Main) {
-                                                isSyncing = false
-                                                Toast.makeText(context, result, Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("SYNC KATALOG SEKARANG", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-
-                        // Section 3: Capture timings
-                        AdminCard(title = "Setelan Sesi Foto") {
-                            OutlinedTextField(
-                                value = countdownSeconds,
-                                onValueChange = { countdownSeconds = it },
-                                label = { Text("Durasi Hitung Mundur (Detik)") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = Color(0xFFE63946)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            OutlinedTextField(
-                                value = totalShots,
-                                onValueChange = { totalShots = it },
-                                label = { Text("Jumlah Jepretan Foto per Sesi") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = Color(0xFFE63946)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    val cd = countdownSeconds.toIntOrNull() ?: 5
-                                    val ts = totalShots.toIntOrNull() ?: 4
-                                    configManager.countdownSeconds = cd
-                                    configManager.totalShots = ts
-                                    Toast.makeText(context, "Setelan sesi disimpan!", Toast.LENGTH_SHORT).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text("Simpan Setelan Sesi", fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        // Section 4: Event & Kiosk Mode Config
-                        AdminCard(title = "Mode Kiosk & Pengelolaan Event") {
-                            Text("Pilih Mode Operasional Kiosk:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Kiosk mode options
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                // Biometric Auth Gate Toggle
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clickable { kioskMode = "MULTI_EVENT" }
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    RadioButton(
-                                        selected = kioskMode == "MULTI_EVENT",
-                                        onClick = { kioskMode = "MULTI_EVENT" },
-                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Multi-Event (Kode)", color = Color.White, fontSize = 12.sp)
-                                }
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clickable { kioskMode = "DEDICATED" }
-                                ) {
-                                    RadioButton(
-                                        selected = kioskMode == "DEDICATED",
-                                        onClick = { kioskMode = "DEDICATED" },
-                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Satu Event Terkunci", color = Color.White, fontSize = 12.sp)
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            if (kioskMode == "DEDICATED") {
-                                val currentEventName = eventsList.firstOrNull { it.id == activeEventId }?.name ?: "Pilih Event"
-                                Text("Pilih Event Aktif Acara:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFF2A2A35))
-                                        .border(1.dp, Color(0xFF3F3F4F), RoundedCornerShape(8.dp))
-                                        .clickable { showEventDialog = true }
-                                        .padding(16.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(currentEventName, color = Color.White, fontSize = 14.sp)
-                                        Text("Ubah ▾", color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Gunakan Sensor Sidik Jari (Biometrik)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Otentikasi biometrik cepat untuk masuk menu admin tanpa PIN", color = Color.Gray, fontSize = 12.sp)
                                     }
+                                    Switch(
+                                        checked = useBiometric,
+                                        onCheckedChange = { useBiometric = it },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFFE63946),
+                                            uncheckedThumbColor = Color.Gray,
+                                            uncheckedTrackColor = Color(0xFF2A2A35)
+                                        )
+                                    )
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
-                            }
-                            
-                            Button(
-                                onClick = {
-                                    configManager.kioskMode = kioskMode
-                                    configManager.activeEventId = activeEventId
-                                    Toast.makeText(context, "Setelan mode event disimpan!", Toast.LENGTH_SHORT).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text("Simpan Setelan Event", fontWeight = FontWeight.Bold)
+
+                                Button(
+                                    onClick = {
+                                        configManager.backendUrl = backendUrl
+                                        configManager.adminPin = adminPin
+                                        configManager.useBiometric = useBiometric
+                                        Toast.makeText(context, "Setelan server disimpan!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text("Simpan Setelan Server", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
 
-                        // Section: Kiosk Theme Customization
+                        val SyncTemplatesBlock: @Composable () -> Unit = {
+                            AdminCard(title = "Sinkronisasi Bingkai (Dynamic Sync)") {
+                                Text(
+                                    text = "Mendownload katalog bingkai (.json) dan ornamen bingkai (.png) dari aaPanel agar aplikasi dapat bekerja 100% offline.",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                if (isSyncing) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(24.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text("Menghubungkan & mengunduh...", color = Color.Gray, fontSize = 13.sp)
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            isSyncing = true
+                                            scope.launch(Dispatchers.IO) {
+                                                val result = syncFramesFromBackend(context, backendUrl, configManager)
+                                                withContext(Dispatchers.Main) {
+                                                    isSyncing = false
+                                                    Toast.makeText(context, result, Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("SYNC KATALOG SEKARANG", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+
+                        val CaptureTimingsBlock: @Composable () -> Unit = {
+                            AdminCard(title = "Setelan Sesi Foto") {
+                                OutlinedTextField(
+                                    value = countdownSeconds,
+                                    onValueChange = { countdownSeconds = it },
+                                    label = { Text("Durasi Hitung Mundur (Detik)") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        focusedBorderColor = Color(0xFFE63946)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedTextField(
+                                    value = totalShots,
+                                    onValueChange = { totalShots = it },
+                                    label = { Text("Jumlah Jepretan Foto per Sesi") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        focusedBorderColor = Color(0xFFE63946)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        val cd = countdownSeconds.toIntOrNull() ?: 5
+                                        val ts = totalShots.toIntOrNull() ?: 4
+                                        configManager.countdownSeconds = cd
+                                        configManager.totalShots = ts
+                                        Toast.makeText(context, "Setelan sesi disimpan!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text("Simpan Setelan Sesi", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        val KioskModeBlock: @Composable () -> Unit = {
+                            AdminCard(title = "Mode Kiosk & Pengelolaan Event") {
+                                Text("Pilih Mode Operasional Kiosk:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Kiosk mode options
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { kioskMode = "MULTI_EVENT" }
+                                    ) {
+                                        RadioButton(
+                                            selected = kioskMode == "MULTI_EVENT",
+                                            onClick = { kioskMode = "MULTI_EVENT" },
+                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Multi-Event (Kode)", color = Color.White, fontSize = 12.sp)
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { kioskMode = "DEDICATED" }
+                                    ) {
+                                        RadioButton(
+                                            selected = kioskMode == "DEDICATED",
+                                            onClick = { kioskMode = "DEDICATED" },
+                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Satu Event Terkunci", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                if (kioskMode == "DEDICATED") {
+                                    val currentEventName = eventsList.firstOrNull { it.id == activeEventId }?.name ?: "Pilih Event"
+                                    Text("Pilih Event Aktif Acara:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFF2A2A35))
+                                            .border(1.dp, Color(0xFF3F3F4F), RoundedCornerShape(8.dp))
+                                            .clickable { showEventDialog = true }
+                                            .padding(16.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(currentEventName, color = Color.White, fontSize = 14.sp)
+                                            Text("Ubah ▾", color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                                
+                                Button(
+                                    onClick = {
+                                        configManager.kioskMode = kioskMode
+                                        configManager.activeEventId = activeEventId
+                                        Toast.makeText(context, "Setelan mode event disimpan!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text("Simpan Setelan Event", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        // Kiosk Theme Customization
                         var activeThemeState by remember { mutableStateOf(configManager.appTheme) }
+                        var isThemeDropdownExpanded by remember { mutableStateOf(false) }
+                        val themeList = listOf(
+                            Pair("NEON_RED", "Neon Red (Modern)"),
+                            Pair("CUTE_PASTEL", "Cute Pastel (Wood)"),
+                            Pair("LUXURY_GOLD", "Luxury Gold (Wedding)"),
+                            Pair("RETRO_ARCADE", "Retro Arcade (8-Bit)")
+                        )
+                        val activeThemeName = themeList.firstOrNull { it.first == activeThemeState }?.second ?: activeThemeState
                         
-                        AdminCard(title = "Tema Tampilan Kiosk (Total Layout)") {
-                            Text(
-                                text = "Pilih gaya visual total untuk Kiosk. Tema akan merubah keseluruhan tata letak, gaya tombol, ornamen, dan tipografi.",
-                                color = Color.Gray,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // 2x2 Grid for Theme Previews
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                // Theme 1: Neon Red
-                                Box(modifier = Modifier.weight(1f)) {
-                                    ThemePreviewCard(
-                                        name = "Neon Red (Modern)",
-                                        isSelected = activeThemeState == "NEON_RED",
-                                        previewContent = {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .background(Color(0xFFE63946))
-                                                    .padding(6.dp)
-                                            ) {
-                                                Text("Jeprat", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(width = 40.dp, height = 15.dp)
-                                                        .clip(RoundedCornerShape(4.dp))
-                                                        .background(Color(0xFF121212))
-                                                        .align(Alignment.BottomCenter),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text("START", color = Color.White, fontSize = 6.sp, fontWeight = FontWeight.Bold)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            activeThemeState = "NEON_RED"
-                                            configManager.appTheme = "NEON_RED"
-                                            Toast.makeText(context, "Tema diatur ke Neon Red!", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                }
+                        val ThemeBlock: @Composable () -> Unit = {
+                            AdminCard(title = "Tema Tampilan Kiosk (Total Layout)") {
+                                Text(
+                                    text = "Pilih gaya visual total untuk Kiosk. Tema akan merubah keseluruhan tata letak, gaya tombol, ornamen, dan tipografi.",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
                                 
-                                // Theme 2: Cute Pastel
-                                Box(modifier = Modifier.weight(1f)) {
-                                    ThemePreviewCard(
-                                        name = "Cute Pastel (Wood)",
-                                        isSelected = activeThemeState == "CUTE_PASTEL",
-                                        previewContent = {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .background(Color(0xFFFBF8EB))
-                                                    .border(BorderStroke(1.dp, Color(0xFF4E3629)), RoundedCornerShape(4.dp))
-                                                    .padding(6.dp)
-                                            ) {
-                                                Text("🌸", fontSize = 8.sp, modifier = Modifier.align(Alignment.TopEnd))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(width = 30.dp, height = 12.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color(0xFFF7D070))
-                                                        .border(BorderStroke(1.dp, Color(0xFF4E3629)), RoundedCornerShape(8.dp))
-                                                        .align(Alignment.BottomCenter),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text("START ➔", color = Color(0xFF4E3629), fontSize = 5.sp, fontWeight = FontWeight.Black)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            activeThemeState = "CUTE_PASTEL"
-                                            configManager.appTheme = "CUTE_PASTEL"
-                                            Toast.makeText(context, "Tema diatur ke Cute Pastel!", Toast.LENGTH_SHORT).show()
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedButton(
+                                        onClick = { isThemeDropdownExpanded = true },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(text = activeThemeName, color = Color.White, fontSize = 14.sp)
+                                            Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                         }
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                // Theme 3: Luxury Gold
-                                Box(modifier = Modifier.weight(1f)) {
-                                    ThemePreviewCard(
-                                        name = "Luxury Gold (Wedding)",
-                                        isSelected = activeThemeState == "LUXURY_GOLD",
-                                        previewContent = {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .background(Color(0xFF0B132B))
-                                                    .border(BorderStroke(0.5.dp, Color(0xFFD4AF37)), RoundedCornerShape(4.dp))
-                                                    .padding(6.dp)
-                                            ) {
-                                                Text("✦", color = Color(0xFFD4AF37), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(width = 45.dp, height = 12.dp)
-                                                        .clip(RoundedCornerShape(1.dp))
-                                                        .background(Color(0xFFD4AF37))
-                                                        .align(Alignment.BottomCenter),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text("ENTER", color = Color(0xFF0B132B), fontSize = 5.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    DropdownMenu(
+                                        expanded = isThemeDropdownExpanded,
+                                        onDismissRequest = { isThemeDropdownExpanded = false },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color(0xFF1E1E24))
+                                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                    ) {
+                                        themeList.forEach { (themeId, themeName) ->
+                                            DropdownMenuItem(
+                                                text = { Text(themeName, color = Color.White) },
+                                                onClick = {
+                                                    activeThemeState = themeId
+                                                    configManager.appTheme = themeId
+                                                    isThemeDropdownExpanded = false
+                                                    Toast.makeText(context, "Tema diatur ke $themeName!", Toast.LENGTH_SHORT).show()
                                                 }
-                                            }
-                                        },
-                                        onClick = {
-                                            activeThemeState = "LUXURY_GOLD"
-                                            configManager.appTheme = "LUXURY_GOLD"
-                                            Toast.makeText(context, "Tema diatur ke Luxury Gold!", Toast.LENGTH_SHORT).show()
+                                            )
                                         }
-                                    )
-                                }
-                                
-                                // Theme 4: Retro Arcade
-                                Box(modifier = Modifier.weight(1f)) {
-                                    ThemePreviewCard(
-                                        name = "Retro Arcade (8-Bit)",
-                                        isSelected = activeThemeState == "RETRO_ARCADE",
-                                        previewContent = {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .background(Color(0xFF0B001A))
-                                                    .border(BorderStroke(1.dp, Color(0xFFDF00FF)), RoundedCornerShape(2.dp))
-                                                    .padding(6.dp)
-                                            ) {
-                                                Text("👾", fontSize = 8.sp, modifier = Modifier.align(Alignment.TopStart))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(width = 40.dp, height = 12.dp)
-                                                        .clip(RoundedCornerShape(0.dp))
-                                                        .background(Color(0xFFDF00FF))
-                                                        .border(BorderStroke(0.5.dp, Color(0xFF00F0FF)), RoundedCornerShape(0.dp))
-                                                        .align(Alignment.BottomCenter),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text("START", color = Color.Black, fontSize = 5.sp, fontWeight = FontWeight.Black)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            activeThemeState = "RETRO_ARCADE"
-                                            configManager.appTheme = "RETRO_ARCADE"
-                                            Toast.makeText(context, "Tema diatur ke Retro Arcade!", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
+                                    }
                                 }
                             }
                         }
 
-                        // Card: Pembaruan Aplikasi
+                        // Pembaruan Aplikasi States
                         val updateManager = remember { UpdateManager(context) }
                         var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
                         var isCheckingUpdate by remember { mutableStateOf(false) }
@@ -809,155 +713,203 @@ fun AdminScreen(
                         val currentVersionName = remember { updateManager.getCurrentVersionName() }
                         val currentVersionCode = remember { updateManager.getCurrentVersionCode() }
 
-                        AdminCard(title = "Pembaruan Aplikasi") {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text("Versi Sekarang", color = Color.Gray, fontSize = 11.sp)
-                                        Text("v$currentVersionName ($currentVersionCode)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    if (updateInfo != null) {
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text("Versi Terbaru", color = Color.Gray, fontSize = 11.sp)
-                                            Text("v${updateInfo!!.versionName} (${updateInfo!!.versionCode})", color = Color(0xFF52B788), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        val AppUpdateBlock: @Composable () -> Unit = {
+                            AdminCard(title = "Pembaruan Aplikasi") {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text("Versi Sekarang", color = Color.Gray, fontSize = 11.sp)
+                                            Text("v$currentVersionName ($currentVersionCode)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        if (updateInfo != null) {
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text("Versi Terbaru", color = Color.Gray, fontSize = 11.sp)
+                                                Text("v${updateInfo!!.versionName} (${updateInfo!!.versionCode})", color = Color(0xFF52B788), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            }
                                         }
                                     }
-                                }
-                                
-                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 4.dp))
-                                
-                                if (updateError != null) {
-                                    Text(updateError!!, color = Color(0xFFE63946), fontSize = 12.sp)
-                                }
-                                
-                                if (updateInfo == null) {
-                                    if (isCheckingUpdate) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(20.dp))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Memeriksa pembaruan...", color = Color.Gray, fontSize = 13.sp)
-                                        }
-                                    } else {
-                                        Button(
-                                            onClick = {
-                                                isCheckingUpdate = true
-                                                updateError = null
-                                                scope.launch {
-                                                    val info = updateManager.checkUpdate(backendUrl)
-                                                    isCheckingUpdate = false
-                                                    if (info != null) {
-                                                        updateInfo = info
-                                                    } else {
-                                                        updateError = "Gagal terhubung ke server update."
-                                                    }
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Text("PERIKSA PEMBARUAN", fontWeight = FontWeight.Bold)
-                                        }
+                                    
+                                    HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 4.dp))
+                                    
+                                    if (updateError != null) {
+                                        Text(updateError!!, color = Color(0xFFE63946), fontSize = 12.sp)
                                     }
-                                } else {
-                                    val hasNewVersion = updateInfo!!.versionCode > currentVersionCode
-                                    if (hasNewVersion) {
-                                        Text(
-                                            text = "Pembaruan tersedia! Catatan rilis:\n${updateInfo!!.changeLog}",
-                                            color = Color.White,
-                                            fontSize = 12.sp,
-                                            lineHeight = 16.sp
-                                        )
-                                        
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        
-                                        if (isDownloading) {
-                                            Column(
+                                    
+                                    if (updateInfo == null) {
+                                        if (isCheckingUpdate) {
+                                            Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                LinearProgressIndicator(
-                                                    progress = downloadProgress ?: 0f,
-                                                    color = Color(0xFFE63946),
-                                                    trackColor = Color(0xFF2A2A35),
-                                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
-                                                )
-                                                val pct = ((downloadProgress ?: 0f) * 100).toInt()
-                                                Text("Mengunduh update: $pct%", color = Color.Gray, fontSize = 11.sp)
+                                                CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(20.dp))
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Memeriksa pembaruan...", color = Color.Gray, fontSize = 13.sp)
                                             }
                                         } else {
                                             Button(
                                                 onClick = {
-                                                    if (!updateManager.canRequestPackageInstalls()) {
-                                                        isInstallPermissionNeeded = true
-                                                    } else {
-                                                        isDownloading = true
-                                                        updateError = null
-                                                        scope.launch {
-                                                            val sanitizedBase = if (backendUrl.endsWith("/")) backendUrl else "$backendUrl/"
-                                                            val fullApkUrl = if (updateInfo!!.apkUrl.startsWith("http")) {
-                                                                updateInfo!!.apkUrl
-                                                            } else {
-                                                                "$sanitizedBase${updateInfo!!.apkUrl}"
-                                                            }
-                                                            
-                                                            // Stop Lock Task Mode before updating
-                                                            context.findActivity()?.let { act ->
-                                                                try {
-                                                                    act.stopLockTask()
-                                                                } catch (e: Exception) {
-                                                                    e.printStackTrace()
-                                                                }
-                                                            }
-                                                            
-                                                            val file = updateManager.downloadApk(fullApkUrl) { progress ->
-                                                                downloadProgress = progress
-                                                            }
-                                                            isDownloading = false
-                                                            if (file != null) {
-                                                                updateManager.installApk(file)
-                                                            } else {
-                                                                updateError = "Gagal mengunduh APK. Silakan periksa koneksi."
-                                                            }
+                                                    isCheckingUpdate = true
+                                                    updateError = null
+                                                    scope.launch {
+                                                        val info = updateManager.checkUpdate(backendUrl)
+                                                        isCheckingUpdate = false
+                                                        if (info != null) {
+                                                            updateInfo = info
+                                                        } else {
+                                                            updateError = "Gagal terhubung ke server update."
                                                         }
                                                     }
                                                 },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF52B788)),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text("PERIKSA PEMBARUAN", fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     } else {
-                                        Text(
-                                            text = "Aplikasi Anda sudah versi terbaru.",
-                                            color = Color(0xFF52B788),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Button(
-                                            onClick = {
-                                                updateInfo = null
-                                                updateError = null
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Text("OK", fontWeight = FontWeight.Bold)
+                                        val hasNewVersion = updateInfo!!.versionCode > currentVersionCode
+                                        if (hasNewVersion) {
+                                            Text(
+                                                text = "Pembaruan tersedia! Catatan rilis:\n${updateInfo!!.changeLog}",
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                lineHeight = 16.sp
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            
+                                            if (isDownloading) {
+                                                Column(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    LinearProgressIndicator(
+                                                        progress = downloadProgress ?: 0f,
+                                                        color = Color(0xFFE63946),
+                                                        trackColor = Color(0xFF2A2A35),
+                                                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                                                    )
+                                                    val pct = ((downloadProgress ?: 0f) * 100).toInt()
+                                                    Text("Mengunduh update: $pct%", color = Color.Gray, fontSize = 11.sp)
+                                                }
+                                            } else {
+                                                Button(
+                                                    onClick = {
+                                                        if (!updateManager.canRequestPackageInstalls()) {
+                                                            isInstallPermissionNeeded = true
+                                                        } else {
+                                                            isDownloading = true
+                                                            updateError = null
+                                                            scope.launch {
+                                                                val sanitizedBase = if (backendUrl.endsWith("/")) backendUrl else "$backendUrl/"
+                                                                val fullApkUrl = if (updateInfo!!.apkUrl.startsWith("http")) {
+                                                                    updateInfo!!.apkUrl
+                                                                } else {
+                                                                    "$sanitizedBase${updateInfo!!.apkUrl}"
+                                                                }
+                                                                
+                                                                // Stop Lock Task Mode before updating
+                                                                context.findActivity()?.let { act ->
+                                                                    try {
+                                                                        act.stopLockTask()
+                                                                    } catch (e: Exception) {
+                                                                        e.printStackTrace()
+                                                                    }
+                                                                }
+                                                                
+                                                                val file = updateManager.downloadApk(fullApkUrl) { progress ->
+                                                                    downloadProgress = progress
+                                                                }
+                                                                isDownloading = false
+                                                                if (file != null) {
+                                                                    updateManager.installApk(file)
+                                                                } else {
+                                                                    updateError = "Gagal mengunduh APK. Silakan periksa koneksi."
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF52B788)),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = Color.White)
+                                                }
+                                            }
+                                        } else {
+                                            Text(
+                                                text = "Aplikasi Anda sudah versi terbaru.",
+                                                color = Color(0xFF52B788),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Button(
+                                                onClick = {
+                                                    updateInfo = null
+                                                    updateError = null
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text("OK", fontWeight = FontWeight.Bold)
+                                            }
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        // Responsive Column Layout
+                        if (isLandscape) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    QuickStatsBlock()
+                                    ServerConfigBlock()
+                                    SyncTemplatesBlock()
+                                    CaptureTimingsBlock()
+                                }
+                                
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    KioskModeBlock()
+                                    ThemeBlock()
+                                    AppUpdateBlock()
+                                }
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                QuickStatsBlock()
+                                ServerConfigBlock()
+                                SyncTemplatesBlock()
+                                CaptureTimingsBlock()
+                                KioskModeBlock()
+                                ThemeBlock()
+                                AppUpdateBlock()
                             }
                         }
 
@@ -1032,215 +984,67 @@ fun AdminScreen(
                             }
                         }
                     }
-
                     // TAB 2: Printer Config
-                    2 -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Card 1: Printer Struk (Thermal / Kasir)
-                        AdminCard(title = "Printer Struk (Thermal)") {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Aktifkan Printer Struk", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                    Text("Gunakan printer thermal untuk mencetak struk jepretan", color = Color.Gray, fontSize = 11.sp)
-                                }
-                                Switch(
-                                    checked = isThermalEnabled,
-                                    onCheckedChange = { checked ->
-                                        val newType = when {
-                                            checked && isColorEnabled -> "AUTO"
-                                            checked -> "THERMAL"
-                                            isColorEnabled -> "COLOR"
-                                            else -> "NONE"
-                                        }
-                                        printerType = newType
-                                        configManager.printerType = newType
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = Color(0xFFE63946),
-                                        uncheckedThumbColor = Color.Gray,
-                                        uncheckedTrackColor = Color(0xFF2A2A35)
-                                    )
-                                )
+                    2 -> {
+                        // Dropdown expanded states
+                        var isProtocolDropdownExpanded by remember { mutableStateOf(false) }
+                        val protocolList = listOf(
+                            Pair("TSPL", "TSPL (Kertas Label / Stiker)"),
+                            Pair("ESC_POS", "ESC/POS (Kertas Struk / Kasir)")
+                        )
+                        val selectedProtocolText = protocolList.firstOrNull { it.first == thermalMode }?.second ?: thermalMode
+
+                        var isPaperWidthDropdownExpanded by remember { mutableStateOf(false) }
+                        val paperWidthList = listOf(
+                            Pair(58, "58 mm (Struk Kasir Kecil)"),
+                            Pair(80, "80 mm (Struk Kasir Lebar / Stiker)")
+                        )
+                        val selectedPaperWidthText = paperWidthList.firstOrNull { it.first == printerPaperWidth }?.second ?: "$printerPaperWidth mm"
+
+                        var isDensityDropdownExpanded by remember { mutableStateOf(false) }
+                        val densityList = listOf(1, 2, 3, 4, 5)
+                        val selectedDensityText = "Level $printDensity"
+
+                        val printerOptions = remember(usbDevices, bluetoothDevices) {
+                            val list = mutableListOf<Pair<String, Pair<String, String>>>() // Pair(address, Pair(displayName, type))
+                            usbDevices.forEach { device ->
+                                val addr = "USB:${device.vendorId},${device.productId}"
+                                val name = device.productName ?: "Printer USB"
+                                list.add(Pair(addr, Pair("$name (VID:${device.vendorId} PID:${device.productId})", "USB")))
                             }
+                            bluetoothDevices.forEach { (name, mac) ->
+                                val addr = "BT:$mac"
+                                list.add(Pair(addr, Pair("$name ($mac)", "BT")))
+                            }
+                            list
+                        }
 
-                            if (isThermalEnabled) {
-                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
-                                
-                                Text("Pilih Protokol Printer Thermal:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    // Option 1: TSPL
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (thermalMode == "TSPL") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                            .border(1.dp, if (thermalMode == "TSPL") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
-                                            .clickable { thermalMode = "TSPL"; configManager.thermalMode = "TSPL" }
-                                            .padding(12.dp)
-                                    ) {
-                                        RadioButton(
-                                            selected = thermalMode == "TSPL",
-                                            onClick = { thermalMode = "TSPL"; configManager.thermalMode = "TSPL" },
-                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text("TSPL", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            Text("Untuk Kertas Label / Stiker", color = Color.Gray, fontSize = 10.sp)
-                                        }
-                                    }
+                        var isPrinterPortDropdownExpanded by remember { mutableStateOf(false) }
+                        val selectedPrinterText = printerOptions.firstOrNull { it.first == printerAddress }?.second?.first ?: printerAddress.ifEmpty { "Pilih Port Printer..." }
 
-                                    // Option 2: ESC/POS
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (thermalMode == "ESC_POS") Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                            .border(1.dp, if (thermalMode == "ESC_POS") Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
-                                            .clickable { thermalMode = "ESC_POS"; configManager.thermalMode = "ESC_POS" }
-                                            .padding(12.dp)
-                                    ) {
-                                        RadioButton(
-                                            selected = thermalMode == "ESC_POS",
-                                            onClick = { thermalMode = "ESC_POS"; configManager.thermalMode = "ESC_POS" },
-                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text("ESC/POS", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            Text("Untuk Kertas Struk / Kasir", color = Color.Gray, fontSize = 10.sp)
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text("Ukuran Lebar Kertas:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    // Option 58mm
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (printerPaperWidth == 58) Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                            .border(1.dp, if (printerPaperWidth == 58) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
-                                            .clickable { 
-                                                printerPaperWidth = 58
-                                                configManager.printerPaperWidth = 58 
-                                            }
-                                            .padding(12.dp)
-                                    ) {
-                                        RadioButton(
-                                            selected = printerPaperWidth == 58,
-                                            onClick = { 
-                                                printerPaperWidth = 58
-                                                configManager.printerPaperWidth = 58 
-                                            },
-                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text("58 mm", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            Text("Struk Kasir Kecil", color = Color.Gray, fontSize = 10.sp)
-                                        }
-                                    }
-
-                                    // Option 80mm
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (printerPaperWidth == 80) Color(0xFFE63946).copy(alpha = 0.15f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                            .border(1.dp, if (printerPaperWidth == 80) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
-                                            .clickable { 
-                                                printerPaperWidth = 80
-                                                configManager.printerPaperWidth = 80 
-                                            }
-                                            .padding(12.dp)
-                                    ) {
-                                        RadioButton(
-                                            selected = printerPaperWidth == 80,
-                                            onClick = { 
-                                                printerPaperWidth = 80
-                                                configManager.printerPaperWidth = 80 
-                                            },
-                                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text("80 mm", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            Text("Struk Kasir Lebar / Stiker", color = Color.Gray, fontSize = 10.sp)
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text("Kepekatan Cetak (Density): $printDensity", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    (1..5).forEach { densityVal ->
-                                        val isSelected = printDensity == densityVal
-                                        Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(45.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35))
-                                                .border(1.dp, if (isSelected) Color(0xFFE63946) else Color(0xFF3F3F4F), RoundedCornerShape(8.dp))
-                                                .clickable {
-                                                    printDensity = densityVal
-                                                    configManager.printDensity = densityVal
-                                                }
-                                        ) {
-                                            Text(
-                                                text = densityVal.toString(),
-                                                color = if (isSelected) Color.White else Color.Gray,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
+                        // Define sub-blocks
+                        val ThermalSettingsCard: @Composable () -> Unit = {
+                            AdminCard(title = "Pengaturan Printer Struk (Thermal)") {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("Potong Kertas Otomatis (Auto-Cut)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                        Text("Memotong kertas struk secara otomatis setelah selesai mencetak", color = Color.Gray, fontSize = 12.sp)
+                                        Text("Aktifkan Printer Struk", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                        Text("Gunakan printer thermal untuk mencetak struk jepretan", color = Color.Gray, fontSize = 11.sp)
                                     }
                                     Switch(
-                                        checked = printerAutoCut,
-                                        onCheckedChange = {
-                                            printerAutoCut = it
-                                            configManager.printerAutoCut = it
+                                        checked = isThermalEnabled,
+                                        onCheckedChange = { checked ->
+                                            val newType = when {
+                                                checked && isColorEnabled -> "AUTO"
+                                                checked -> "THERMAL"
+                                                isColorEnabled -> "COLOR"
+                                                else -> "NONE"
+                                            }
+                                            printerType = newType
+                                            configManager.printerType = newType
                                         },
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = Color.White,
@@ -1251,152 +1055,327 @@ fun AdminScreen(
                                     )
                                 }
 
-                                // Card: Riwayat & Prioritas Printer (Auto-Connect)
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-                                    border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                    shape = RoundedCornerShape(16.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                if (isThermalEnabled) {
+                                    HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 4.dp))
+
+                                    // Protocol Dropdown Row
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Riwayat & Prioritas Printer (Auto-Connect)", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                        Text(
-                                            text = "Aplikasi akan otomatis mendeteksi dan menggunakan printer teratas yang berstatus TERSEDIA saat dibuka (startup) atau sebagai cadangan jika printer utama offline.",
-                                            color = Color.Gray,
-                                            fontSize = 11.sp,
-                                            lineHeight = 15.sp
-                                        )
-                                        
-                                        if (historyListState.isEmpty()) {
-                                            Text(
-                                                text = "Belum ada riwayat printer terhubung. Pilih printer di bawah untuk menambahkannya.",
-                                                color = Color.Gray,
-                                                fontSize = 12.sp,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                                            )
-                                        } else {
-                                            historyListState.forEachIndexed { index, printer ->
-                                                val isAvailable = remember(usbDevices, bluetoothDevices) {
-                                                    if (printer.type == "USB") {
-                                                        val parts = printer.address.substring(4).split(",")
-                                                        if (parts.size == 2) {
-                                                            val vid = parts[0].toIntOrNull() ?: 0
-                                                            val pid = parts[1].toIntOrNull() ?: 0
-                                                            usbDevices.any { it.vendorId == vid && it.productId == pid }
-                                                        } else false
-                                                    } else {
-                                                        val mac = printer.address.substring(3)
-                                                        bluetoothDevices.any { it.second.equals(mac, ignoreCase = true) }
-                                                    }
-                                                }
-                                                
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(if (printerAddress == printer.address) Color(0xFFE63946).copy(alpha = 0.08f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                                        .border(1.dp, if (printerAddress == printer.address) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
-                                                        .padding(12.dp)
+                                        Text("Protokol:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedButton(
+                                                onClick = { isProtocolDropdownExpanded = true },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                Box(
-                                                                    contentAlignment = Alignment.Center,
-                                                                    modifier = Modifier
-                                                                        .size(20.dp)
-                                                                        .clip(CircleShape)
-                                                                        .background(Color(0xFFE63946))
-                                                                    ) {
-                                                                        Text(
-                                                                            text = (index + 1).toString(),
-                                                                            color = Color.White,
-                                                                            fontSize = 10.sp,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                    }
-                                                                Spacer(modifier = Modifier.width(8.dp))
-                                                                Text(printer.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                            }
-                                                            Spacer(modifier = Modifier.height(4.dp))
-                                                            Text("${printer.type} | ${printer.address}", color = Color.Gray, fontSize = 10.sp)
-                                                            Spacer(modifier = Modifier.height(4.dp))
-                                                            
-                                                            // Availability label
+                                                    Text(text = selectedProtocolText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
+                                                }
+                                            }
+                                            DropdownMenu(
+                                                expanded = isProtocolDropdownExpanded,
+                                                onDismissRequest = { isProtocolDropdownExpanded = false },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF1E1E24))
+                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            ) {
+                                                protocolList.forEach { (mode, label) ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(label, color = Color.White) },
+                                                        onClick = {
+                                                            thermalMode = mode
+                                                            configManager.thermalMode = mode
+                                                            isProtocolDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Paper Width Dropdown Row
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Lebar Kertas:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedButton(
+                                                onClick = { isPaperWidthDropdownExpanded = true },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(text = selectedPaperWidthText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
+                                                }
+                                            }
+                                            DropdownMenu(
+                                                expanded = isPaperWidthDropdownExpanded,
+                                                onDismissRequest = { isPaperWidthDropdownExpanded = false },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF1E1E24))
+                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            ) {
+                                                paperWidthList.forEach { (width, label) ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(label, color = Color.White) },
+                                                        onClick = {
+                                                            printerPaperWidth = width
+                                                            configManager.printerPaperWidth = width
+                                                            isPaperWidthDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Density Dropdown Row
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Kepekatan:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedButton(
+                                                onClick = { isDensityDropdownExpanded = true },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(text = selectedDensityText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
+                                                }
+                                            }
+                                            DropdownMenu(
+                                                expanded = isDensityDropdownExpanded,
+                                                onDismissRequest = { isDensityDropdownExpanded = false },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF1E1E24))
+                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            ) {
+                                                densityList.forEach { valDensity ->
+                                                    DropdownMenuItem(
+                                                        text = { Text("Level $valDensity", color = Color.White) },
+                                                        onClick = {
+                                                            printDensity = valDensity
+                                                            configManager.printDensity = valDensity
+                                                            isDensityDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Potong Kertas Otomatis (Auto-Cut)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text("Memotong kertas struk secara otomatis setelah selesai mencetak", color = Color.Gray, fontSize = 11.sp)
+                                        }
+                                        Switch(
+                                            checked = printerAutoCut,
+                                            onCheckedChange = {
+                                                printerAutoCut = it
+                                                configManager.printerAutoCut = it
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = Color(0xFFE63946),
+                                                uncheckedThumbColor = Color.Gray,
+                                                uncheckedTrackColor = Color(0xFF2A2A35)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        val PrinterHistoryCard: @Composable () -> Unit = {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text("Riwayat & Prioritas Printer (Auto-Connect)", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "Aplikasi akan otomatis mendeteksi dan menggunakan printer teratas yang berstatus TERSEDIA saat dibuka (startup) atau sebagai cadangan jika printer utama offline.",
+                                        color = Color.Gray,
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp
+                                    )
+                                    
+                                    if (historyListState.isEmpty()) {
+                                        Text(
+                                            text = "Belum ada riwayat printer terhubung. Pilih printer di bawah untuk menambahkannya.",
+                                            color = Color.Gray,
+                                            fontSize = 12.sp,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                                        )
+                                    } else {
+                                        historyListState.forEachIndexed { index, printer ->
+                                            val isAvailable = remember(usbDevices, bluetoothDevices) {
+                                                if (printer.type == "USB") {
+                                                    val parts = printer.address.substring(4).split(",")
+                                                    if (parts.size == 2) {
+                                                        val vid = parts[0].toIntOrNull() ?: 0
+                                                        val pid = parts[1].toIntOrNull() ?: 0
+                                                        usbDevices.any { it.vendorId == vid && it.productId == pid }
+                                                    } else false
+                                                } else {
+                                                    val mac = printer.address.substring(3)
+                                                    bluetoothDevices.any { it.second.equals(mac, ignoreCase = true) }
+                                                }
+                                            }
+                                            
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(if (printerAddress == printer.address) Color(0xFFE63946).copy(alpha = 0.08f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                                    .border(1.dp, if (printerAddress == printer.address) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                    .padding(12.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                                             Box(
+                                                                contentAlignment = Alignment.Center,
                                                                 modifier = Modifier
-                                                                    .clip(RoundedCornerShape(4.dp))
-                                                                    .background(if (isAvailable) Color(0xFF52B788).copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.15f))
-                                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                    .size(20.dp)
+                                                                    .clip(CircleShape)
+                                                                    .background(Color(0xFFE63946))
                                                             ) {
                                                                 Text(
-                                                                    text = if (isAvailable) "TERSEDIA" else "OFFLINE",
-                                                                    color = if (isAvailable) Color(0xFF52B788) else Color.Gray,
-                                                                    fontSize = 8.sp,
+                                                                    text = (index + 1).toString(),
+                                                                    color = Color.White,
+                                                                    fontSize = 10.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
                                                             }
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text(printer.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                                         }
+                                                        Spacer(modifier = Modifier.height(4.dp))
+                                                        Text("${printer.type} | ${printer.address}", color = Color.Gray, fontSize = 10.sp)
+                                                        Spacer(modifier = Modifier.height(4.dp))
                                                         
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        // Availability label
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(4.dp))
+                                                                .background(if (isAvailable) Color(0xFF52B788).copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.15f))
+                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
                                                         ) {
-                                                            // Move Up
-                                                            if (index > 0) {
-                                                                IconButton(
-                                                                    onClick = {
-                                                                        val list = historyListState.toMutableList()
-                                                                        val temp = list[index]
-                                                                        list[index] = list[index - 1]
-                                                                        list[index - 1] = temp
-                                                                        configManager.savePrinterHistory(list)
-                                                                        historyListState = list
-                                                                    },
-                                                                    modifier = Modifier.size(28.dp)
-                                                                ) {
-                                                                    Text("▲", color = Color.White, fontSize = 10.sp)
-                                                                }
-                                                            }
-                                                            
-                                                            // Move Down
-                                                            if (index < historyListState.size - 1) {
-                                                                IconButton(
-                                                                    onClick = {
-                                                                        val list = historyListState.toMutableList()
-                                                                        val temp = list[index]
-                                                                        list[index] = list[index + 1]
-                                                                        list[index + 1] = temp
-                                                                        configManager.savePrinterHistory(list)
-                                                                        historyListState = list
-                                                                    },
-                                                                    modifier = Modifier.size(28.dp)
-                                                                ) {
-                                                                    Text("▼", color = Color.White, fontSize = 10.sp)
-                                                                }
-                                                            }
-                                                            
-                                                            // Delete
+                                                            Text(
+                                                                text = if (isAvailable) "TERSEDIA" else "OFFLINE",
+                                                                color = if (isAvailable) Color(0xFF52B788) else Color.Gray,
+                                                                fontSize = 8.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                    }
+                                                    
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        // Move Up
+                                                        if (index > 0) {
                                                             IconButton(
                                                                 onClick = {
                                                                     val list = historyListState.toMutableList()
-                                                                    list.removeAt(index)
+                                                                    val temp = list[index]
+                                                                    list[index] = list[index - 1]
+                                                                    list[index - 1] = temp
                                                                     configManager.savePrinterHistory(list)
                                                                     historyListState = list
                                                                 },
                                                                 modifier = Modifier.size(28.dp)
                                                             ) {
-                                                                Text("❌", color = Color(0xFFE63946), fontSize = 10.sp)
+                                                                Text("▲", color = Color.White, fontSize = 10.sp)
                                                             }
+                                                        }
+                                                        
+                                                        // Move Down
+                                                        if (index < historyListState.size - 1) {
+                                                            IconButton(
+                                                                onClick = {
+                                                                    val list = historyListState.toMutableList()
+                                                                    val temp = list[index]
+                                                                    list[index] = list[index + 1]
+                                                                    list[index + 1] = temp
+                                                                    configManager.savePrinterHistory(list)
+                                                                    historyListState = list
+                                                                },
+                                                                modifier = Modifier.size(28.dp)
+                                                            ) {
+                                                                Text("▼", color = Color.White, fontSize = 10.sp)
+                                                            }
+                                                        }
+                                                        
+                                                        // Delete
+                                                        IconButton(
+                                                            onClick = {
+                                                                val list = historyListState.toMutableList()
+                                                                list.removeAt(index)
+                                                                configManager.savePrinterHistory(list)
+                                                                historyListState = list
+                                                            },
+                                                            modifier = Modifier.size(28.dp)
+                                                        ) {
+                                                            Text("❌", color = Color(0xFFE63946), fontSize = 10.sp)
                                                         }
                                                     }
                                                 }
@@ -1404,8 +1383,11 @@ fun AdminScreen(
                                         }
                                     }
                                 }
+                            }
+                        }
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                        val ThermalConnectionCard: @Composable () -> Unit = {
+                            AdminCard(title = "Koneksi Printer Struk") {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1426,65 +1408,64 @@ fun AdminScreen(
                                     }
                                 }
                                 
-                                // USB list
-                                if (usbDevices.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Koneksi USB OTG:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                                    usbDevices.forEach { device ->
-                                        val deviceAddr = "USB:${device.vendorId},${device.productId}"
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedButton(
+                                        onClick = { isPrinterPortDropdownExpanded = true },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                    ) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            val deviceName = device.productName ?: "Printer USB"
-                                            Text("$deviceName (VID:${device.vendorId} PID:${device.productId})", color = Color.White, fontSize = 13.sp)
-                                            RadioButton(
-                                                selected = printerAddress == deviceAddr,
-                                                onClick = {
-                                                    printerAddress = deviceAddr
-                                                    configManager.printerAddress = deviceAddr
-                                                    configManager.addPrinterToHistory(deviceAddr, deviceName, "USB")
-                                                    historyListState = configManager.getPrinterHistory()
-                                                },
-                                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
+                                            Text(text = selectedPrinterText, color = Color.White, fontSize = 13.sp)
+                                            Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
+                                        }
+                                    }
+                                    DropdownMenu(
+                                        expanded = isPrinterPortDropdownExpanded,
+                                        onDismissRequest = { isPrinterPortDropdownExpanded = false },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color(0xFF1E1E24))
+                                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                    ) {
+                                        if (printerOptions.isEmpty()) {
+                                            DropdownMenuItem(
+                                                text = { Text("Tidak ada printer terdeteksi", color = Color.Gray) },
+                                                onClick = { isPrinterPortDropdownExpanded = false }
                                             )
+                                        } else {
+                                            printerOptions.forEach { (addr, info) ->
+                                                val (dispName, type) = info
+                                                DropdownMenuItem(
+                                                    text = { Text("[$type] $dispName", color = Color.White) },
+                                                    onClick = {
+                                                        printerAddress = addr
+                                                        configManager.printerAddress = addr
+                                                        configManager.addPrinterToHistory(addr, dispName.split(" (")[0], type)
+                                                        historyListState = configManager.getPrinterHistory()
+                                                        isPrinterPortDropdownExpanded = false
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
 
-                                // Bluetooth list
-                                if (bluetoothDevices.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text("Koneksi Bluetooth Paired:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                                    bluetoothDevices.forEach { (name, mac) ->
-                                        val deviceAddr = "BT:$mac"
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text("$name ($mac)", color = Color.White, fontSize = 13.sp)
-                                            RadioButton(
-                                                selected = printerAddress == deviceAddr,
-                                                onClick = {
-                                                    printerAddress = deviceAddr
-                                                    configManager.printerAddress = deviceAddr
-                                                    configManager.addPrinterToHistory(deviceAddr, name, "BT")
-                                                    historyListState = configManager.getPrinterHistory()
-                                                },
-                                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
-                                            )
-                                        }
-                                    }
-                                }
-                                
-                                if (usbDevices.isEmpty() && bluetoothDevices.isEmpty()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                if (printerOptions.isEmpty() && usbDevices.isEmpty() && bluetoothDevices.isEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text("Tidak ada printer terdeteksi. Hubungkan printer struk menggunakan kabel USB OTG atau koneksi Bluetooth.", color = Color.Gray, fontSize = 12.sp)
                                 }
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
                                 if (isTestingPrint) {
                                     Row(
                                         horizontalArrangement = Arrangement.Center,
@@ -1511,79 +1492,122 @@ fun AdminScreen(
                             }
                         }
 
-                        // Card 2: Printer Foto Warna (Sistem)
-                        AdminCard(title = "Printer Foto Warna (Sistem)") {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Aktifkan Printer Warna", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                    Text("Gunakan printer warna sistem Android untuk mencetak hasil foto", color = Color.Gray, fontSize = 11.sp)
-                                }
-                                Switch(
-                                    checked = isColorEnabled,
-                                    onCheckedChange = { checked ->
-                                        val newType = when {
-                                            isThermalEnabled && checked -> "AUTO"
-                                            isThermalEnabled -> "THERMAL"
-                                            checked -> "COLOR"
-                                            else -> "NONE"
-                                        }
-                                        printerType = newType
-                                        configManager.printerType = newType
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = Color(0xFFE63946),
-                                        uncheckedThumbColor = Color.Gray,
-                                        uncheckedTrackColor = Color(0xFF2A2A35)
-                                    )
-                                )
-                            }
-
-                            if (isColorEnabled) {
-                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
-                                
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A35).copy(alpha = 0.4f)),
-                                    border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth()
+                        val ColorPrinterCard: @Composable () -> Unit = {
+                            AdminCard(title = "Printer Foto Warna (Sistem)") {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text("Panduan Koneksi Printer Warna:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                        Text("1. Hubungkan printer warna Anda ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Color.Gray, fontSize = 12.sp)
-                                        Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda.", color = Color.Gray, fontSize = 12.sp)
-                                        Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Silakan pilih printer Anda di jendela tersebut.", color = Color.Gray, fontSize = 12.sp)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Aktifkan Printer Warna", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                        Text("Gunakan printer warna sistem Android untuk mencetak hasil foto", color = Color.Gray, fontSize = 11.sp)
                                     }
+                                    Switch(
+                                        checked = isColorEnabled,
+                                        onCheckedChange = { checked ->
+                                            val newType = when {
+                                                isThermalEnabled && checked -> "AUTO"
+                                                isThermalEnabled -> "THERMAL"
+                                                checked -> "COLOR"
+                                                else -> "NONE"
+                                            }
+                                            printerType = newType
+                                            configManager.printerType = newType
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFFE63946),
+                                            uncheckedThumbColor = Color.Gray,
+                                            uncheckedTrackColor = Color(0xFF2A2A35)
+                                        )
+                                    )
                                 }
 
-                                Spacer(modifier = Modifier.height(16.dp))
-                                if (isTestingPrint) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.Center,
+                                if (isColorEnabled) {
+                                    HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
+                                    
+                                    Card(
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A35).copy(alpha = 0.4f)),
+                                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                        shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        CircularProgressIndicator(color = Color(0xFFE63946))
+                                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text("Panduan Koneksi Printer Warna:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text("1. Hubungkan printer warna Anda ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Color.Gray, fontSize = 12.sp)
+                                            Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda.", color = Color.Gray, fontSize = 12.sp)
+                                            Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Silakan pilih printer Anda di jendela tersebut.", color = Color.Gray, fontSize = 12.sp)
+                                        }
                                     }
-                                } else {
-                                    Button(
-                                        onClick = {
-                                            isTestingPrint = true
-                                            scope.launch {
-                                                val success = testPrintJob(context, configManager, "COLOR")
-                                                isTestingPrint = false
-                                                Toast.makeText(context, success, Toast.LENGTH_LONG).show()
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = Color.White)
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    if (isTestingPrint) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            CircularProgressIndicator(color = Color(0xFFE63946))
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                isTestingPrint = true
+                                                scope.launch {
+                                                    val success = testPrintJob(context, configManager, "COLOR")
+                                                    isTestingPrint = false
+                                                    Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = Color.White)
+                                        }
                                     }
                                 }
+                            }
+                        }
+
+                        // Responsive double-column or single-column layout for Tab 2
+                        if (isLandscape && isThermalEnabled) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    ThermalSettingsCard()
+                                    ColorPrinterCard()
+                                }
+                                
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    PrinterHistoryCard()
+                                    ThermalConnectionCard()
+                                }
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                ThermalSettingsCard()
+                                if (isThermalEnabled) {
+                                    PrinterHistoryCard()
+                                    ThermalConnectionCard()
+                                }
+                                ColorPrinterCard()
                             }
                         }
                     }

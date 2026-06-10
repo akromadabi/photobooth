@@ -274,7 +274,6 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(AppTheme.colors.background)
-            .padding(24.dp)
     ) {
         val activeTheme = AppTheme.type
         val onLogoClick = {
@@ -914,7 +913,7 @@ fun ModernHomeLayout(
         Column(
             modifier = Modifier
                 .statusBarsPadding()
-                .padding(top = 16.dp, start = if (isLandscape) 120.dp else 0.dp)
+                .padding(top = 40.dp, start = if (isLandscape) 144.dp else 24.dp)
                 .align(Alignment.TopStart)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -942,7 +941,7 @@ fun ModernHomeLayout(
             }
         }
 
-        // Elongated Tilted Scrolling Photo Strip in the Top Right Corner
+        // Elongated Tilted Scrolling Photo Strip in the Top Right Corner (Aligns directly to screen edges)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -970,7 +969,7 @@ fun ModernHomeLayout(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.Center)
-                .padding(bottom = 60.dp, start = if (isLandscape) 120.dp else 0.dp),
+                .padding(bottom = 60.dp, start = if (isLandscape) 144.dp else 24.dp),
             verticalArrangement = Arrangement.Center
         ) {
             Text(
@@ -992,7 +991,7 @@ fun ModernHomeLayout(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp, start = if (isLandscape) 120.dp else 0.dp, end = if (isLandscape) 120.dp else 0.dp),
+                .padding(bottom = 40.dp, start = if (isLandscape) 144.dp else 24.dp, end = if (isLandscape) 144.dp else 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -1076,7 +1075,7 @@ fun ModernHomeLayout(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(bottom = 120.dp, start = if (isLandscape) 120.dp else 24.dp)
+                    .padding(bottom = 144.dp, start = if (isLandscape) 144.dp else 48.dp)
                     .size(44.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.15f))
@@ -1103,67 +1102,217 @@ fun CutePastelHomeLayout(
 ) {
     val themeColors = AppTheme.colors
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(themeColors.background)
-            .border(BorderStroke(4.dp, themeColors.border), RoundedCornerShape(16.dp))
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Cartoon ornaments
-        Text(
-            text = "★",
-            color = themeColors.accentColor,
-            fontSize = 32.sp,
+        // Inner card with border & padding
+        Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = 20.dp, y = 80.dp)
-        )
-        Text(
-            text = "💛",
-            fontSize = 28.sp,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = 40.dp, y = (-160).dp)
-        )
-        Text(
-            text = "✨",
-            fontSize = 24.sp,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(x = 60.dp, y = (-20).dp)
-        )
-
-        // Top Left Logo
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
-                .align(Alignment.TopStart)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onLogoClick
-                )
+                .fillMaxSize()
+                .padding(24.dp)
+                .background(themeColors.background, RoundedCornerShape(16.dp))
+                .border(BorderStroke(4.dp, themeColors.border), RoundedCornerShape(16.dp))
+                .padding(16.dp)
         ) {
-            Box(
+            // Cartoon ornaments
+            Text(
+                text = "★",
+                color = themeColors.accentColor,
+                fontSize = 32.sp,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(themeColors.buttonBackground)
-                    .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .align(Alignment.TopStart)
+                    .offset(x = 20.dp, y = 80.dp)
+            )
+            Text(
+                text = "💛",
+                fontSize = 28.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 40.dp, y = (-160).dp)
+            )
+            Text(
+                text = "✨",
+                fontSize = 24.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = 60.dp, y = (-20).dp)
+            )
+
+            // Top Left Logo
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
+                    .align(Alignment.TopStart)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onLogoClick
+                    )
             ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(themeColors.buttonBackground)
+                        .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = resolvedEventName ?: "Jeprat Jepret",
+                        color = themeColors.buttonContent,
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Center Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
+                    .align(Alignment.CenterStart)
+                    .padding(start = if (isLandscape) 80.dp else 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(Color.White, RoundedCornerShape(16.dp))
+                        .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Ayo foto bareng! 📸✨",
+                        color = themeColors.onBackground,
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .size(if (isLandscape) 180.dp else 150.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(themeColors.cardBackground)
+                        .border(BorderStroke(4.dp, themeColors.border), RoundedCornerShape(24.dp))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.TopEnd)
+                            .clip(CircleShape)
+                            .background(themeColors.accentColor)
+                            .border(BorderStroke(3.dp, themeColors.border), CircleShape)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(0.6f)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .border(BorderStroke(4.dp, themeColors.border), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(0.5f)
+                                .clip(CircleShape)
+                                .background(themeColors.border)
+                        )
+                    }
+                }
+
                 Text(
-                    text = resolvedEventName ?: "Jeprat Jepret",
-                    color = themeColors.buttonContent,
-                    fontFamily = themeColors.fontFamily,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Setiap Momen\nSangat Istimewa!",
+                    color = themeColors.onBackground,
+                    fontSize = if (isLandscape) 38.sp else 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = if (isLandscape) 46.sp else 38.sp,
+                    fontFamily = themeColors.fontFamily
                 )
+            }
+
+            // Bottom CTA
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Button(
+                    onClick = onStartClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = themeColors.buttonBackground,
+                        contentColor = themeColors.buttonContent
+                    ),
+                    shape = RoundedCornerShape(50.dp),
+                    border = BorderStroke(4.dp, themeColors.border),
+                    contentPadding = PaddingValues(horizontal = 36.dp, vertical = 16.dp),
+                    modifier = Modifier
+                        .height(64.dp)
+                        .width(240.dp)
+                        .graphicsLayer {
+                            scaleX = buttonScale
+                            scaleY = buttonScale
+                        }
+                ) {
+                    Text(
+                        text = "TAP TO START ➔",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = themeColors.fontFamily
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = "Ambil foto seru bersama teman-teman!\nHasil cetak stiker bisa langsung ditempel.",
+                        color = themeColors.onBackground.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        fontFamily = themeColors.fontFamily,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Text(
+                        text = "Jeprat-Jepret Kiosk",
+                        color = themeColors.onBackground,
+                        fontSize = 16.sp,
+                        fontFamily = themeColors.fontFamily,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            if (isMultiEventMode) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(themeColors.accentColor)
+                        .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
+                        .clickable { onTicketClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🎟️", fontSize = 20.sp)
+                }
             }
         }
 
-        // Tilted Photo Strip
+        // Tilted Photo Strip (Overlayed outside the bordered inner card, aligns directly to screen bounds)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -1196,150 +1345,6 @@ fun CutePastelHomeLayout(
                     .border(BorderStroke(2.dp, themeColors.border))
             )
         }
-
-        // Center Content
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
-                .align(Alignment.CenterStart)
-                .padding(start = if (isLandscape) 80.dp else 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(Color.White, RoundedCornerShape(16.dp))
-                    .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = "Ayo foto bareng! 📸✨",
-                    color = themeColors.onBackground,
-                    fontFamily = themeColors.fontFamily,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            
-            Box(
-                modifier = Modifier
-                    .size(if (isLandscape) 180.dp else 150.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(themeColors.cardBackground)
-                    .border(BorderStroke(4.dp, themeColors.border), RoundedCornerShape(24.dp))
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .align(Alignment.TopEnd)
-                        .clip(CircleShape)
-                        .background(themeColors.accentColor)
-                        .border(BorderStroke(3.dp, themeColors.border), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(0.6f)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .border(BorderStroke(4.dp, themeColors.border), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(0.5f)
-                            .clip(CircleShape)
-                            .background(themeColors.border)
-                    )
-                }
-            }
-
-            Text(
-                text = "Setiap Momen\nSangat Istimewa!",
-                color = themeColors.onBackground,
-                fontSize = if (isLandscape) 38.sp else 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                lineHeight = if (isLandscape) 46.sp else 38.sp,
-                fontFamily = themeColors.fontFamily
-            )
-        }
-
-        // Bottom CTA
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Button(
-                onClick = onStartClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = themeColors.buttonBackground,
-                    contentColor = themeColors.buttonContent
-                ),
-                shape = RoundedCornerShape(50.dp),
-                border = BorderStroke(4.dp, themeColors.border),
-                contentPadding = PaddingValues(horizontal = 36.dp, vertical = 16.dp),
-                modifier = Modifier
-                    .height(64.dp)
-                    .width(240.dp)
-                    .graphicsLayer {
-                        scaleX = buttonScale
-                        scaleY = buttonScale
-                    }
-            ) {
-                Text(
-                    text = "TAP TO START ➔",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = themeColors.fontFamily
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = "Ambil foto seru bersama teman-teman!\nHasil cetak stiker bisa langsung ditempel.",
-                    color = themeColors.onBackground.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
-                    fontFamily = themeColors.fontFamily,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                Text(
-                    text = "Jeprat-Jepret Kiosk",
-                    color = themeColors.onBackground,
-                    fontSize = 16.sp,
-                    fontFamily = themeColors.fontFamily,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        if (isMultiEventMode) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(themeColors.accentColor)
-                    .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
-                    .clickable { onTicketClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🎟️", fontSize = 20.sp)
-            }
-        }
     }
 }
 
@@ -1355,82 +1360,199 @@ fun LuxuryGoldHomeLayout(
 ) {
     val themeColors = AppTheme.colors
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(themeColors.background)
-            .padding(12.dp)
-            .border(BorderStroke(1.dp, themeColors.accentColor), RoundedCornerShape(8.dp))
-            .padding(4.dp)
-            .border(BorderStroke(2.dp, themeColors.accentColor), RoundedCornerShape(6.dp))
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Luxury sparkles
-        Text(
-            text = "✦",
-            color = themeColors.accentColor.copy(alpha = 0.5f),
-            fontSize = 24.sp,
+        // Inner card with double borders & padding
+        Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = 40.dp, y = 100.dp)
-        )
-        Text(
-            text = "✦",
-            color = themeColors.accentColor.copy(alpha = 0.4f),
-            fontSize = 18.sp,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = 60.dp, y = (-200).dp)
-        )
-        Text(
-            text = "✦",
-            color = themeColors.accentColor.copy(alpha = 0.6f),
-            fontSize = 22.sp,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .offset(x = (-300).dp, y = 80.dp)
-        )
-
-        // Top Monogram Logo
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
-                .align(Alignment.TopStart)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onLogoClick
-                )
+                .fillMaxSize()
+                .padding(24.dp)
+                .background(themeColors.background, RoundedCornerShape(8.dp))
+                .border(BorderStroke(1.dp, themeColors.accentColor), RoundedCornerShape(8.dp))
+                .padding(4.dp)
+                .border(BorderStroke(2.dp, themeColors.accentColor), RoundedCornerShape(6.dp))
+                .padding(16.dp)
         ) {
-            Box(
+            // Luxury sparkles
+            Text(
+                text = "✦",
+                color = themeColors.accentColor.copy(alpha = 0.5f),
+                fontSize = 24.sp,
                 modifier = Modifier
-                    .size(64.dp)
-                    .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
-                    .padding(4.dp)
-                    .border(BorderStroke(0.5.dp, themeColors.onBackground), CircleShape),
-                contentAlignment = Alignment.Center
+                    .align(Alignment.TopStart)
+                    .offset(x = 40.dp, y = 100.dp)
+            )
+            Text(
+                text = "✦",
+                color = themeColors.accentColor.copy(alpha = 0.4f),
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 60.dp, y = (-200).dp)
+            )
+            Text(
+                text = "✦",
+                color = themeColors.accentColor.copy(alpha = 0.6f),
+                fontSize = 22.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = (-300).dp, y = 80.dp)
+            )
+
+            // Top Monogram Logo
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
+                    .align(Alignment.TopStart)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onLogoClick
+                    )
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
+                        .padding(4.dp)
+                        .border(BorderStroke(0.5.dp, themeColors.onBackground), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (resolvedEventName.isNullOrEmpty()) "J" else resolvedEventName.take(1),
+                        color = themeColors.accentColor,
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (resolvedEventName.isNullOrEmpty()) "J" else resolvedEventName.take(1),
-                    color = themeColors.accentColor,
+                    text = resolvedEventName ?: "WEDDING KIOSK",
+                    color = themeColors.onBackground,
                     fontFamily = themeColors.fontFamily,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = resolvedEventName ?: "WEDDING KIOSK",
-                color = themeColors.onBackground,
-                fontFamily = themeColors.fontFamily,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
-            )
+
+            // Center Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
+                    .align(Alignment.CenterStart)
+                    .padding(start = if (isLandscape) 80.dp else 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "WELCOME TO",
+                    color = themeColors.accentColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 4.sp,
+                    fontFamily = themeColors.fontFamily
+                )
+                Text(
+                    text = resolvedEventName ?: "A Beautiful\nCelebration",
+                    color = themeColors.onBackground,
+                    fontSize = if (isLandscape) 44.sp else 36.sp,
+                    fontWeight = FontWeight.Light,
+                    lineHeight = if (isLandscape) 52.sp else 44.sp,
+                    fontFamily = themeColors.fontFamily
+                )
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(1.dp)
+                        .background(themeColors.accentColor)
+                )
+                Text(
+                    text = "Capture your special moments in our exclusive luxury photo kiosk.",
+                    color = themeColors.onBackground.copy(alpha = 0.6f),
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp,
+                    fontFamily = themeColors.fontFamily
+                )
+            }
+
+            // Bottom CTA
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Button(
+                    onClick = onStartClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = themeColors.buttonBackground,
+                        contentColor = themeColors.buttonContent
+                    ),
+                    shape = RoundedCornerShape(4.dp),
+                    border = BorderStroke(1.5.dp, themeColors.onBackground),
+                    contentPadding = PaddingValues(horizontal = 44.dp, vertical = 18.dp),
+                    modifier = Modifier
+                        .height(56.dp)
+                        .width(260.dp)
+                ) {
+                    Text(
+                        text = "BEGIN EXPERIENCE",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        fontFamily = themeColors.fontFamily
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = "Designed for premium celebrations.",
+                        color = themeColors.onBackground.copy(alpha = 0.4f),
+                        fontSize = 9.sp,
+                        letterSpacing = 1.sp,
+                        fontFamily = themeColors.fontFamily
+                    )
+                    Text(
+                        text = "EST. 2026",
+                        color = themeColors.accentColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        fontFamily = themeColors.fontFamily
+                    )
+                }
+            }
+
+            if (isMultiEventMode) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color.Transparent)
+                        .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
+                        .clickable { onTicketClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🎟️", fontSize = 16.sp)
+                }
+            }
         }
 
-        // Tilted photo strip
+        // Tilted photo strip (Outside the bordered card, aligns to screen edges)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -1453,118 +1575,6 @@ fun LuxuryGoldHomeLayout(
         ) {
             InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
         }
-
-        // Center Content
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
-                .align(Alignment.CenterStart)
-                .padding(start = if (isLandscape) 80.dp else 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "WELCOME TO",
-                color = themeColors.accentColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 4.sp,
-                fontFamily = themeColors.fontFamily
-            )
-            Text(
-                text = resolvedEventName ?: "A Beautiful\nCelebration",
-                color = themeColors.onBackground,
-                fontSize = if (isLandscape) 44.sp else 36.sp,
-                fontWeight = FontWeight.Light,
-                lineHeight = if (isLandscape) 52.sp else 44.sp,
-                fontFamily = themeColors.fontFamily
-            )
-            Box(
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(1.dp)
-                    .background(themeColors.accentColor)
-            )
-            Text(
-                text = "Capture your special moments in our exclusive luxury photo kiosk.",
-                color = themeColors.onBackground.copy(alpha = 0.6f),
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
-                fontFamily = themeColors.fontFamily
-            )
-        }
-
-        // Bottom CTA
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Button(
-                onClick = onStartClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = themeColors.buttonBackground,
-                    contentColor = themeColors.buttonContent
-                ),
-                shape = RoundedCornerShape(4.dp),
-                border = BorderStroke(1.5.dp, themeColors.onBackground),
-                contentPadding = PaddingValues(horizontal = 44.dp, vertical = 18.dp),
-                modifier = Modifier
-                    .height(56.dp)
-                    .width(260.dp)
-            ) {
-                Text(
-                    text = "BEGIN EXPERIENCE",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    fontFamily = themeColors.fontFamily
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = "Designed for premium celebrations.",
-                    color = themeColors.onBackground.copy(alpha = 0.4f),
-                    fontSize = 9.sp,
-                    letterSpacing = 1.sp,
-                    fontFamily = themeColors.fontFamily
-                )
-                Text(
-                    text = "EST. 2026",
-                    color = themeColors.accentColor,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    fontFamily = themeColors.fontFamily
-                )
-            }
-        }
-
-        if (isMultiEventMode) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Transparent)
-                    .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
-                    .clickable { onTicketClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🎟️", fontSize = 16.sp)
-            }
-        }
     }
 }
 
@@ -1579,108 +1589,229 @@ fun RetroArcadeHomeLayout(
     onTicketClick: () -> Unit
 ) {
     val themeColors = AppTheme.colors
-    
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(themeColors.background)
-            .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(8.dp))
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
-        androidx.compose.foundation.Canvas(
+        // Inner card with border & padding
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.4f)
-                .align(Alignment.BottomCenter)
+                .fillMaxSize()
+                .padding(24.dp)
+                .background(themeColors.background, RoundedCornerShape(8.dp))
+                .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(8.dp))
+                .padding(16.dp)
         ) {
-            val width = size.width
-            val height = size.height
-            val gridColor = Color(0xFFDF00FF).copy(alpha = 0.15f)
-            
-            val linesCount = 10
-            for (i in 0..linesCount) {
-                val ratio = i.toFloat() / linesCount
-                val y = height * (ratio * ratio)
-                drawLine(
-                    color = gridColor,
-                    start = Offset(0f, y),
-                    end = Offset(width, y),
-                    strokeWidth = 2f
-                )
+            // Perspective grid canvas
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.4f)
+                    .align(Alignment.BottomCenter)
+            ) {
+                val width = size.width
+                val height = size.height
+                val gridColor = Color(0xFFDF00FF).copy(alpha = 0.15f)
+                
+                val linesCount = 10
+                for (i in 0..linesCount) {
+                    val ratio = i.toFloat() / linesCount
+                    val y = height * (ratio * ratio)
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(0f, y),
+                        end = Offset(width, y),
+                        strokeWidth = 2f
+                    )
+                }
+                
+                val columnsCount = 14
+                for (i in 0..columnsCount) {
+                    val xRatio = i.toFloat() / columnsCount
+                    val startX = width * xRatio
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(width / 2f, 0f),
+                        end = Offset(startX, height),
+                        strokeWidth = 2f
+                    )
+                }
             }
-            
-            val columnsCount = 14
-            for (i in 0..columnsCount) {
-                val xRatio = i.toFloat() / columnsCount
-                val startX = width * xRatio
-                drawLine(
-                    color = gridColor,
-                    start = Offset(width / 2f, 0f),
-                    end = Offset(startX, height),
-                    strokeWidth = 2f
-                )
-            }
-        }
 
-        Text(
-            text = "👾",
-            fontSize = 28.sp,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = 60.dp, y = 120.dp)
-        )
-        Text(
-            text = "🍒",
-            fontSize = 24.sp,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(x = 40.dp, y = (-80).dp)
-        )
-        Text(
-            text = "🕹️",
-            fontSize = 26.sp,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = (-320).dp, y = (-180).dp)
-        )
-
-        // Top Left Logo
-        Column(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
-                .align(Alignment.TopStart)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onLogoClick
-                )
-        ) {
             Text(
-                text = "JEPRAT // JEPRET",
-                color = themeColors.accentColor,
-                fontFamily = themeColors.fontFamily,
+                text = "👾",
+                fontSize = 28.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = 60.dp, y = 120.dp)
+            )
+            Text(
+                text = "🍒",
+                fontSize = 24.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = 40.dp, y = (-80).dp)
+            )
+            Text(
+                text = "🕹️",
                 fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                style = androidx.compose.ui.text.TextStyle(
-                    shadow = Shadow(
-                        color = Color(0xFFDF00FF),
-                        offset = Offset(2f, 2f),
-                        blurRadius = 4f
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-320).dp, y = (-180).dp)
+            )
+
+            // Top Left Logo
+            Column(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
+                    .align(Alignment.TopStart)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onLogoClick
+                    )
+            ) {
+                Text(
+                    text = "JEPRAT // JEPRET",
+                    color = themeColors.accentColor,
+                    fontFamily = themeColors.fontFamily,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = androidx.compose.ui.text.TextStyle(
+                        shadow = Shadow(
+                            color = Color(0xFFDF00FF),
+                            offset = Offset(2f, 2f),
+                            blurRadius = 4f
+                        )
                     )
                 )
-            )
-            Text(
-                text = resolvedEventName ?: "ARCADE EDITION",
-                color = Color.White,
-                fontFamily = themeColors.fontFamily,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp
-            )
+                Text(
+                    text = resolvedEventName ?: "ARCADE EDITION",
+                    color = Color.White,
+                    fontFamily = themeColors.fontFamily,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            // Center Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
+                    .align(Alignment.CenterStart)
+                    .padding(start = if (isLandscape) 80.dp else 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val flashingAlpha by rememberInfiniteTransition().animateFloat(
+                    initialValue = 0.2f,
+                    targetValue = 1.0f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(durationMillis = 800, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "FlashingReady"
+                )
+                
+                Text(
+                    text = "> READY PLAYER ONE",
+                    color = themeColors.border,
+                    fontFamily = themeColors.fontFamily,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.alpha(flashingAlpha)
+                )
+                
+                Text(
+                    text = "INSERT COIN\nTO START SESSION",
+                    color = themeColors.onBackground,
+                    fontSize = if (isLandscape) 38.sp else 30.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = if (isLandscape) 46.sp else 38.sp,
+                    fontFamily = themeColors.fontFamily,
+                    style = androidx.compose.ui.text.TextStyle(
+                        shadow = Shadow(
+                            color = Color(0xFFDF00FF).copy(alpha = 0.8f),
+                            offset = Offset(2f, 2f),
+                            blurRadius = 6f
+                        )
+                    )
+                )
+            }
+
+            // Bottom CTA
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Button(
+                    onClick = onStartClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = themeColors.buttonBackground,
+                        contentColor = themeColors.buttonContent
+                    ),
+                    shape = RoundedCornerShape(0.dp),
+                    border = BorderStroke(3.dp, themeColors.accentColor),
+                    contentPadding = PaddingValues(horizontal = 36.dp, vertical = 18.dp),
+                    modifier = Modifier
+                        .height(60.dp)
+                        .width(220.dp)
+                ) {
+                    Text(
+                        text = "PRESS START",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = themeColors.fontFamily,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = "COINS: 99 / FREE PLAY",
+                        color = themeColors.accentColor.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                        fontFamily = themeColors.fontFamily
+                    )
+                    Text(
+                        text = "STAGE 1",
+                        color = themeColors.border,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = themeColors.fontFamily
+                    )
+                }
+            }
+
+            if (isMultiEventMode) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(themeColors.accentColor.copy(alpha = 0.2f))
+                        .border(BorderStroke(2.dp, themeColors.accentColor), RoundedCornerShape(4.dp))
+                        .clickable { onTicketClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🎟️", fontSize = 16.sp)
+                }
+            }
         }
 
-        // Tilted photo strip
+        // Tilted photo strip (Outside the bordered card, aligns to screen edges)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -1702,121 +1833,6 @@ fun RetroArcadeHomeLayout(
             contentAlignment = Alignment.TopCenter
         ) {
             InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
-        }
-
-        // Center Content
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
-                .align(Alignment.CenterStart)
-                .padding(start = if (isLandscape) 80.dp else 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            val flashingAlpha by rememberInfiniteTransition().animateFloat(
-                initialValue = 0.2f,
-                targetValue = 1.0f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 800, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "FlashingReady"
-            )
-            
-            Text(
-                text = "> READY PLAYER ONE",
-                color = themeColors.border,
-                fontFamily = themeColors.fontFamily,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.alpha(flashingAlpha)
-            )
-            
-            Text(
-                text = "INSERT COIN\nTO START SESSION",
-                color = themeColors.onBackground,
-                fontSize = if (isLandscape) 38.sp else 30.sp,
-                fontWeight = FontWeight.ExtraBold,
-                lineHeight = if (isLandscape) 46.sp else 38.sp,
-                fontFamily = themeColors.fontFamily,
-                style = androidx.compose.ui.text.TextStyle(
-                    shadow = Shadow(
-                        color = Color(0xFFDF00FF).copy(alpha = 0.8f),
-                        offset = Offset(2f, 2f),
-                        blurRadius = 6f
-                    )
-                )
-            )
-        }
-
-        // Bottom CTA
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Button(
-                onClick = onStartClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = themeColors.buttonBackground,
-                    contentColor = themeColors.buttonContent
-                ),
-                shape = RoundedCornerShape(0.dp),
-                border = BorderStroke(3.dp, themeColors.accentColor),
-                contentPadding = PaddingValues(horizontal = 36.dp, vertical = 18.dp),
-                modifier = Modifier
-                    .height(60.dp)
-                    .width(220.dp)
-            ) {
-                Text(
-                    text = "PRESS START",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontFamily = themeColors.fontFamily,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = "COINS: 99 / FREE PLAY",
-                    color = themeColors.accentColor.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
-                    fontFamily = themeColors.fontFamily
-                )
-                Text(
-                    text = "STAGE 1",
-                    color = themeColors.border,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = themeColors.fontFamily
-                )
-            }
-        }
-
-        if (isMultiEventMode) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(themeColors.accentColor.copy(alpha = 0.2f))
-                    .border(BorderStroke(2.dp, themeColors.accentColor), RoundedCornerShape(4.dp))
-                    .clickable { onTicketClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🎟️", fontSize = 16.sp)
-            }
         }
     }
 }
