@@ -50,6 +50,8 @@ import coil.compose.AsyncImage
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
 import com.example.photobooth.ui.frame.getFramesForLayout
+import com.example.photobooth.theme.AppTheme
+import com.example.photobooth.theme.AppThemeType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -178,12 +180,12 @@ fun PreviewResultScreen(
             CenterAlignedTopAppBar(
                 title = { Text("PRATINJAU & EDIT FOTO", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF0F0F12),
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
-        containerColor = Color(0xFF0F0F12),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         if (isStitching && isFirstStitch) {
@@ -197,8 +199,8 @@ fun PreviewResultScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    CircularProgressIndicator(color = Color(0xFFE63946))
-                    Text("Menyusun strip foto Anda...", color = Color.Gray, fontSize = 14.sp)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Text("Menyusun strip foto Anda...", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 14.sp)
                 }
             }
         } else {
@@ -425,10 +427,10 @@ fun FilterItem(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) Color(0xFFE63946) else Color(0xFF18181F))
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
             .border(
                 1.dp,
-                if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35),
+                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
@@ -437,7 +439,7 @@ fun FilterItem(
     ) {
         Text(
             text = title,
-            color = Color.White,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
@@ -813,9 +815,9 @@ fun PreviewPhotoContainer(
         modifier = modifier
             .fillMaxHeight()
             .aspectRatio(frameAspectRatio)
-            .border(2.dp, Color(0xFFE63946), RoundedCornerShape(12.dp))
+            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black),
+            .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center
     ) {
         if (previewBitmap != null) {
@@ -943,7 +945,7 @@ fun StickerOverlay(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .border(1.5.dp, Color(0xFFE63946), RoundedCornerShape(8.dp))
+                                .border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                         )
                     }
 
@@ -961,7 +963,7 @@ fun StickerOverlay(
                             .align(Alignment.TopEnd)
                             .offset(x = 6.dp, y = (-6).dp)
                             .size(24.dp)
-                            .background(Color(0xFFE63946), CircleShape)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -990,7 +992,7 @@ fun HorizontalTabRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF18181F), RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -1008,15 +1010,25 @@ fun HorizontalTabRow(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(if (isSelected) Color(0xFFE63946) else Color.Transparent)
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onTabSelected(tab) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(imageVector = icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = title, color = Color.White, fontSize = 10.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                    Text(
+                        text = title,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
                 }
             }
         }
@@ -1033,7 +1045,7 @@ fun VerticalTabColumn(
         modifier = modifier
             .width(80.dp)
             .fillMaxHeight()
-            .background(Color(0xFF0F0F12), RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
             .padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1051,15 +1063,26 @@ fun VerticalTabColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isSelected) Color(0xFFE63946) else Color.Transparent)
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onTabSelected(tab) }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(imageVector = icon, contentDescription = title, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = title, color = Color.White, fontSize = 9.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center)
+                    Text(
+                        text = title,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -1078,7 +1101,7 @@ fun FrameSelectorPanel(
     ) {
         Text(
             text = "Pilih Desain Bingkai Baru:",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -1112,7 +1135,7 @@ fun FilterSelectorPanel(
     ) {
         Text(
             text = "Pilih Filter Estetik:",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -1145,7 +1168,7 @@ fun StickerSelectorPanel(
     ) {
         Text(
             text = "Sentuh Stiker untuk Menambahkan ke Foto:",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -1162,7 +1185,7 @@ fun StickerSelectorPanel(
                     modifier = Modifier
                         .size(54.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF2A2A35))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .clickable { onAddSticker(emoji) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -1173,7 +1196,7 @@ fun StickerSelectorPanel(
         
         Text(
             text = "Tips: Geser dengan 1 jari untuk memindahkan. Gunakan 2 jari (cubit) untuk memutar atau memperbesar.",
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             fontSize = 10.sp,
             lineHeight = 14.sp
         )
@@ -1204,12 +1227,12 @@ fun DoodleSelectorPanel(
                 enabled = doodleLines.isNotEmpty(),
                 modifier = Modifier
                     .size(44.dp)
-                    .background(Color(0xFF2A2A35), CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Undo,
                     contentDescription = "Undo",
-                    tint = if (doodleLines.isNotEmpty()) Color.White else Color.DarkGray
+                    tint = if (doodleLines.isNotEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                 )
             }
             
@@ -1218,17 +1241,17 @@ fun DoodleSelectorPanel(
                 enabled = doodleLines.isNotEmpty(),
                 modifier = Modifier
                     .size(44.dp)
-                    .background(Color(0xFF2A2A35), CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Clear All",
-                    tint = if (doodleLines.isNotEmpty()) Color(0xFFE63946) else Color.DarkGray
+                    tint = if (doodleLines.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                 )
             }
         }
         
-        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color(0xFF2A2A35)))
+        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outline))
         
         // Middle part: Stroke widths
         Column(
@@ -1236,7 +1259,7 @@ fun DoodleSelectorPanel(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("PENA", color = Color.Gray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Text("PENA", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(3f, 6f, 10f).forEach { size ->
@@ -1244,7 +1267,7 @@ fun DoodleSelectorPanel(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(if (activeStrokeWidth == size) Color(0xFFE63946).copy(alpha = 0.3f) else Color.Transparent)
+                            .background(if (activeStrokeWidth == size) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.Transparent)
                             .clickable { onStrokeWidthSelected(size) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -1252,21 +1275,21 @@ fun DoodleSelectorPanel(
                             modifier = Modifier
                                 .size((size * 1.2f).dp)
                                 .clip(CircleShape)
-                                .background(Color.White)
+                                .background(MaterialTheme.colorScheme.onBackground)
                         )
                     }
                 }
             }
         }
         
-        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color(0xFF2A2A35)))
+        Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outline))
         
         // Right part: Colors
         Column(
             modifier = Modifier.weight(1f).fillMaxHeight(),
             verticalArrangement = Arrangement.Center
         ) {
-            Text("WARNA", color = Color.Gray, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Text("WARNA", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1281,7 +1304,7 @@ fun DoodleSelectorPanel(
                             .background(color)
                             .border(
                                 width = if (activePenColor == color) 2.dp else 1.dp,
-                                color = if (activePenColor == color) Color.White else Color(0xFF2A2A35),
+                                color = if (activePenColor == color) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                 shape = CircleShape
                             )
                             .clickable { onColorSelected(color) }
@@ -1317,7 +1340,7 @@ fun MiniFrameCard(
             .background(parsedColor)
             .border(
                 width = if (isSelected) 3.dp else 0.dp,
-                color = if (isSelected) Color(0xFFE63946) else Color.Transparent,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable { onClick() },
@@ -1345,7 +1368,7 @@ fun MiniFrameCard(
                         modifier = Modifier
                             .offset(x = slotLeft, y = slotTop)
                             .size(slotWidth, slotHeight)
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                     )
                 }
                 
@@ -1363,12 +1386,12 @@ fun MiniFrameCard(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
                 .padding(vertical = 2.dp)
         ) {
             Text(
                 text = frame.name,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 8.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -1391,23 +1414,27 @@ fun ActionsRow(
         // Retake Button
         OutlinedButton(
             onClick = onRetakeClick,
-            border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground),
             modifier = Modifier
                 .weight(1f)
                 .height(56.dp),
             enabled = !isProcessingConfirm
         ) {
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = "Retake")
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "Retake",
+                tint = MaterialTheme.colorScheme.onBackground
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Ulangi Foto")
+            Text("Ulangi Foto", color = MaterialTheme.colorScheme.onBackground)
         }
 
         // Confirm and print/share Button
         Button(
             onClick = onConfirmClick,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .weight(1.5f)
@@ -1415,11 +1442,15 @@ fun ActionsRow(
             enabled = !isProcessingConfirm
         ) {
             if (isProcessingConfirm) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
             } else {
-                Icon(imageVector = Icons.Default.Check, contentDescription = "Confirm")
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Confirm",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Cetak & Download", fontWeight = FontWeight.Bold)
+                Text("Cetak & Download", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }

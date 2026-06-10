@@ -11,6 +11,19 @@ $packagesList = [];
 if (file_exists($packagesFile)) {
     $packagesList = json_decode(file_get_contents($packagesFile), true);
 }
+
+// Load settings for theme configuration
+$settingsFile = __DIR__ . '/settings.json';
+$settings = [
+    "app_theme" => "NEON_RED"
+];
+if (file_exists($settingsFile)) {
+    $settingsData = json_decode(file_get_contents($settingsFile), true);
+    if (is_array($settingsData)) {
+        $settings = array_merge($settings, $settingsData);
+    }
+}
+$appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -20,7 +33,7 @@ if (file_exists($packagesFile)) {
     <title>Kiosk App Web Simulator - Creative Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Fredoka:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
@@ -1476,6 +1489,865 @@ if (file_exists($packagesFile)) {
             justify-content: center !important;
             align-items: center !important;
         }
+
+        /* ------------------------------------------------------------- */
+        /* DYNAMIC KIOSK SIMULATOR THEMES */
+        /* ------------------------------------------------------------- */
+        
+        /* 1. Neon Red (Modern - Default) */
+        .theme-neon_red .screen-home {
+            background-color: var(--primary-red) !important;
+        }
+        .theme-neon_red .home-logo-part1, 
+        .theme-neon_red .home-logo-part2 {
+            font-family: 'Outfit', sans-serif !important;
+            color: white !important;
+        }
+        .theme-neon_red .btn-start {
+            font-family: 'Outfit', sans-serif !important;
+            background-color: white !important;
+            color: var(--primary-red) !important;
+            border-radius: 50px !important;
+        }
+        .theme-neon_red .home-slogan {
+            font-family: 'Outfit', sans-serif !important;
+            color: rgba(255,255,255,0.85) !important;
+        }
+
+        /* 2. Cute Pastel (Wood Illustration) */
+        .theme-cute_pastel .screen-home {
+            background-color: #fcf8f2 !important;
+            background-image: radial-gradient(#e5dec9 1.5px, transparent 1.5px) !important;
+            background-size: 20px 20px !important;
+            border: 8px solid #4e3629 !important;
+            border-radius: 18px !important;
+            box-shadow: inset 0 0 40px rgba(78, 54, 41, 0.05) !important;
+            padding: 30px !important;
+        }
+        .theme-cute_pastel .home-logo-part1 {
+            font-family: 'Fredoka', sans-serif !important;
+            color: #4e3629 !important;
+            font-weight: 700 !important;
+            text-shadow: none !important;
+        }
+        .theme-cute_pastel .home-logo-part2 {
+            font-family: 'Fredoka', sans-serif !important;
+            color: #e57c5d !important;
+            font-weight: 400 !important;
+            text-shadow: none !important;
+        }
+        .theme-cute_pastel .btn-start {
+            background-color: #f7d070 !important;
+            color: #4e3629 !important;
+            border: 4px solid #4e3629 !important;
+            border-radius: 24px !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+            box-shadow: 0 6px 0 #4e3629 !important;
+            text-shadow: none !important;
+            letter-spacing: 0.5px !important;
+            transition: all 0.2s !important;
+            opacity: 1 !important;
+        }
+        .theme-cute_pastel .btn-start:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 0 #4e3629 !important;
+        }
+        .theme-cute_pastel .btn-start:active {
+            transform: translateY(4px) !important;
+            box-shadow: 0 2px 0 #4e3629 !important;
+        }
+        .theme-cute_pastel .home-slogan {
+            font-family: 'Fredoka', sans-serif !important;
+            color: #8b6851 !important;
+            font-weight: 600 !important;
+            text-transform: none !important;
+            letter-spacing: 0.5px !important;
+        }
+        .theme-cute_pastel .screen-home::before {
+            content: "⭐" !important;
+            position: absolute !important;
+            top: 40px !important;
+            right: 180px !important;
+            font-size: 2rem !important;
+            animation: floatText 3s infinite ease-in-out !important;
+            z-index: 8 !important;
+        }
+        .theme-cute_pastel .screen-home::after {
+            content: "🌸" !important;
+            position: absolute !important;
+            bottom: 30px !important;
+            left: 40px !important;
+            font-size: 2rem !important;
+            animation: floatText 4s infinite ease-in-out !important;
+            z-index: 8 !important;
+        }
+        .theme-cute_pastel .home-strip-container {
+            border: 6px solid #4e3629 !important;
+            border-radius: 12px !important;
+            box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.15) !important;
+        }
+
+        /* 3. Luxury Gold (Elegant Wedding) */
+        .theme-luxury_gold .screen-home {
+            background-color: #0b132b !important;
+            background-image: radial-gradient(#d4af37 0.5px, transparent 0.5px) !important;
+            background-size: 15px 15px !important;
+            border: 1px solid rgba(212, 175, 55, 0.3) !important;
+            border-radius: 18px !important;
+        }
+        .theme-luxury_gold .screen-home::before {
+            content: "" !important;
+            position: absolute !important;
+            top: 15px !important;
+            left: 15px !important;
+            right: 15px !important;
+            bottom: 15px !important;
+            border: 2px solid #d4af37 !important;
+            pointer-events: none !important;
+            z-index: 9 !important;
+            opacity: 0.8 !important;
+        }
+        .theme-luxury_gold .screen-home::after {
+            content: "" !important;
+            position: absolute !important;
+            top: 20px !important;
+            left: 20px !important;
+            right: 20px !important;
+            bottom: 20px !important;
+            border: 1px solid #d4af37 !important;
+            pointer-events: none !important;
+            z-index: 9 !important;
+            opacity: 0.5 !important;
+        }
+        .theme-luxury_gold .home-logo-part1 {
+            font-family: 'Playfair Display', serif !important;
+            color: #d4af37 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+            letter-spacing: 2px !important;
+        }
+        .theme-luxury_gold .home-logo-part2 {
+            font-family: 'Playfair Display', serif !important;
+            color: #f4e0a5 !important;
+            font-weight: 400 !important;
+            font-style: italic !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+            letter-spacing: 2px !important;
+        }
+        .theme-luxury_gold .btn-start {
+            background: linear-gradient(135deg, #d4af37 0%, #f4e0a5 50%, #d4af37 100%) !important;
+            color: #0b132b !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
+            letter-spacing: 2px !important;
+            text-transform: uppercase !important;
+            opacity: 1 !important;
+        }
+        .theme-luxury_gold .home-slogan {
+            font-family: 'Playfair Display', serif !important;
+            color: #f4e0a5 !important;
+            font-weight: 400 !important;
+            letter-spacing: 3px !important;
+            font-style: italic !important;
+        }
+        .theme-luxury_gold .home-strip-container {
+            border: 2px solid #d4af37 !important;
+            background-color: #0b132b !important;
+        }
+        .theme-luxury_gold .strip-pic {
+            border: 1px solid rgba(212,175,55,0.2) !important;
+            background-color: #0b132b !important;
+        }
+
+        /* 4. Retro Arcade (8-Bit Vaporwave) */
+        .theme-retro_arcade .screen-home {
+            background-color: #0c001a !important;
+            background-image: 
+                linear-gradient(rgba(223, 0, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(223, 0, 255, 0.1) 1px, transparent 1px) !important;
+            background-size: 25px 25px !important;
+            border: 4px solid #df00ff !important;
+            border-radius: 18px !important;
+        }
+        .theme-retro_arcade .screen-home::before {
+            content: "🍒" !important;
+            position: absolute !important;
+            top: 40px !important;
+            right: 180px !important;
+            font-size: 1.8rem !important;
+            animation: floatText 2s infinite ease-in-out !important;
+            z-index: 8 !important;
+        }
+        .theme-retro_arcade .screen-home::after {
+            content: "👾" !important;
+            position: absolute !important;
+            bottom: 35px !important;
+            left: 40px !important;
+            font-size: 1.8rem !important;
+            animation: floatText 3s infinite ease-in-out !important;
+            z-index: 8 !important;
+        }
+        .theme-retro_arcade .home-logo-part1 {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 1.25rem !important;
+            color: #00f0ff !important;
+            text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff !important;
+        }
+        .theme-retro_arcade .home-logo-part2 {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 1.25rem !important;
+            color: #df00ff !important;
+            text-shadow: 0 0 10px #df00ff, 0 0 20px #df00ff !important;
+            margin-top: 6px !important;
+        }
+        .theme-retro_arcade .btn-start {
+            background-color: black !important;
+            color: #00f0ff !important;
+            border: 4px solid #df00ff !important;
+            border-radius: 0 !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 1rem !important;
+            box-shadow: 0 0 15px #df00ff !important;
+            letter-spacing: 0px !important;
+            animation: pulseArcadeBtn 1s infinite alternate !important;
+            opacity: 1 !important;
+        }
+        @keyframes pulseArcadeBtn {
+            0% { border-color: #df00ff; box-shadow: 0 0 10px #df00ff; color: #00f0ff; }
+            100% { border-color: #00f0ff; box-shadow: 0 0 20px #00f0ff; color: #df00ff; }
+        }
+        .theme-retro_arcade .home-slogan {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.55rem !important;
+            color: #00f0ff !important;
+            text-shadow: 0 0 5px #00f0ff !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0px !important;
+        }
+        .theme-retro_arcade .home-strip-container {
+            border: 4px solid #df00ff !important;
+            box-shadow: 0 0 20px rgba(223, 0, 255, 0.4) !important;
+            background-color: black !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* CUTE PASTEL OVERRIDES FOR ALL SCREENS */
+        /* ------------------------------------------------------------- */
+        .theme-cute_pastel {
+            background-color: #fcf8f2 !important;
+            font-family: 'Fredoka', sans-serif !important;
+        }
+        .theme-cute_pastel .kiosk-screen {
+            background-color: #fcf8f2 !important;
+            background-image: radial-gradient(#e5dec9 1.5px, transparent 1.5px) !important;
+            background-size: 20px 20px !important;
+        }
+        .theme-cute_pastel .screen-header-back {
+            background-color: #f5eedc !important;
+            border-bottom: 4px solid #4e3629 !important;
+        }
+        .theme-cute_pastel .screen-title {
+            color: #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .btn-back {
+            color: #e57c5d !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .layout-card, 
+        .theme-cute_pastel .frame-card {
+            background-color: #fcf8f2 !important;
+            border: 4px solid #4e3629 !important;
+            border-radius: 20px !important;
+            box-shadow: 4px 4px 0 #4e3629 !important;
+            color: #4e3629 !important;
+        }
+        .theme-cute_pastel .layout-card:hover,
+        .theme-cute_pastel .frame-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 6px 6px 0 #4e3629 !important;
+            border-color: #e57c5d !important;
+        }
+        .theme-cute_pastel .layout-icon {
+            background-color: #f5eedc !important;
+            border: 3px solid #4e3629 !important;
+            color: #e57c5d !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_pastel .layout-desc {
+            color: #8b6851 !important;
+        }
+        .theme-cute_pastel .frame-card-preview {
+            background-color: #f5eedc !important;
+            border: 2px solid #4e3629 !important;
+            border-radius: 8px !important;
+        }
+        .theme-cute_pastel .frame-card-name {
+            color: #4e3629 !important;
+        }
+        .theme-cute_pastel .camera-slots-bar {
+            background-color: #f5eedc !important;
+            border-left: 4px solid #4e3629 !important;
+        }
+        .theme-cute_pastel .camera-rec-badge {
+            background-color: #4e3629 !important;
+            color: #fcf8f2 !important;
+            border: 2px solid #fcf8f2 !important;
+        }
+        .theme-cute_pastel .capture-slot-box {
+            background-color: #fcf8f2 !important;
+            border: 3px dashed #4e3629 !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_pastel .capture-slot-box.active {
+            border-color: #e57c5d !important;
+            border-style: solid !important;
+        }
+        .theme-cute_pastel .capture-slot-box.captured {
+            border-color: #4e3629 !important;
+            border-style: solid !important;
+        }
+        .theme-cute_pastel .camera-trigger-btn,
+        .theme-cute_pastel .camera-trigger-btn-floating {
+            background-color: #e57c5d !important;
+            color: white !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+            box-shadow: 3px 3px 0 #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .camera-trigger-btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 4px 4px 0 #4e3629 !important;
+        }
+        .theme-cute_pastel .section-title {
+            color: #8b6851 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .preview-controllers {
+            background-color: #f5eedc !important;
+            border-left: 4px solid #4e3629 !important;
+        }
+        .theme-cute_pastel .btn-confirm {
+            background-color: #e57c5d !important;
+            color: white !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+            box-shadow: 3px 3px 0 #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .btn-retake {
+            background-color: #fcf8f2 !important;
+            color: #4e3629 !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+            box-shadow: 3px 3px 0 #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .btn-confirm:hover,
+        .theme-cute_pastel .btn-retake:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 4px 4px 0 #4e3629 !important;
+        }
+        .theme-cute_pastel .btn-clear-canvas {
+            background-color: #fcf8f2 !important;
+            color: #4e3629 !important;
+            border: 2px solid #4e3629 !important;
+            border-radius: 10px !important;
+            font-family: 'Fredoka', sans-serif !important;
+        }
+        .theme-cute_pastel .stitched-canvas-container {
+            border: 8px solid #4e3629 !important;
+            border-radius: 16px !important;
+            box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.1) !important;
+        }
+        .theme-cute_pastel .share-info-panel {
+            background-color: #f5eedc !important;
+            border-left: 4px solid #4e3629 !important;
+            color: #4e3629 !important;
+        }
+        .theme-cute_pastel .share-info-panel h2 {
+            color: #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .share-qr-container {
+            background-color: white !important;
+            border: 4px solid #4e3629 !important;
+            border-radius: 16px !important;
+            box-shadow: 3px 3px 0 #4e3629 !important;
+        }
+        .theme-cute_pastel .btn-open-portal {
+            background-color: #f7d070 !important;
+            color: #4e3629 !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+            box-shadow: 3px 3px 0 #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .btn-finish {
+            background-color: #e57c5d !important;
+            color: white !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+            box-shadow: 3px 3px 0 #4e3629 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .sim-dialog {
+            background-color: #fcf8f2 !important;
+            border: 6px solid #4e3629 !important;
+            border-radius: 24px !important;
+            color: #4e3629 !important;
+        }
+        .theme-cute_pastel .sim-dialog-title {
+            color: #e57c5d !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_pastel .sim-dialog-desc {
+            color: #8b6851 !important;
+        }
+        .theme-cute_pastel .sim-dialog-input {
+            background-color: #f5eedc !important;
+            border: 3px solid #4e3629 !important;
+            color: #4e3629 !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_pastel .btn-dialog-confirm {
+            background-color: #e57c5d !important;
+            color: white !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_pastel .btn-dialog-cancel {
+            background-color: #f5eedc !important;
+            color: #4e3629 !important;
+            border: 3px solid #4e3629 !important;
+            border-radius: 12px !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* LUXURY GOLD OVERRIDES FOR ALL SCREENS */
+        /* ------------------------------------------------------------- */
+        .theme-luxury_gold {
+            background-color: #0b132b !important;
+            font-family: 'Playfair Display', serif !important;
+        }
+        .theme-luxury_gold .kiosk-screen {
+            background-color: #0b132b !important;
+            background-image: radial-gradient(#d4af37 0.5px, transparent 0.5px) !important;
+            background-size: 15px 15px !important;
+        }
+        .theme-luxury_gold .screen-header-back {
+            background-color: #0d1b3e !important;
+            border-bottom: 2px solid #d4af37 !important;
+        }
+        .theme-luxury_gold .screen-title {
+            color: #d4af37 !important;
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+            letter-spacing: 1px !important;
+        }
+        .theme-luxury_gold .btn-back {
+            color: #f4e0a5 !important;
+            font-family: 'Playfair Display', serif !important;
+        }
+        .theme-luxury_gold .layout-card, 
+        .theme-luxury_gold .frame-card {
+            background-color: #0d1b3e !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+            color: #f4e0a5 !important;
+        }
+        .theme-luxury_gold .layout-card:hover,
+        .theme-luxury_gold .frame-card:hover {
+            border-color: #f4e0a5 !important;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4) !important;
+            transform: translateY(-2px) !important;
+        }
+        .theme-luxury_gold .layout-icon {
+            background-color: rgba(212, 175, 55, 0.1) !important;
+            border: 1px solid #d4af37 !important;
+            color: #d4af37 !important;
+            border-radius: 4px !important;
+        }
+        .theme-luxury_gold .layout-desc {
+            color: rgba(244, 224, 165, 0.7) !important;
+        }
+        .theme-luxury_gold .frame-card-preview {
+            background-color: #0b132b !important;
+            border: 1px solid rgba(212, 175, 55, 0.3) !important;
+            border-radius: 2px !important;
+        }
+        .theme-luxury_gold .frame-card-name {
+            color: #d4af37 !important;
+            font-weight: 600 !important;
+        }
+        .theme-luxury_gold .camera-slots-bar {
+            background-color: #0d1b3e !important;
+            border-left: 2px solid #d4af37 !important;
+        }
+        .theme-luxury_gold .camera-rec-badge {
+            background-color: #0b132b !important;
+            color: #d4af37 !important;
+            border: 1px solid #d4af37 !important;
+        }
+        .theme-luxury_gold .capture-slot-box {
+            background-color: #0b132b !important;
+            border: 1px dashed #d4af37 !important;
+            border-radius: 4px !important;
+        }
+        .theme-luxury_gold .capture-slot-box.active {
+            border-color: #f4e0a5 !important;
+            border-style: solid !important;
+            box-shadow: 0 0 8px #d4af37 !important;
+        }
+        .theme-luxury_gold .capture-slot-box.captured {
+            border-color: #d4af37 !important;
+            border-style: solid !important;
+        }
+        .theme-luxury_gold .camera-trigger-btn,
+        .theme-luxury_gold .camera-trigger-btn-floating {
+            background: linear-gradient(135deg, #d4af37 0%, #f4e0a5 50%, #d4af37 100%) !important;
+            color: #0b132b !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+        }
+        .theme-luxury_gold .section-title {
+            color: #d4af37 !important;
+            font-family: 'Playfair Display', serif !important;
+            letter-spacing: 1px !important;
+        }
+        .theme-luxury_gold .preview-controllers {
+            background-color: #0d1b3e !important;
+            border-left: 2px solid #d4af37 !important;
+        }
+        .theme-luxury_gold .btn-confirm {
+            background: linear-gradient(135deg, #d4af37 0%, #f4e0a5 50%, #d4af37 100%) !important;
+            color: #0b132b !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+        }
+        .theme-luxury_gold .btn-retake {
+            background-color: transparent !important;
+            color: #f4e0a5 !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+            font-family: 'Playfair Display', serif !important;
+        }
+        .theme-luxury_gold .btn-clear-canvas {
+            background-color: transparent !important;
+            color: #d4af37 !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+        }
+        .theme-luxury_gold .stitched-canvas-container {
+            border: 3px solid #d4af37 !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        }
+        .theme-luxury_gold .share-info-panel {
+            background-color: #0d1b3e !important;
+            border-left: 2px solid #d4af37 !important;
+            color: #f4e0a5 !important;
+        }
+        .theme-luxury_gold .share-info-panel h2 {
+            color: #d4af37 !important;
+            font-family: 'Playfair Display', serif !important;
+        }
+        .theme-luxury_gold .share-qr-container {
+            background-color: white !important;
+            border: 2px solid #d4af37 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2) !important;
+        }
+        .theme-luxury_gold .btn-open-portal {
+            background-color: transparent !important;
+            color: #f4e0a5 !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+        }
+        .theme-luxury_gold .btn-finish {
+            background: linear-gradient(135deg, #d4af37 0%, #f4e0a5 50%, #d4af37 100%) !important;
+            color: #0b132b !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-luxury_gold .sim-dialog {
+            background-color: #0b132b !important;
+            border: 2px solid #d4af37 !important;
+            border-radius: 8px !important;
+            color: #f4e0a5 !important;
+        }
+        .theme-luxury_gold .sim-dialog-title {
+            color: #d4af37 !important;
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+            letter-spacing: 1px !important;
+        }
+        .theme-luxury_gold .sim-dialog-desc {
+            color: rgba(244, 224, 165, 0.7) !important;
+        }
+        .theme-luxury_gold .sim-dialog-input {
+            background-color: #0d1b3e !important;
+            border: 1px solid #d4af37 !important;
+            color: white !important;
+            border-radius: 4px !important;
+        }
+        .theme-luxury_gold .btn-dialog-confirm,
+        .theme-luxury_gold .btn-dialog-gold {
+            background: linear-gradient(135deg, #d4af37 0%, #f4e0a5 50%, #d4af37 100%) !important;
+            color: #0b132b !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+        }
+        .theme-luxury_gold .btn-dialog-cancel {
+            background-color: transparent !important;
+            color: #f4e0a5 !important;
+            border: 1px solid #d4af37 !important;
+            border-radius: 4px !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* RETRO ARCADE OVERRIDES FOR ALL SCREENS */
+        /* ------------------------------------------------------------- */
+        .theme-retro_arcade {
+            background-color: #0c001a !important;
+            font-family: 'Press Start 2P', monospace !important;
+        }
+        .theme-retro_arcade .kiosk-screen {
+            background-color: #0c001a !important;
+            background-image: 
+                linear-gradient(rgba(223, 0, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(223, 0, 255, 0.1) 1px, transparent 1px) !important;
+            background-size: 25px 25px !important;
+        }
+        .theme-retro_arcade .screen-header-back {
+            background-color: black !important;
+            border-bottom: 4px solid #df00ff !important;
+        }
+        .theme-retro_arcade .screen-title {
+            color: #00f0ff !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.75rem !important;
+            text-shadow: 0 0 5px #00f0ff !important;
+        }
+        .theme-retro_arcade .btn-back {
+            color: #df00ff !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.6rem !important;
+            text-shadow: 0 0 5px #df00ff !important;
+        }
+        .theme-retro_arcade .layout-card, 
+        .theme-retro_arcade .frame-card {
+            background-color: black !important;
+            border: 3px solid #df00ff !important;
+            border-radius: 0px !important;
+            box-shadow: 0 0 10px rgba(223, 0, 255, 0.3) !important;
+            color: #00f0ff !important;
+        }
+        .theme-retro_arcade .layout-card:hover,
+        .theme-retro_arcade .frame-card:hover {
+            border-color: #00f0ff !important;
+            box-shadow: 0 0 15px #00f0ff !important;
+            transform: scale(1.02) !important;
+        }
+        .theme-retro_arcade .layout-icon {
+            background-color: transparent !important;
+            border: 2px solid #00f0ff !important;
+            color: #df00ff !important;
+            border-radius: 0px !important;
+        }
+        .theme-retro_arcade .layout-desc {
+            color: white !important;
+            font-size: 0.55rem !important;
+            line-height: 1.6 !important;
+        }
+        .theme-retro_arcade .frame-card-preview {
+            background-color: black !important;
+            border: 2px solid #df00ff !important;
+            border-radius: 0px !important;
+        }
+        .theme-retro_arcade .frame-card-name {
+            color: #00f0ff !important;
+            font-size: 0.6rem !important;
+        }
+        .theme-retro_arcade .camera-slots-bar {
+            background-color: black !important;
+            border-left: 4px solid #df00ff !important;
+        }
+        .theme-retro_arcade .camera-rec-badge {
+            background-color: black !important;
+            color: #ff0055 !important;
+            border: 2px solid #ff0055 !important;
+            border-radius: 0px !important;
+            text-shadow: 0 0 5px #ff0055 !important;
+        }
+        .theme-retro_arcade .capture-slot-box {
+            background-color: black !important;
+            border: 2px dashed #df00ff !important;
+            border-radius: 0px !important;
+        }
+        .theme-retro_arcade .capture-slot-box.active {
+            border-color: #00f0ff !important;
+            border-style: solid !important;
+            box-shadow: 0 0 10px #00f0ff !important;
+        }
+        .theme-retro_arcade .capture-slot-box.captured {
+            border-color: #df00ff !important;
+            border-style: solid !important;
+        }
+        .theme-retro_arcade .camera-trigger-btn,
+        .theme-retro_arcade .camera-trigger-btn-floating {
+            background-color: black !important;
+            color: #00f0ff !important;
+            border: 3px solid #df00ff !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.65rem !important;
+            box-shadow: 0 0 10px #df00ff !important;
+        }
+        .theme-retro_arcade .camera-trigger-btn:hover {
+            color: #df00ff !important;
+            border-color: #00f0ff !important;
+            box-shadow: 0 0 15px #00f0ff !important;
+        }
+        .theme-retro_arcade .section-title {
+            color: #df00ff !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.6rem !important;
+            text-shadow: 0 0 5px #df00ff !important;
+        }
+        .theme-retro_arcade .preview-controllers {
+            background-color: black !important;
+            border-left: 4px solid #df00ff !important;
+        }
+        .theme-retro_arcade .btn-confirm {
+            background-color: black !important;
+            color: #39ff14 !important;
+            border: 3px solid #39ff14 !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.6rem !important;
+            box-shadow: 0 0 10px #39ff14 !important;
+        }
+        .theme-retro_arcade .btn-retake {
+            background-color: black !important;
+            color: #ff0055 !important;
+            border: 3px solid #ff0055 !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.6rem !important;
+            box-shadow: 0 0 10px #ff0055 !important;
+        }
+        .theme-retro_arcade .btn-confirm:hover,
+        .theme-retro_arcade .btn-retake:hover {
+            transform: scale(1.02) !important;
+        }
+        .theme-retro_arcade .btn-clear-canvas {
+            background-color: black !important;
+            color: #df00ff !important;
+            border: 2px solid #df00ff !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.5rem !important;
+        }
+        .theme-retro_arcade .stitched-canvas-container {
+            border: 4px solid #df00ff !important;
+            box-shadow: 0 0 20px rgba(223, 0, 255, 0.4) !important;
+        }
+        .theme-retro_arcade .share-info-panel {
+            background-color: black !important;
+            border-left: 4px solid #df00ff !important;
+            color: #00f0ff !important;
+        }
+        .theme-retro_arcade .share-info-panel h2 {
+            color: #00f0ff !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.75rem !important;
+            text-shadow: 0 0 5px #00f0ff !important;
+        }
+        .theme-retro_arcade .share-qr-container {
+            background-color: white !important;
+            border: 4px solid #df00ff !important;
+            border-radius: 0px !important;
+            box-shadow: 0 0 15px rgba(223, 0, 255, 0.3) !important;
+        }
+        .theme-retro_arcade .btn-open-portal {
+            background-color: black !important;
+            color: #df00ff !important;
+            border: 3px solid #df00ff !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.65rem !important;
+            box-shadow: 0 0 10px #df00ff !important;
+        }
+        .theme-retro_arcade .btn-finish {
+            background-color: black !important;
+            color: #00f0ff !important;
+            border: 3px solid #00f0ff !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.65rem !important;
+            box-shadow: 0 0 10px #00f0ff !important;
+        }
+        .theme-retro_arcade .sim-dialog {
+            background-color: black !important;
+            border: 4px solid #df00ff !important;
+            border-radius: 0px !important;
+            color: #00f0ff !important;
+        }
+        .theme-retro_arcade .sim-dialog-title {
+            color: #df00ff !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.75rem !important;
+            text-shadow: 0 0 5px #df00ff !important;
+        }
+        .theme-retro_arcade .sim-dialog-desc {
+            color: white !important;
+            font-size: 0.55rem !important;
+            line-height: 1.6 !important;
+        }
+        .theme-retro_arcade .sim-dialog-input {
+            background-color: #0c001a !important;
+            border: 2px solid #00f0ff !important;
+            color: white !important;
+            border-radius: 0px !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 0.6rem !important;
+        }
+        .theme-retro_arcade .btn-dialog-confirm {
+            background-color: black !important;
+            color: #00f0ff !important;
+            border: 2px solid #00f0ff !important;
+            border-radius: 0px !important;
+        }
+        .theme-retro_arcade .btn-dialog-cancel {
+            background-color: black !important;
+            color: #ff0055 !important;
+            border: 2px solid #ff0055 !important;
+            border-radius: 0px !important;
+        }
     </style>
 </head>
 <body>
@@ -1561,7 +2433,7 @@ if (file_exists($packagesFile)) {
         <div class="simulator-area">
             <div class="tablet-device">
                 <div class="tablet-lens"></div>
-                <div class="screen-container">
+                <div class="screen-container theme-<?php echo strtolower($appTheme); ?>">
                     
                     <!-- Status Bar -->
                     <div class="status-bar">

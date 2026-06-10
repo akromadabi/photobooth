@@ -27,6 +27,7 @@ if [ -d "backend" ]; then
     cp backend/*.json . 2>/dev/null || true
     cp backend/*.html . 2>/dev/null || true
     cp backend/*.png . 2>/dev/null || true
+    cp backend/*.apk . 2>/dev/null || true
     cp -r backend/characters . 2>/dev/null || true
     cp -r backend/frames . 2>/dev/null || true
 else

@@ -45,6 +45,8 @@ import androidx.core.content.ContextCompat
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
 import com.example.photobooth.ui.frame.getFramesForLayout
+import com.example.photobooth.theme.AppTheme
+import com.example.photobooth.theme.AppThemeType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -102,7 +104,7 @@ fun CameraCaptureScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color(0xFF0F0F12)),
+                .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -110,15 +112,15 @@ fun CameraCaptureScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(24.dp)
             ) {
-                Text("Kamera Diperlukan", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Kamera Diperlukan", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Text(
                     text = "Aplikasi photobooth membutuhkan izin kamera untuk mengambil foto Anda.",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center
                 )
                 Button(
                     onClick = { launcher.launch(Manifest.permission.CAMERA) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                 ) {
                     Text("Berikan Izin")
                 }
@@ -371,7 +373,7 @@ fun CameraCaptureLayout(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0F0F12))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Fullscreen Camera Preview
         AndroidView(
@@ -426,12 +428,12 @@ fun CameraCaptureLayout(
             Box(
                 modifier = Modifier
                     .size(160.dp)
-                    .background(Color(0xFFE63946).copy(alpha = 0.85f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = countdownValue.toString(),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 80.sp,
                     fontWeight = FontWeight.Black,
                     textAlign = TextAlign.Center
@@ -456,10 +458,14 @@ fun CameraCaptureLayout(
                     .background(Color.Black.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center
             ) {
+                val isCutePastel = AppTheme.type == AppThemeType.CUTE_PASTEL
                 Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24).copy(alpha = 0.95f)),
-                    border = BorderStroke(2.dp, Color(0xFFE63946)),
+                    shape = RoundedCornerShape(if (isCutePastel) 16.dp else 24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+                    border = BorderStroke(
+                        width = if (isCutePastel) 3.dp else 2.dp,
+                        color = MaterialTheme.colorScheme.outline
+                    ),
                     modifier = Modifier.padding(32.dp).width(360.dp)
                 ) {
                     Column(
@@ -469,20 +475,20 @@ fun CameraCaptureLayout(
                     ) {
                         Text(
                             text = "📸 OTOMATIS AKTIF",
-                            color = Color(0xFFE63946),
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black
                         )
                         Text(
                             text = "SENYUM LEBAR UNTUK MEMULAI FOTO!",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
                         Text(
                             text = "Kiosk akan mendeteksi senyuman Anda secara otomatis untuk memulai jepretan secara hands-free.",
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             fontSize = 11.sp,
                             textAlign = TextAlign.Center,
                             lineHeight = 16.sp
@@ -493,13 +499,13 @@ fun CameraCaptureLayout(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             CircularProgressIndicator(
-                                color = Color(0xFFE63946),
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp
                             )
                             Text(
                                 text = "Menunggu senyuman...",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 fontSize = 12.sp
                             )
                         }
@@ -509,13 +515,13 @@ fun CameraCaptureLayout(
                                 isWaitingForSmile = false
                                 isTimerActive = true
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 text = "MULAI FOTO",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )

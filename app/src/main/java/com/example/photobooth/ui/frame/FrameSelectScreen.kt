@@ -30,6 +30,8 @@ import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
 import com.example.photobooth.data.FrameConfig
 import com.example.photobooth.data.Slot
+import com.example.photobooth.theme.AppTheme
+import com.example.photobooth.theme.AppThemeType
 import com.google.gson.Gson
 import java.io.File
 
@@ -67,16 +69,16 @@ fun FrameSelectScreen(
                 title = { Text("PILIH TEMPLATE BINGKAI", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF0F0F12),
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
-        containerColor = Color(0xFF0F0F12),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         Column(
@@ -88,7 +90,7 @@ fun FrameSelectScreen(
         ) {
             Text(
                 text = "Pilih desain bingkai untuk foto Anda",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 32.dp)
@@ -147,10 +149,14 @@ fun FrameCard(
     val cardAspectRatio = if (isStrip) 0.5f else 1.2f
     val padding = if (isStrip) 8.dp else 16.dp
 
+    val isCutePastel = AppTheme.type == AppThemeType.CUTE_PASTEL
     Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+        shape = RoundedCornerShape(if (isCutePastel) 12.dp else 20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(
+            width = if (isCutePastel) 3.dp else 1.dp,
+            color = MaterialTheme.colorScheme.outline
+        ),
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(cardAspectRatio)
@@ -171,7 +177,7 @@ fun FrameCard(
                     .padding(horizontal = padding)
                     .clip(RoundedCornerShape(8.dp))
                     .background(parsedColor)
-                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 val frameWidth = frame.width.coerceAtLeast(1).toFloat()
@@ -206,13 +212,13 @@ fun FrameCard(
                             modifier = Modifier
                                 .offset(x = slotLeft, y = slotTop)
                                 .size(slotWidth, slotHeight)
-                                .background(Color.White.copy(alpha = 0.05f)),
+                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "👤",
                                 fontSize = (slotHeight.value * 0.45f).sp,
-                                color = Color.White.copy(alpha = 0.25f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -233,7 +239,7 @@ fun FrameCard(
             
             Text(
                 text = frame.name,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -322,6 +328,42 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     height = 2000,
                     backgroundColor = "#ffb7b2",
                     imageUrl = "frames/creative_strip_pink.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "seoul_aesthetic",
+                    name = "Seoul Aesthetic",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#f5f2eb",
+                    imageUrl = "frames/seoul_aesthetic.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "love_factory",
+                    name = "Love Factory Y2K",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#18181b",
+                    imageUrl = "frames/love_factory.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "cyber_neon",
+                    name = "Cyber Neon Y2K",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#0a0b10",
+                    imageUrl = "frames/cyber_neon.png",
                     slots = stripSlots
                 )
             )

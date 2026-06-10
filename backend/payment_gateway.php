@@ -38,7 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action']) && !empty(
         // Load settings to verify signature
         $settingsFile = __DIR__ . '/settings.json';
         $settings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
-        $serverKey = isset($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : '';
+        
+        // Load appropriate server key based on environment with fallback
+        $midtransEnv = isset($settings['midtrans_environment']) ? $settings['midtrans_environment'] : 'sandbox';
+        if ($midtransEnv === 'production') {
+            $serverKey = !empty($settings['midtrans_production_server_key']) ? $settings['midtrans_production_server_key'] : (isset($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : '');
+        } else {
+            $serverKey = !empty($settings['midtrans_sandbox_server_key']) ? $settings['midtrans_sandbox_server_key'] : (isset($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : '');
+        }
         
         // Verify signature
         $localSignature = hash("sha512", $orderId . $statusCode . $grossAmount . $serverKey);
@@ -99,8 +106,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'check_midtrans_status') {
     if ($orderId) {
         $settingsFile = __DIR__ . '/settings.json';
         $settings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
-        $serverKey = isset($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : '';
         $isProduction = isset($settings['midtrans_environment']) && $settings['midtrans_environment'] === 'production';
+        
+        if ($isProduction) {
+            $serverKey = !empty($settings['midtrans_production_server_key']) ? $settings['midtrans_production_server_key'] : (isset($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : '');
+        } else {
+            $serverKey = !empty($settings['midtrans_sandbox_server_key']) ? $settings['midtrans_sandbox_server_key'] : (isset($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : '');
+        }
         
         if (!$serverKey) {
             echo json_encode(['success' => false, 'message' => 'Server Key Midtrans tidak dikonfigurasi.']);
@@ -258,9 +270,22 @@ $defaults = [
     "payment_mode" => "dummy",
     "midtrans_server_key" => "",
     "midtrans_client_key" => "",
+    "midtrans_sandbox_server_key" => "",
+    "midtrans_sandbox_client_key" => "",
+    "midtrans_production_server_key" => "",
+    "midtrans_production_client_key" => "",
     "midtrans_environment" => "sandbox"
 ];
 $settings = array_merge($defaults, (array)$settings);
+
+// Dynamic mapping resolution:
+if ($settings['midtrans_environment'] === 'production') {
+    $settings['midtrans_client_key'] = !empty($settings['midtrans_production_client_key']) ? $settings['midtrans_production_client_key'] : $settings['midtrans_client_key'];
+    $settings['midtrans_server_key'] = !empty($settings['midtrans_production_server_key']) ? $settings['midtrans_production_server_key'] : $settings['midtrans_server_key'];
+} else {
+    $settings['midtrans_client_key'] = !empty($settings['midtrans_sandbox_client_key']) ? $settings['midtrans_sandbox_client_key'] : $settings['midtrans_client_key'];
+    $settings['midtrans_server_key'] = !empty($settings['midtrans_sandbox_server_key']) ? $settings['midtrans_sandbox_server_key'] : $settings['midtrans_server_key'];
+}
 
 $state = getQueueState($queueFile);
 $currentQueueNumber = 0;

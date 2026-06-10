@@ -9,5 +9,6 @@ data class KioskConfigDto(
     @SerializedName("countdown_seconds") val countdownSeconds: Int?,
     @SerializedName("total_shots") val totalShots: Int?,
     @SerializedName("printer_type") val printerType: String?,
-    @SerializedName("use_biometric") val useBiometric: Boolean?
+    @SerializedName("use_biometric") val useBiometric: Boolean?,
+    @SerializedName("app_theme") val appTheme: String?
 )

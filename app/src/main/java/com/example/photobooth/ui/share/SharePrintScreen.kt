@@ -315,7 +315,7 @@ fun SharePrintScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0F0F12))
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         // Direct Close Button in the top right corner
@@ -328,7 +328,7 @@ fun SharePrintScreen(
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Lewati",
-                tint = Color.White.copy(alpha = 0.6f)
+                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
         }
 
@@ -350,13 +350,13 @@ fun SharePrintScreen(
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Success",
-                        tint = Color(0xFFE63946),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(48.dp)
                     )
                     
                     Text(
                         text = "TERIMA KASIH!",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp
@@ -365,40 +365,40 @@ fun SharePrintScreen(
                     // Status Card
                     Card(
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Status Proses:", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            Text("Status Proses:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
                             
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Simpan Digital:", color = Color.White, fontSize = 13.sp)
+                                Text("Simpan Digital:", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                                 if (isUploading) {
-                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                                 } else {
-                                    Text(uploadStatus, color = Color.LightGray, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(uploadStatus, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                             
                             if (shouldPrint) {
-                                Divider(color = Color(0xFF2A2A35))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Cetak Fisik:", color = Color.White, fontSize = 13.sp)
+                                    Text("Cetak Fisik:", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                                     if (isPrinting) {
-                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                                     } else {
-                                        Text(printStatus, color = Color.LightGray, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                        Text(printStatus, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }
@@ -432,7 +432,7 @@ fun SharePrintScreen(
                         
                         Text(
                             text = "Pindai QR Code di atas dengan HP Anda untuk mengunduh foto digital.",
-                            color = Color.LightGray,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                             fontSize = 11.sp,
                             textAlign = TextAlign.Center,
                             lineHeight = 15.sp
@@ -455,13 +455,13 @@ fun SharePrintScreen(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Success",
-                    tint = Color(0xFFE63946),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(64.dp)
                 )
                 
                 Text(
                     text = "TERIMA KASIH!",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp
@@ -470,40 +470,40 @@ fun SharePrintScreen(
                 // Status Card
                 Card(
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Status Proses:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text("Status Proses:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
                         
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Simpan Digital:", color = Color.White, fontSize = 14.sp)
+                            Text("Simpan Digital:", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             if (isUploading) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                             } else {
-                                Text(uploadStatus, color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text(uploadStatus, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                         
                         if (shouldPrint) {
-                            Divider(color = Color(0xFF2A2A35))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Cetak Fisik:", color = Color.White, fontSize = 14.sp)
+                                Text("Cetak Fisik:", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                 if (isPrinting) {
-                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFE63946))
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                                 } else {
-                                    Text(printStatus, color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(printStatus, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -533,7 +533,7 @@ fun SharePrintScreen(
                     
                     Text(
                         text = "Pindai QR Code di atas dengan HP Anda\nuntuk mengunduh file foto digital.",
-                        color = Color.LightGray,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                         lineHeight = 18.sp
@@ -545,7 +545,7 @@ fun SharePrintScreen(
         // Bottom Finish Button
         Button(
             onClick = onFinishClick,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -558,11 +558,16 @@ fun SharePrintScreen(
             } else {
                 "SELESAI"
             }
-            Text(buttonText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(
+                text = buttonText,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
     }
 
-    // Manual print flow selection dialog (if manual session without package)
+    // Manual print flow selection dialog (if manual kiosk session)
     if (shouldPrint && packageId.isEmpty() && showManualPrintOption) {
         Dialog(onDismissRequest = { 
             showManualPrintOption = false 
@@ -570,8 +575,8 @@ fun SharePrintScreen(
         }) {
             Card(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -581,11 +586,11 @@ fun SharePrintScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    Text("Pilih Tipe Cetakan", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                    Text("Pilih Tipe Cetakan", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
                     
                     Text(
                         text = "Kiosk berjalan dalam sesi manual (tanpa paket). Silakan pilih printer tujuan cetak Anda:",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                         lineHeight = 18.sp
@@ -600,13 +605,13 @@ fun SharePrintScreen(
                                 showManualPrintOption = false
                                 manualPrintFlow = "COLOR_PRINT"
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
                         ) {
-                            Text("CETAK FOTO WARNA", fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("CETAK FOTO WARNA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                     
@@ -616,13 +621,13 @@ fun SharePrintScreen(
                                 showManualPrintOption = false
                                 manualPrintFlow = "RECEIPT"
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
                         ) {
-                            Text("CETAK STRUK THERMAL", fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("CETAK STRUK THERMAL", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondary)
                         }
                     }
                     
@@ -631,14 +636,14 @@ fun SharePrintScreen(
                             showManualPrintOption = false
                             isPrinting = false
                         },
-                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
                     ) {
-                        Text("LEWATI TANPA CETAK", color = Color.White)
+                        Text("LEWATI TANPA CETAK", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

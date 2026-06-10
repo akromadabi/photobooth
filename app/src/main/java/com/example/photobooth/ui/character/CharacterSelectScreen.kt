@@ -26,6 +26,8 @@ import coil.compose.AsyncImage
 import com.example.photobooth.api.CharacterDto
 import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
+import com.example.photobooth.theme.AppTheme
+import com.example.photobooth.theme.AppThemeType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,16 +70,16 @@ fun CharacterSelectScreen(
                 title = { Text("PILIH KARAKTER AI", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF0F0F12),
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
-        containerColor = Color(0xFF0F0F12),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         Box(
@@ -92,8 +94,8 @@ fun CharacterSelectScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    CircularProgressIndicator(color = Color(0xFFE63946))
-                    Text("Memuat katalog karakter...", color = Color.Gray, fontSize = 14.sp)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Text("Memuat katalog karakter...", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 14.sp)
                 }
             } else if (errorMsg != null) {
                 Column(
@@ -101,18 +103,18 @@ fun CharacterSelectScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.width(320.dp)
                 ) {
-                    Text("Terjadi Gangguan", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(text = errorMsg!!, color = Color.LightGray, textAlign = TextAlign.Center, fontSize = 14.sp)
+                    Text("Terjadi Gangguan", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(text = errorMsg!!, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f), textAlign = TextAlign.Center, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = { reloadTrigger++ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                     ) {
                         Text("Coba Lagi")
                     }
                 }
             } else if (characters.isEmpty()) {
-                Text("Tidak ada karakter yang terdaftar saat ini.", color = Color.Gray, fontSize = 14.sp)
+                Text("Tidak ada karakter yang terdaftar saat ini.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 14.sp)
             } else {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -120,7 +122,7 @@ fun CharacterSelectScreen(
                 ) {
                     Text(
                         text = "Pilih salah satu karakter di bawah. Wajah Anda akan digabungkan secara otomatis.",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
@@ -151,10 +153,14 @@ fun CharacterCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isCutePastel = AppTheme.type == AppThemeType.CUTE_PASTEL
     Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+        shape = RoundedCornerShape(if (isCutePastel) 16.dp else 24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(
+            width = if (isCutePastel) 3.dp else 1.dp,
+            color = MaterialTheme.colorScheme.outline
+        ),
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
@@ -172,7 +178,7 @@ fun CharacterCard(
                     .fillMaxWidth()
                     .height(240.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
             )
 
             Column(
@@ -181,13 +187,13 @@ fun CharacterCard(
             ) {
                 Text(
                     text = character.name,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = character.description,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
                     maxLines = 3

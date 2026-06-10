@@ -1,5 +1,5 @@
 {
-    "version": 12,
+    "version": 13,
     "events": [
         {
             "id": "general",
@@ -267,6 +267,126 @@
                     "y": 50,
                     "width": 1100,
                     "height": 800
+                }
+            ]
+        },
+        {
+            "id": "seoul_aesthetic",
+            "name": "Seoul Aesthetic",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#f5f2eb",
+            "image_url": "frames/seoul_aesthetic.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
+                }
+            ]
+        },
+        {
+            "id": "love_factory",
+            "name": "Love Factory Y2K",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#18181b",
+            "image_url": "frames/love_factory.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
+                }
+            ]
+        },
+        {
+            "id": "cyber_neon",
+            "name": "Cyber Neon Y2K",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#0a0b10",
+            "image_url": "frames/cyber_neon.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 50,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 455,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 860,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1265,
+                    "width": 500,
+                    "height": 375
                 }
             ]
         }

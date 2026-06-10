@@ -86,4 +86,46 @@ class ConfigManager(context: Context) {
     var lastRemoteSessionId: String
         get() = prefs.getString(KEY_LAST_REMOTE_SESSION_ID, "") ?: ""
         set(value) = prefs.edit().putString(KEY_LAST_REMOTE_SESSION_ID, value).apply()
+
+    var appTheme: String
+        get() = prefs.getString("app_theme", "NEON_RED") ?: "NEON_RED"
+        set(value) = prefs.edit().putString("app_theme", value).apply()
+
+    var printerHistoryJson: String
+        get() = prefs.getString("printer_history_json", "[]") ?: "[]"
+        set(value) = prefs.edit().putString("printer_history_json", value).apply()
+
+    fun getPrinterHistory(): List<HistoryPrinter> {
+        return try {
+            val json = printerHistoryJson
+            val type = object : com.google.gson.reflect.TypeToken<List<HistoryPrinter>>() {}.type
+            com.google.gson.Gson().fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun savePrinterHistory(list: List<HistoryPrinter>) {
+        try {
+            val json = com.google.gson.Gson().toJson(list)
+            printerHistoryJson = json
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun addPrinterToHistory(address: String, name: String, type: String) {
+        val current = getPrinterHistory().toMutableList()
+        // Remove existing item with same address if it exists to avoid duplicates
+        current.removeAll { it.address == address }
+        // Add to the top of the list (highest priority by default)
+        current.add(0, HistoryPrinter(address, name, type))
+        savePrinterHistory(current)
+    }
 }
+
+data class HistoryPrinter(
+    val address: String, // E.g. "USB:vid,pid" or "BT:mac"
+    val name: String,    // E.g. "XP-420B" or Bluetooth name
+    val type: String     // "USB" or "BT"
+)

@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.photobooth"
         minSdk = 24
         targetSdk = 36
-        versionCode = 24
-        versionName = "1.16.3"
+        versionCode = 25
+        versionName = "1.17.0"
     }
 
     buildTypes {
@@ -104,3 +104,42 @@ dependencies {
   // Google ML Kit Face Detection (Smile-to-Trigger offline)
   implementation("com.google.mlkit:face-detection:16.1.7")
 }
+
+val rootDirFile = project.rootDir
+val apkVersionCode = android.defaultConfig.versionCode
+val apkVersionName = android.defaultConfig.versionName
+
+tasks.register<Copy>("copyApkToBackend") {
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    include("app-debug.apk")
+    into(rootDirFile.resolve("backend"))
+}
+
+tasks.register("generateUpdateJson") {
+    val updateJsonFile = rootDirFile.resolve("backend/update.json")
+    val content = """
+        {
+          "versionCode": ${apkVersionCode ?: 0},
+          "versionName": "${apkVersionName ?: ""}",
+          "apkUrl": "app-debug.apk",
+          "changeLog": "Pembaruan otomatis dari Gradle build."
+        }
+    """.trimIndent()
+    
+    inputs.property("versionCode", apkVersionCode ?: 0)
+    inputs.property("versionName", apkVersionName ?: "")
+    outputs.file(updateJsonFile)
+
+    doLast {
+        updateJsonFile.writeText(content)
+        println("Generated update.json at ${updateJsonFile.absolutePath}")
+    }
+}
+
+// Automatically execute the finalizers after assembleDebug completes successfully
+afterEvaluate {
+    tasks.named("assembleDebug") {
+        finalizedBy("copyApkToBackend", "generateUpdateJson")
+    }
+}
+

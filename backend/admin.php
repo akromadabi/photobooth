@@ -17,13 +17,40 @@ function loadSettings($file) {
         "payment_mode" => "dummy",
         "midtrans_server_key" => "",
         "midtrans_client_key" => "",
+        "midtrans_sandbox_server_key" => "",
+        "midtrans_sandbox_client_key" => "",
+        "midtrans_production_server_key" => "",
+        "midtrans_production_client_key" => "",
         "midtrans_environment" => "sandbox",
-        "fal_key" => ""
+        "fal_key" => "",
+        "app_theme" => "NEON_RED"
     ];
     if (file_exists($file)) {
         $loaded = json_decode(file_get_contents($file), true);
         if (is_array($loaded)) {
-            return array_merge($defaults, $loaded);
+            $merged = array_merge($defaults, $loaded);
+            
+            // Dynamic routing & backward compatibility
+            if ($merged['midtrans_environment'] === 'production') {
+                if (empty($merged['midtrans_production_client_key']) && !empty($merged['midtrans_client_key'])) {
+                    $merged['midtrans_production_client_key'] = $merged['midtrans_client_key'];
+                }
+                if (empty($merged['midtrans_production_server_key']) && !empty($merged['midtrans_server_key'])) {
+                    $merged['midtrans_production_server_key'] = $merged['midtrans_server_key'];
+                }
+                $merged['midtrans_client_key'] = $merged['midtrans_production_client_key'];
+                $merged['midtrans_server_key'] = $merged['midtrans_production_server_key'];
+            } else {
+                if (empty($merged['midtrans_sandbox_client_key']) && !empty($merged['midtrans_client_key'])) {
+                    $merged['midtrans_sandbox_client_key'] = $merged['midtrans_client_key'];
+                }
+                if (empty($merged['midtrans_sandbox_server_key']) && !empty($merged['midtrans_server_key'])) {
+                    $merged['midtrans_sandbox_server_key'] = $merged['midtrans_server_key'];
+                }
+                $merged['midtrans_client_key'] = $merged['midtrans_sandbox_client_key'];
+                $merged['midtrans_server_key'] = $merged['midtrans_sandbox_server_key'];
+            }
+            return $merged;
         }
     }
     return $defaults;
@@ -353,10 +380,26 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $printer = isset($_POST['printer_type']) ? $_POST['printer_type'] : 'NONE';
     $biometric = isset($_POST['use_biometric']) && $_POST['use_biometric'] == '1';
     $paymentMode = isset($_POST['payment_mode']) ? $_POST['payment_mode'] : 'dummy';
-    $midtransServerKey = isset($_POST['midtrans_server_key']) ? trim($_POST['midtrans_server_key']) : '';
-    $midtransClientKey = isset($_POST['midtrans_client_key']) ? trim($_POST['midtrans_client_key']) : '';
+    
+    // Read new separated keys
+    $midtransSandboxServerKey = isset($_POST['midtrans_sandbox_server_key']) ? trim($_POST['midtrans_sandbox_server_key']) : '';
+    $midtransSandboxClientKey = isset($_POST['midtrans_sandbox_client_key']) ? trim($_POST['midtrans_sandbox_client_key']) : '';
+    $midtransProductionServerKey = isset($_POST['midtrans_production_server_key']) ? trim($_POST['midtrans_production_server_key']) : '';
+    $midtransProductionClientKey = isset($_POST['midtrans_production_client_key']) ? trim($_POST['midtrans_production_client_key']) : '';
+    
     $midtransEnv = isset($_POST['midtrans_environment']) ? $_POST['midtrans_environment'] : 'sandbox';
+    
+    // Active keys for backwards compatibility fallback
+    if ($midtransEnv === 'production') {
+        $midtransClientKey = $midtransProductionClientKey;
+        $midtransServerKey = $midtransProductionServerKey;
+    } else {
+        $midtransClientKey = $midtransSandboxClientKey;
+        $midtransServerKey = $midtransSandboxServerKey;
+    }
+    
     $falKey = isset($_POST['fal_key']) ? trim($_POST['fal_key']) : '';
+    $appTheme = isset($_POST['app_theme']) ? $_POST['app_theme'] : 'NEON_RED';
     
     $settings = [
         "admin_pin" => $newPin ? $newPin : '1234',
@@ -367,8 +410,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         "payment_mode" => $paymentMode,
         "midtrans_server_key" => $midtransServerKey,
         "midtrans_client_key" => $midtransClientKey,
+        "midtrans_sandbox_server_key" => $midtransSandboxServerKey,
+        "midtrans_sandbox_client_key" => $midtransSandboxClientKey,
+        "midtrans_production_server_key" => $midtransProductionServerKey,
+        "midtrans_production_client_key" => $midtransProductionClientKey,
         "midtrans_environment" => $midtransEnv,
-        "fal_key" => $falKey
+        "fal_key" => $falKey,
+        "app_theme" => $appTheme
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -1875,6 +1923,92 @@ foreach ($weeklyStats as $date => $cnt) {
             border-radius: 12px;
             border: 1px solid #f1f5f9;
         }
+
+        /* Zoom Frame Styling */
+        .frame-card-preview-admin {
+            position: relative;
+            cursor: pointer;
+        }
+        .frame-preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            color: #ffffff;
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(4px);
+            border-radius: 10px;
+            z-index: 10;
+        }
+        .frame-card-preview-admin:hover .frame-preview-overlay {
+            opacity: 1;
+        }
+        .frame-preview-overlay i {
+            font-size: 1.6rem;
+            transform: scale(0.85);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: #ffffff;
+        }
+        .frame-card-preview-admin:hover .frame-preview-overlay i {
+            transform: scale(1);
+        }
+        .frame-preview-overlay span {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .zoom-wrapper {
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: transparent;
+        }
+        .zoom-bg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .zoom-bg-container.checkerboard {
+            background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: #0f172a;
+        }
+        .zoom-frame-img {
+            position: relative;
+            z-index: 2;
+            height: 420px;
+            width: auto;
+            max-width: 100%;
+            display: block;
+            object-fit: contain;
+            pointer-events: none;
+            transition: height 0.1s ease;
+        }
+        .zoom-mockup-slot {
+            position: absolute;
+            transition: all 0.1s ease;
+        }
     </style>
     <!-- Include QRCode Generator Library for Web -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -2127,6 +2261,16 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </div>
 
                                 <div class="form-group">
+                                    <label for="app_theme">Tema Tampilan Kiosk</label>
+                                    <select id="app_theme" name="app_theme" class="form-select">
+                                        <option value="NEON_RED" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'NEON_RED') ? 'selected' : ''; ?>>Neon Red (Modern)</option>
+                                        <option value="CUTE_PASTEL" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'CUTE_PASTEL') ? 'selected' : ''; ?>>Cute Pastel (Wood)</option>
+                                        <option value="LUXURY_GOLD" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'LUXURY_GOLD') ? 'selected' : ''; ?>>Luxury Gold (Wedding)</option>
+                                        <option value="RETRO_ARCADE" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'RETRO_ARCADE') ? 'selected' : ''; ?>>Retro Arcade (8-Bit)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
                                     <label for="payment_mode">Mode Pembayaran</label>
                                     <select id="payment_mode" name="payment_mode" class="form-select" onchange="toggleMidtransFields(this.value)">
                                         <option value="dummy" <?php echo $settings['payment_mode'] === 'dummy' ? 'selected' : ''; ?>>Simulasi / Dummy (Tanpa Kunci API)</option>
@@ -2141,38 +2285,85 @@ foreach ($weeklyStats as $date => $cnt) {
                                 <div class="form-grid">
                                     <div class="form-group">
                                         <label for="midtrans_environment">Environment Midtrans</label>
-                                        <select id="midtrans_environment" name="midtrans_environment" class="form-select">
+                                        <select id="midtrans_environment" name="midtrans_environment" class="form-select" onchange="toggleMidtransEnvFields(this.value)">
                                             <option value="sandbox" <?php echo $settings['midtrans_environment'] === 'sandbox' ? 'selected' : ''; ?>>Sandbox (Mode Uji Coba)</option>
                                             <option value="production" <?php echo $settings['midtrans_environment'] === 'production' ? 'selected' : ''; ?>>Production (Pembayaran Asli)</option>
                                         </select>
                                     </div>
                                     
-                                    <div class="form-group">
-                                        <label for="midtrans_client_key">Midtrans Client Key</label>
-                                        <input type="text" id="midtrans_client_key" name="midtrans_client_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_client_key']); ?>" placeholder="SB-Mid-client-...">
+                                    <!-- Sandbox Key Fields -->
+                                    <div class="form-group sandbox-group" style="<?php echo $settings['midtrans_environment'] === 'sandbox' ? '' : 'display: none;'; ?>">
+                                        <label for="midtrans_sandbox_client_key">Sandbox Client Key</label>
+                                        <input type="text" id="midtrans_sandbox_client_key" name="midtrans_sandbox_client_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_sandbox_client_key']); ?>" placeholder="SB-Mid-client-...">
                                     </div>
 
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label for="midtrans_server_key">Midtrans Server Key</label>
-                                        <input type="password" id="midtrans_server_key" name="midtrans_server_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_server_key']); ?>" placeholder="SB-Mid-server-...">
+                                    <div class="form-group sandbox-group" style="grid-column: span 2; <?php echo $settings['midtrans_environment'] === 'sandbox' ? '' : 'display: none;'; ?>">
+                                        <label for="midtrans_sandbox_server_key">Sandbox Server Key</label>
+                                        <input type="password" id="midtrans_sandbox_server_key" name="midtrans_sandbox_server_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_sandbox_server_key']); ?>" placeholder="SB-Mid-server-...">
+                                    </div>
+
+                                    <!-- Production Key Fields -->
+                                    <div class="form-group production-group" style="<?php echo $settings['midtrans_environment'] === 'production' ? '' : 'display: none;'; ?>">
+                                        <label for="midtrans_production_client_key">Production Client Key</label>
+                                        <input type="text" id="midtrans_production_client_key" name="midtrans_production_client_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_production_client_key']); ?>" placeholder="Mid-client-...">
+                                    </div>
+
+                                    <div class="form-group production-group" style="grid-column: span 2; <?php echo $settings['midtrans_environment'] === 'production' ? '' : 'display: none;'; ?>">
+                                        <label for="midtrans_production_server_key">Production Server Key</label>
+                                        <input type="password" id="midtrans_production_server_key" name="midtrans_production_server_key" class="form-input" value="<?php echo htmlspecialchars($settings['midtrans_production_server_key']); ?>" placeholder="Mid-server-...">
                                     </div>
                                 </div>
                             </div>
                             <script>
-                                function toggleMidtransFields(mode) {
-                                    const section = document.getElementById('midtrans-settings-section');
-                                    const serverKey = document.getElementById('midtrans_server_key');
-                                    const clientKey = document.getElementById('midtrans_client_key');
-                                    if (mode === 'midtrans') {
-                                        section.style.display = 'block';
-                                        serverKey.setAttribute('required', 'required');
-                                        clientKey.setAttribute('required', 'required');
+                                function toggleMidtransEnvFields(env) {
+                                    const sandboxGroups = document.querySelectorAll('.sandbox-group');
+                                    const productionGroups = document.querySelectorAll('.production-group');
+                                    const paymentMode = document.getElementById('payment_mode').value;
+
+                                    if (env === 'sandbox') {
+                                        sandboxGroups.forEach(el => {
+                                            el.style.display = ''; // Revert to stylesheet default display style
+                                            const input = el.querySelector('input');
+                                            if (paymentMode === 'midtrans') {
+                                                input.setAttribute('required', 'required');
+                                            }
+                                        });
+                                        productionGroups.forEach(el => {
+                                            el.style.display = 'none';
+                                            const input = el.querySelector('input');
+                                            input.removeAttribute('required');
+                                        });
                                     } else {
-                                        section.style.display = 'none';
-                                        serverKey.removeAttribute('required');
-                                        clientKey.removeAttribute('required');
+                                        sandboxGroups.forEach(el => {
+                                            el.style.display = 'none';
+                                            const input = el.querySelector('input');
+                                            input.removeAttribute('required');
+                                        });
+                                        productionGroups.forEach(el => {
+                                            el.style.display = ''; // Revert to stylesheet default display style
+                                            const input = el.querySelector('input');
+                                            if (paymentMode === 'midtrans') {
+                                                input.setAttribute('required', 'required');
+                                            }
+                                        });
                                     }
                                 }
+
+                                function toggleMidtransFields(mode) {
+                                    const section = document.getElementById('midtrans-settings-section');
+                                    if (mode === 'midtrans') {
+                                        section.style.display = 'block';
+                                        const env = document.getElementById('midtrans_environment').value;
+                                        toggleMidtransEnvFields(env);
+                                    } else {
+                                        section.style.display = 'none';
+                                        // Remove required attributes from all inputs
+                                        document.querySelectorAll('.sandbox-group input, .production-group input').forEach(input => {
+                                            input.removeAttribute('required');
+                                        });
+                                    }
+                                }
+                                
                                 // Set initial required attributes
                                 document.addEventListener('DOMContentLoaded', () => {
                                     const selectEl = document.getElementById('payment_mode');
@@ -2432,8 +2623,12 @@ foreach ($weeklyStats as $date => $cnt) {
                                 <?php else: ?>
                                     <?php foreach ($framesList as $f): ?>
                                         <div class="frame-card-admin">
-                                            <div class="frame-card-preview-admin">
+                                            <div class="frame-card-preview-admin" onclick="openFrameZoom(<?php echo htmlspecialchars(json_encode($f)); ?>)">
                                                 <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" alt="<?php echo htmlspecialchars($f['name']); ?>" onerror="this.src='https://placehold.co/150x180/121212/ffffff?text=No+Preview'">
+                                                <div class="frame-preview-overlay">
+                                                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                                    <span>Zoom Detail</span>
+                                                </div>
                                             </div>
                                             <div class="frame-card-meta">
                                                 <div class="frame-card-title"><?php echo htmlspecialchars($f['name']); ?></div>
@@ -2648,6 +2843,82 @@ foreach ($weeklyStats as $date => $cnt) {
         </div>
     </div>
 
+    <!-- Modal Frame Zoom -->
+    <div class="modal" id="frameZoomModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <button class="modal-close" onclick="closeFrameZoom()">&times;</button>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-magnifying-glass-plus" style="color: var(--primary);"></i>
+                <span id="zoomFrameTitle">Detail Bingkai</span>
+            </div>
+            
+            <div class="modal-split" style="height: 520px;">
+                <div class="modal-preview" style="position: relative; overflow: auto; background-color: #0f172a; padding: 24px; display: flex; justify-content: center; align-items: center;">
+                    <div id="zoomFrameContainer" style="position: relative; display: inline-block; margin: auto;">
+                        <!-- Will be dynamically populated by JS -->
+                    </div>
+                </div>
+                
+                <div class="modal-actions" style="width: 280px; justify-content: flex-start; padding-top: 10px;">
+                    <div class="card-section" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 0; background: #f8fafc; width: 100%;">
+                        <h4 style="margin-bottom: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                            <i class="fa-solid fa-circle-info"></i> Informasi Bingkai
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem;">
+                            <div>ID Bingkai: <b id="zoomFrameId" style="font-family: monospace; color: var(--primary);"></b></div>
+                            <div>Tipe: <b id="zoomFrameType"></b></div>
+                            <div>Event: <b id="zoomFrameEvent"></b></div>
+                            <div>Jumlah Slot: <b id="zoomFrameSlots"></b></div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>Warna Latar:</span>
+                                <span id="zoomFrameBgColorText" style="font-family: monospace; font-weight: 700;"></span>
+                                <span id="zoomFrameBgColorColor" style="display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #cbd5e1;"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-section" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 0; background: #f8fafc; width: 100%; display: flex; flex-direction: column; gap: 12px;">
+                        <h4 style="color: var(--text-main); font-size: 0.9rem; font-weight: 700;">
+                            <i class="fa-solid fa-sliders"></i> Tampilan Pratinjau
+                        </h4>
+                        
+                        <!-- Toggle Plain vs Mockup -->
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Mode Latar Belakang:</span>
+                            <div style="display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: white;">
+                                <button type="button" id="btnZoomModePlain" class="btn-layer-toggle active" style="flex: 1; border: none; padding: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; text-align: center;" onclick="setZoomMode('plain')">
+                                    <i class="fa-solid fa-border-none"></i> Transparan
+                                </button>
+                                <button type="button" id="btnZoomModeMockup" class="btn-layer-toggle" style="flex: 1; border: none; padding: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; text-align: center;" onclick="setZoomMode('mockup')">
+                                    <i class="fa-solid fa-user-astronaut"></i> Mockup
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Zoom Slider -->
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Skala Perbesaran:</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-magnifying-glass-minus" style="font-size: 0.8rem; color: var(--text-muted);"></i>
+                                <input type="range" id="zoomScaleRange" min="1" max="2" step="0.1" value="1" style="flex: 1; accent-color: var(--primary);" oninput="applyZoomScale(this.value)">
+                                <i class="fa-solid fa-magnifying-glass-plus" style="font-size: 0.8rem; color: var(--primary);"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <button id="zoomEditBtn" class="btn-primary" style="width: 100%;">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit Bingkai Ini
+                        </button>
+                        <button class="btn-secondary" style="width: 100%; border: 1px solid var(--border-color);" onclick="closeFrameZoom()">
+                            <i class="fa-solid fa-xmark"></i> Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Tab switching logic
         const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
@@ -2767,9 +3038,174 @@ foreach ($weeklyStats as $date => $cnt) {
             modal.classList.remove('active');
         }
 
+        // Zoom Frame Modal Handlers
+        let currentFrame = null;
+        let currentZoomImg = null;
+        let currentBgContainer = null;
+        let zoomObserver = null;
+
+        function openFrameZoom(frame) {
+            currentFrame = frame;
+            
+            // Set title
+            document.getElementById('zoomFrameTitle').innerText = 'Detail Bingkai: ' + frame.name;
+            
+            // Set metadata
+            document.getElementById('zoomFrameId').innerText = frame.id;
+            document.getElementById('zoomFrameType').innerText = frame.type.toUpperCase();
+            
+            // Event Name
+            let evtName = "Umum (Default)";
+            if (typeof eventsList !== 'undefined') {
+                const evt = eventsList.find(e => e.id === frame.event_id);
+                if (evt) evtName = evt.name;
+            }
+            document.getElementById('zoomFrameEvent').innerText = evtName;
+            document.getElementById('zoomFrameSlots').innerText = frame.slots.length + ' Foto';
+            
+            const bgColor = frame.background_color || '#ffffff';
+            document.getElementById('zoomFrameBgColorText').innerText = bgColor;
+            document.getElementById('zoomFrameBgColorColor').style.backgroundColor = bgColor;
+            
+            // Set Edit button click handler
+            document.getElementById('zoomEditBtn').onclick = function() {
+                closeFrameZoom();
+                editFrame(frame);
+            };
+            
+            // Create preview layout
+            const container = document.getElementById('zoomFrameContainer');
+            container.innerHTML = '';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'zoom-wrapper';
+            
+            const bgContainer = document.createElement('div');
+            bgContainer.className = 'zoom-bg-container checkerboard';
+            currentBgContainer = bgContainer;
+            
+            const img = document.createElement('img');
+            img.src = frame.image_url + '?v=' + Date.now();
+            img.className = 'zoom-frame-img';
+            currentZoomImg = img;
+            
+            wrapper.appendChild(bgContainer);
+            wrapper.appendChild(img);
+            container.appendChild(wrapper);
+            
+            // Reset zoom slider to 1.0 and active button states
+            document.getElementById('zoomScaleRange').value = 1.0;
+            img.style.height = '420px'; // Initial base height
+            
+            const btnPlain = document.getElementById('btnZoomModePlain');
+            const btnMockup = document.getElementById('btnZoomModeMockup');
+            btnPlain.classList.add('active');
+            btnMockup.classList.remove('active');
+            
+            // Listen for image load to initialize observer and render slots
+            img.onload = function() {
+                renderMockupSlots(frame, img, bgContainer);
+                
+                // Setup ResizeObserver
+                if (zoomObserver) {
+                    zoomObserver.disconnect();
+                }
+                zoomObserver = new ResizeObserver(() => {
+                    renderMockupSlots(frame, img, bgContainer);
+                });
+                zoomObserver.observe(img);
+            };
+            
+            // Show Modal
+            document.getElementById('frameZoomModal').classList.add('active');
+        }
+
+        function closeFrameZoom() {
+            document.getElementById('frameZoomModal').classList.remove('active');
+            if (zoomObserver) {
+                zoomObserver.disconnect();
+                zoomObserver = null;
+            }
+            currentFrame = null;
+            currentZoomImg = null;
+            currentBgContainer = null;
+        }
+
+        function setZoomMode(mode) {
+            const btnPlain = document.getElementById('btnZoomModePlain');
+            const btnMockup = document.getElementById('btnZoomModeMockup');
+            
+            if (mode === 'plain') {
+                btnPlain.classList.add('active');
+                btnMockup.classList.remove('active');
+            } else {
+                btnPlain.classList.remove('active');
+                btnMockup.classList.add('active');
+            }
+            
+            if (currentFrame && currentZoomImg && currentBgContainer) {
+                renderMockupSlots(currentFrame, currentZoomImg, currentBgContainer);
+            }
+        }
+
+        function applyZoomScale(scale) {
+            if (currentZoomImg) {
+                // base height is 420px, we multiply it by scale
+                currentZoomImg.style.height = (420 * scale) + 'px';
+            }
+        }
+
+        function renderMockupSlots(frame, imgEl, bgContainer) {
+            bgContainer.innerHTML = '';
+            const naturalW = imgEl.naturalWidth;
+            const naturalH = imgEl.naturalHeight;
+            const renderedW = imgEl.width;
+            const renderedH = imgEl.height;
+            
+            if (!naturalW || !naturalH || !renderedW || !renderedH) return;
+            
+            const scaleX = renderedW / naturalW;
+            const scaleY = renderedH / naturalH;
+            
+            // Check if mockup mode is active
+            const isMockup = document.getElementById('btnZoomModeMockup').classList.contains('active');
+            
+            if (isMockup) {
+                // Place beautiful sample photos (using Unsplash high-quality portrait URLs)
+                const dummyImages = [
+                    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+                    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400',
+                    'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=400',
+                    'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400'
+                ];
+                
+                frame.slots.forEach((slot, index) => {
+                    const slotDiv = document.createElement('div');
+                    slotDiv.className = 'zoom-mockup-slot';
+                    slotDiv.style.position = 'absolute';
+                    slotDiv.style.left = (slot.x * scaleX) + 'px';
+                    slotDiv.style.top = (slot.y * scaleY) + 'px';
+                    slotDiv.style.width = (slot.width * scaleX) + 'px';
+                    slotDiv.style.height = (slot.height * scaleY) + 'px';
+                    slotDiv.style.backgroundImage = `url('${dummyImages[index % dummyImages.length]}')`;
+                    slotDiv.style.backgroundSize = 'cover';
+                    slotDiv.style.backgroundPosition = 'center';
+                    slotDiv.style.zIndex = 1;
+                    bgContainer.appendChild(slotDiv);
+                });
+                bgContainer.classList.remove('checkerboard');
+            } else {
+                bgContainer.classList.add('checkerboard');
+            }
+        }
+
         window.onclick = function(event) {
             if (event.target === modal) {
                 closeDetails();
+            }
+            const zoomModal = document.getElementById('frameZoomModal');
+            if (event.target === zoomModal) {
+                closeFrameZoom();
             }
         }
 

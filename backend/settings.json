@@ -4,9 +4,14 @@
     "total_shots": 4,
     "printer_type": "NONE",
     "use_biometric": true,
-    "payment_mode": "midtrans",
+    "payment_mode": "dummy",
     "midtrans_server_key": "",
     "midtrans_client_key": "",
+    "midtrans_sandbox_server_key": "",
+    "midtrans_sandbox_client_key": "",
+    "midtrans_production_server_key": "",
+    "midtrans_production_client_key": "",
     "midtrans_environment": "sandbox",
-    "fal_key": ""
+    "fal_key": "",
+    "app_theme": "RETRO_ARCADE"
 }

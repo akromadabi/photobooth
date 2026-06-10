@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Allow access to files in context.cacheDir -->
+    <cache-path name="shared_files" path="." />
+    <!-- Allow access to files in context.externalCacheDir -->
+    <external-cache-path name="shared_external_files" path="." />
+    <!-- Allow access to files in context.getExternalFilesDir(null) -->
+    <external-files-path name="external_files" path="." />
+</paths>

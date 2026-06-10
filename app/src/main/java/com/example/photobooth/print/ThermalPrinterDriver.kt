@@ -38,15 +38,19 @@ class ThermalPrinterDriver : PrinterManager {
         val configManager = ConfigManager(context)
         val address = configManager.printerAddress // format: "USB:vid,pid" or "BT:mac_address"
         
-        if (address.startsWith("BT:")) {
-            val mac = address.substring(3)
-            return@withContext printViaBluetooth(bitmap, mac, context)
-        } else if (address.startsWith("USB:")) {
-            val parts = address.substring(4).split(",")
-            if (parts.size == 2) {
-                val vid = parts[0].toIntOrNull() ?: 0
-                val pid = parts[1].toIntOrNull() ?: 0
-                return@withContext printViaUsb(bitmap, vid, pid, context)
+        if (address.isNotEmpty()) {
+            val result = printToSpecificAddress(bitmap, address, context)
+            if (result is PrintResult.Success) {
+                return@withContext result
+            }
+        }
+        
+        // Active printer failed or offline: Try fallback auto-selection based on priority list
+        val newAddress = PrinterAutoSelector.autoSelectActivePrinter(context)
+        if (newAddress != null && newAddress != address) {
+            val result = printToSpecificAddress(bitmap, newAddress, context)
+            if (result is PrintResult.Success) {
+                return@withContext result
             }
         }
         
@@ -56,7 +60,25 @@ class ThermalPrinterDriver : PrinterManager {
             return@withContext usbResult
         }
         
-        PrintResult.Error("Printer tidak terkonfigurasi. Konfigurasi alamat printer di Menu Admin.")
+        PrintResult.Error("Printer tidak terkonfigurasi atau tidak tersedia. Hubungkan printer di Menu Admin.")
+    }
+
+    private suspend fun printToSpecificAddress(bitmap: Bitmap, address: String, context: Context): PrintResult {
+        return if (address.startsWith("BT:")) {
+            val mac = address.substring(3)
+            printViaBluetooth(bitmap, mac, context)
+        } else if (address.startsWith("USB:")) {
+            val parts = address.substring(4).split(",")
+            if (parts.size == 2) {
+                val vid = parts[0].toIntOrNull() ?: 0
+                val pid = parts[1].toIntOrNull() ?: 0
+                printViaUsb(bitmap, vid, pid, context)
+            } else {
+                PrintResult.Error("Format alamat USB printer tidak valid")
+            }
+        } else {
+            PrintResult.Error("Tipe printer tidak dikenal")
+        }
     }
 
     private fun generateTsplData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {

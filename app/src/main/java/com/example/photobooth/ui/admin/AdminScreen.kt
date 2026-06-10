@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -54,6 +55,11 @@ import coil.compose.AsyncImage
 import com.example.photobooth.api.HistoryItem
 import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
+import com.example.photobooth.data.HistoryPrinter
+import android.content.ContextWrapper
+import androidx.fragment.app.FragmentActivity
+import com.example.photobooth.data.UpdateManager
+import com.example.photobooth.data.UpdateInfo
 import com.example.photobooth.print.ColorPrinterDriver
 import com.example.photobooth.print.PrintResult
 import com.example.photobooth.print.ThermalPrinterDriver
@@ -108,6 +114,7 @@ fun AdminScreen(
     var countdownSeconds by remember { mutableStateOf(configManager.countdownSeconds.toString()) }
     var totalShots by remember { mutableStateOf(configManager.totalShots.toString()) }
     var printerType by remember { mutableStateOf(configManager.printerType) }
+    var historyListState by remember { mutableStateOf(configManager.getPrinterHistory()) }
     val isThermalEnabled = remember(printerType) { printerType == "AUTO" || printerType == "THERMAL" }
     val isColorEnabled = remember(printerType) { printerType == "AUTO" || printerType == "COLOR" }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
@@ -627,6 +634,364 @@ fun AdminScreen(
                             }
                         }
 
+                        // Section: Kiosk Theme Customization
+                        var activeThemeState by remember { mutableStateOf(configManager.appTheme) }
+                        
+                        AdminCard(title = "Tema Tampilan Kiosk (Total Layout)") {
+                            Text(
+                                text = "Pilih gaya visual total untuk Kiosk. Tema akan merubah keseluruhan tata letak, gaya tombol, ornamen, dan tipografi.",
+                                color = Color.Gray,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // 2x2 Grid for Theme Previews
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Theme 1: Neon Red
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ThemePreviewCard(
+                                        name = "Neon Red (Modern)",
+                                        isSelected = activeThemeState == "NEON_RED",
+                                        previewContent = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color(0xFFE63946))
+                                                    .padding(6.dp)
+                                            ) {
+                                                Text("Jeprat", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(width = 40.dp, height = 15.dp)
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(Color(0xFF121212))
+                                                        .align(Alignment.BottomCenter),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("START", color = Color.White, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            activeThemeState = "NEON_RED"
+                                            configManager.appTheme = "NEON_RED"
+                                            Toast.makeText(context, "Tema diatur ke Neon Red!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                                
+                                // Theme 2: Cute Pastel
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ThemePreviewCard(
+                                        name = "Cute Pastel (Wood)",
+                                        isSelected = activeThemeState == "CUTE_PASTEL",
+                                        previewContent = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color(0xFFFBF8EB))
+                                                    .border(BorderStroke(1.dp, Color(0xFF4E3629)), RoundedCornerShape(4.dp))
+                                                    .padding(6.dp)
+                                            ) {
+                                                Text("🌸", fontSize = 8.sp, modifier = Modifier.align(Alignment.TopEnd))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(width = 30.dp, height = 12.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(Color(0xFFF7D070))
+                                                        .border(BorderStroke(1.dp, Color(0xFF4E3629)), RoundedCornerShape(8.dp))
+                                                        .align(Alignment.BottomCenter),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("START ➔", color = Color(0xFF4E3629), fontSize = 5.sp, fontWeight = FontWeight.Black)
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            activeThemeState = "CUTE_PASTEL"
+                                            configManager.appTheme = "CUTE_PASTEL"
+                                            Toast.makeText(context, "Tema diatur ke Cute Pastel!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Theme 3: Luxury Gold
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ThemePreviewCard(
+                                        name = "Luxury Gold (Wedding)",
+                                        isSelected = activeThemeState == "LUXURY_GOLD",
+                                        previewContent = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color(0xFF0B132B))
+                                                    .border(BorderStroke(0.5.dp, Color(0xFFD4AF37)), RoundedCornerShape(4.dp))
+                                                    .padding(6.dp)
+                                            ) {
+                                                Text("✦", color = Color(0xFFD4AF37), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(width = 45.dp, height = 12.dp)
+                                                        .clip(RoundedCornerShape(1.dp))
+                                                        .background(Color(0xFFD4AF37))
+                                                        .align(Alignment.BottomCenter),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("ENTER", color = Color(0xFF0B132B), fontSize = 5.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            activeThemeState = "LUXURY_GOLD"
+                                            configManager.appTheme = "LUXURY_GOLD"
+                                            Toast.makeText(context, "Tema diatur ke Luxury Gold!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                                
+                                // Theme 4: Retro Arcade
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ThemePreviewCard(
+                                        name = "Retro Arcade (8-Bit)",
+                                        isSelected = activeThemeState == "RETRO_ARCADE",
+                                        previewContent = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color(0xFF0B001A))
+                                                    .border(BorderStroke(1.dp, Color(0xFFDF00FF)), RoundedCornerShape(2.dp))
+                                                    .padding(6.dp)
+                                            ) {
+                                                Text("👾", fontSize = 8.sp, modifier = Modifier.align(Alignment.TopStart))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(width = 40.dp, height = 12.dp)
+                                                        .clip(RoundedCornerShape(0.dp))
+                                                        .background(Color(0xFFDF00FF))
+                                                        .border(BorderStroke(0.5.dp, Color(0xFF00F0FF)), RoundedCornerShape(0.dp))
+                                                        .align(Alignment.BottomCenter),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("START", color = Color.Black, fontSize = 5.sp, fontWeight = FontWeight.Black)
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            activeThemeState = "RETRO_ARCADE"
+                                            configManager.appTheme = "RETRO_ARCADE"
+                                            Toast.makeText(context, "Tema diatur ke Retro Arcade!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Card: Pembaruan Aplikasi
+                        val updateManager = remember { UpdateManager(context) }
+                        var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+                        var isCheckingUpdate by remember { mutableStateOf(false) }
+                        var updateError by remember { mutableStateOf<String?>(null) }
+                        var downloadProgress by remember { mutableStateOf<Float?>(null) }
+                        var isDownloading by remember { mutableStateOf(false) }
+                        var isInstallPermissionNeeded by remember { mutableStateOf(false) }
+
+                        val currentVersionName = remember { updateManager.getCurrentVersionName() }
+                        val currentVersionCode = remember { updateManager.getCurrentVersionCode() }
+
+                        AdminCard(title = "Pembaruan Aplikasi") {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text("Versi Sekarang", color = Color.Gray, fontSize = 11.sp)
+                                        Text("v$currentVersionName ($currentVersionCode)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    if (updateInfo != null) {
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("Versi Terbaru", color = Color.Gray, fontSize = 11.sp)
+                                            Text("v${updateInfo!!.versionName} (${updateInfo!!.versionCode})", color = Color(0xFF52B788), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                                
+                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 4.dp))
+                                
+                                if (updateError != null) {
+                                    Text(updateError!!, color = Color(0xFFE63946), fontSize = 12.sp)
+                                }
+                                
+                                if (updateInfo == null) {
+                                    if (isCheckingUpdate) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Memeriksa pembaruan...", color = Color.Gray, fontSize = 13.sp)
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                isCheckingUpdate = true
+                                                updateError = null
+                                                scope.launch {
+                                                    val info = updateManager.checkUpdate(backendUrl)
+                                                    isCheckingUpdate = false
+                                                    if (info != null) {
+                                                        updateInfo = info
+                                                    } else {
+                                                        updateError = "Gagal terhubung ke server update."
+                                                    }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text("PERIKSA PEMBARUAN", fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                } else {
+                                    val hasNewVersion = updateInfo!!.versionCode > currentVersionCode
+                                    if (hasNewVersion) {
+                                        Text(
+                                            text = "Pembaruan tersedia! Catatan rilis:\n${updateInfo!!.changeLog}",
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                        
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        
+                                        if (isDownloading) {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                LinearProgressIndicator(
+                                                    progress = downloadProgress ?: 0f,
+                                                    color = Color(0xFFE63946),
+                                                    trackColor = Color(0xFF2A2A35),
+                                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                                                )
+                                                val pct = ((downloadProgress ?: 0f) * 100).toInt()
+                                                Text("Mengunduh update: $pct%", color = Color.Gray, fontSize = 11.sp)
+                                            }
+                                        } else {
+                                            Button(
+                                                onClick = {
+                                                    if (!updateManager.canRequestPackageInstalls()) {
+                                                        isInstallPermissionNeeded = true
+                                                    } else {
+                                                        isDownloading = true
+                                                        updateError = null
+                                                        scope.launch {
+                                                            val sanitizedBase = if (backendUrl.endsWith("/")) backendUrl else "$backendUrl/"
+                                                            val fullApkUrl = if (updateInfo!!.apkUrl.startsWith("http")) {
+                                                                updateInfo!!.apkUrl
+                                                            } else {
+                                                                "$sanitizedBase${updateInfo!!.apkUrl}"
+                                                            }
+                                                            
+                                                            // Stop Lock Task Mode before updating
+                                                            context.findActivity()?.let { act ->
+                                                                try {
+                                                                    act.stopLockTask()
+                                                                } catch (e: Exception) {
+                                                                    e.printStackTrace()
+                                                                }
+                                                            }
+                                                            
+                                                            val file = updateManager.downloadApk(fullApkUrl) { progress ->
+                                                                downloadProgress = progress
+                                                            }
+                                                            isDownloading = false
+                                                            if (file != null) {
+                                                                updateManager.installApk(file)
+                                                            } else {
+                                                                updateError = "Gagal mengunduh APK. Silakan periksa koneksi."
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF52B788)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = Color.White)
+                                            }
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "Aplikasi Anda sudah versi terbaru.",
+                                            color = Color(0xFF52B788),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Button(
+                                            onClick = {
+                                                updateInfo = null
+                                                updateError = null
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text("OK", fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Dialog for requesting unknown sources permission
+                        if (isInstallPermissionNeeded) {
+                            AlertDialog(
+                                onDismissRequest = { isInstallPermissionNeeded = false },
+                                title = { Text("Izin Instalasi Diperlukan", color = Color.White) },
+                                text = { 
+                                    Text(
+                                        "Untuk memperbarui aplikasi Photobooth langsung dari kiosk, Anda harus memberikan izin untuk menginstal aplikasi dari sumber tidak dikenal.",
+                                        color = Color.Gray
+                                    ) 
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            isInstallPermissionNeeded = false
+                                            updateManager.openInstallPermissionSettings()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
+                                    ) {
+                                        Text("Buka Setelan")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { isInstallPermissionNeeded = false }) {
+                                        Text("Batal", color = Color.Gray)
+                                    }
+                                },
+                                containerColor = Color(0xFF1E1E24)
+                            )
+                        }
+
                         // Event Selection Dialog
                         if (showEventDialog) {
                             Dialog(onDismissRequest = { showEventDialog = false }) {
@@ -886,6 +1251,160 @@ fun AdminScreen(
                                     )
                                 }
 
+                                // Card: Riwayat & Prioritas Printer (Auto-Connect)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
+                                    border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text("Riwayat & Prioritas Printer (Auto-Connect)", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = "Aplikasi akan otomatis mendeteksi dan menggunakan printer teratas yang berstatus TERSEDIA saat dibuka (startup) atau sebagai cadangan jika printer utama offline.",
+                                            color = Color.Gray,
+                                            fontSize = 11.sp,
+                                            lineHeight = 15.sp
+                                        )
+                                        
+                                        if (historyListState.isEmpty()) {
+                                            Text(
+                                                text = "Belum ada riwayat printer terhubung. Pilih printer di bawah untuk menambahkannya.",
+                                                color = Color.Gray,
+                                                fontSize = 12.sp,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                                            )
+                                        } else {
+                                            historyListState.forEachIndexed { index, printer ->
+                                                val isAvailable = remember(usbDevices, bluetoothDevices) {
+                                                    if (printer.type == "USB") {
+                                                        val parts = printer.address.substring(4).split(",")
+                                                        if (parts.size == 2) {
+                                                            val vid = parts[0].toIntOrNull() ?: 0
+                                                            val pid = parts[1].toIntOrNull() ?: 0
+                                                            usbDevices.any { it.vendorId == vid && it.productId == pid }
+                                                        } else false
+                                                    } else {
+                                                        val mac = printer.address.substring(3)
+                                                        bluetoothDevices.any { it.second.equals(mac, ignoreCase = true) }
+                                                    }
+                                                }
+                                                
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(if (printerAddress == printer.address) Color(0xFFE63946).copy(alpha = 0.08f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
+                                                        .border(1.dp, if (printerAddress == printer.address) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                        .padding(12.dp)
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Box(
+                                                                    contentAlignment = Alignment.Center,
+                                                                    modifier = Modifier
+                                                                        .size(20.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(Color(0xFFE63946))
+                                                                    ) {
+                                                                        Text(
+                                                                            text = (index + 1).toString(),
+                                                                            color = Color.White,
+                                                                            fontSize = 10.sp,
+                                                                            fontWeight = FontWeight.Bold
+                                                                        )
+                                                                    }
+                                                                Spacer(modifier = Modifier.width(8.dp))
+                                                                Text(printer.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                            Spacer(modifier = Modifier.height(4.dp))
+                                                            Text("${printer.type} | ${printer.address}", color = Color.Gray, fontSize = 10.sp)
+                                                            Spacer(modifier = Modifier.height(4.dp))
+                                                            
+                                                            // Availability label
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(4.dp))
+                                                                    .background(if (isAvailable) Color(0xFF52B788).copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.15f))
+                                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                            ) {
+                                                                Text(
+                                                                    text = if (isAvailable) "TERSEDIA" else "OFFLINE",
+                                                                    color = if (isAvailable) Color(0xFF52B788) else Color.Gray,
+                                                                    fontSize = 8.sp,
+                                                                    fontWeight = FontWeight.Bold
+                                                                )
+                                                            }
+                                                        }
+                                                        
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                            // Move Up
+                                                            if (index > 0) {
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        val list = historyListState.toMutableList()
+                                                                        val temp = list[index]
+                                                                        list[index] = list[index - 1]
+                                                                        list[index - 1] = temp
+                                                                        configManager.savePrinterHistory(list)
+                                                                        historyListState = list
+                                                                    },
+                                                                    modifier = Modifier.size(28.dp)
+                                                                ) {
+                                                                    Text("▲", color = Color.White, fontSize = 10.sp)
+                                                                }
+                                                            }
+                                                            
+                                                            // Move Down
+                                                            if (index < historyListState.size - 1) {
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        val list = historyListState.toMutableList()
+                                                                        val temp = list[index]
+                                                                        list[index] = list[index + 1]
+                                                                        list[index + 1] = temp
+                                                                        configManager.savePrinterHistory(list)
+                                                                        historyListState = list
+                                                                    },
+                                                                    modifier = Modifier.size(28.dp)
+                                                                ) {
+                                                                    Text("▼", color = Color.White, fontSize = 10.sp)
+                                                                }
+                                                            }
+                                                            
+                                                            // Delete
+                                                            IconButton(
+                                                                onClick = {
+                                                                    val list = historyListState.toMutableList()
+                                                                    list.removeAt(index)
+                                                                    configManager.savePrinterHistory(list)
+                                                                    historyListState = list
+                                                                },
+                                                                modifier = Modifier.size(28.dp)
+                                                            ) {
+                                                                Text("❌", color = Color(0xFFE63946), fontSize = 10.sp)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -925,6 +1444,8 @@ fun AdminScreen(
                                                 onClick = {
                                                     printerAddress = deviceAddr
                                                     configManager.printerAddress = deviceAddr
+                                                    configManager.addPrinterToHistory(deviceAddr, deviceName, "USB")
+                                                    historyListState = configManager.getPrinterHistory()
                                                 },
                                                 colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
                                             )
@@ -949,6 +1470,8 @@ fun AdminScreen(
                                                 onClick = {
                                                     printerAddress = deviceAddr
                                                     configManager.printerAddress = deviceAddr
+                                                    configManager.addPrinterToHistory(deviceAddr, name, "BT")
+                                                    historyListState = configManager.getPrinterHistory()
                                                 },
                                                 colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
                                             )
@@ -1315,6 +1838,51 @@ fun AdminCard(
                 fontWeight = FontWeight.Bold
             )
             content()
+        }
+    }
+}
+
+@Composable
+fun ThemePreviewCard(
+    name: String,
+    isSelected: Boolean,
+    previewContent: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35))
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+            ) {
+                previewContent()
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (isSelected) Color(0xFFE63946).copy(alpha = 0.15f) else Color.Transparent)
+                    .padding(vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = name,
+                    color = if (isSelected) Color(0xFFE63946) else Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -2120,4 +2688,13 @@ private suspend fun saveImageToGallery(context: Context, photoUrl: String): Stri
             "Gagal menyimpan: ${e.localizedMessage}"
         }
     }
+}
+
+private fun Context.findActivity(): FragmentActivity? {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is FragmentActivity) return context
+        context = context.baseContext
+    }
+    return null
 }

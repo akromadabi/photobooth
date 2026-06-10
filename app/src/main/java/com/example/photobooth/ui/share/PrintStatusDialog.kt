@@ -28,7 +28,7 @@ fun PrintStatusDialog(
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
@@ -42,7 +42,7 @@ fun PrintStatusDialog(
                 Text(
                     text = "Mencetak Foto",
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 18.sp
                 )
                 
@@ -73,7 +73,7 @@ fun PrintStatusDialog(
                             .width(100.dp)
                             .height(150.dp)
                             .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
-                            .background(Color.DarkGray)
+                            .background(MaterialTheme.colorScheme.outline)
                     ) {
                         // The sliding image
                         Box(
@@ -116,8 +116,8 @@ fun PrintStatusDialog(
                             .width(180.dp)
                             .height(80.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF2A2A35))
-                            .border(1.dp, Color(0xFF4E4E5A), RoundedCornerShape(12.dp)),
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -130,12 +130,12 @@ fun PrintStatusDialog(
                                     .width(30.dp)
                                     .height(4.dp)
                                     .clip(RoundedCornerShape(2.dp))
-                                    .background(Color(0xFF52B788)) // Glowing Green LED
+                                    .background(MaterialTheme.colorScheme.primary) // Glowing Theme LED
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "XP-420B",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -150,19 +150,19 @@ fun PrintStatusDialog(
                             .width(120.dp)
                             .height(4.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(Color(0xFF0F0F12))
+                            .background(MaterialTheme.colorScheme.background)
                     )
                 }
 
                 Text(
                     text = statusText,
-                    color = Color.LightGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
                 )
                 
                 CircularProgressIndicator(
-                    color = Color(0xFFE63946),
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp),
                     strokeWidth = 3.dp
                 )
