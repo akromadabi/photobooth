@@ -925,11 +925,18 @@ fun AdminScreen(
                                     ) 
                                 },
                                 confirmButton = {
-                                    Button(
-                                        onClick = {
-                                            isInstallPermissionNeeded = false
-                                            updateManager.openInstallPermissionSettings()
-                                        },
+                                     Button(
+                                         onClick = {
+                                             isInstallPermissionNeeded = false
+                                             context.findActivity()?.let { act ->
+                                                 try {
+                                                     act.stopLockTask()
+                                                 } catch (e: Exception) {
+                                                     e.printStackTrace()
+                                                 }
+                                             }
+                                             updateManager.openInstallPermissionSettings()
+                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
                                     ) {
                                         Text("Buka Setelan")
