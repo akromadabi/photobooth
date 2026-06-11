@@ -63,6 +63,14 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
+        
+        // Re-request Lock Task (Kiosk Mode)
+        try {
+            startLockTask()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         syncSettings()
         // Auto-select printer based on priority and readiness at startup/resume
         try {

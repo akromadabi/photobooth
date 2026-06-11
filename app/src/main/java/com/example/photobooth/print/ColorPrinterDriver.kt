@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.pdf.PdfDocument
+import android.os.Build
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
@@ -24,6 +25,28 @@ class ColorPrinterDriver : PrinterManager {
                 ?: return@withContext PrintResult.Error("Print Service not available on this device")
                 
             val jobName = "Creative Studio Photobooth"
+            
+            // Suspend Lock Task Mode temporarily on the Main thread to allow system print dialog to open
+            withContext(Dispatchers.Main) {
+                val activity = context.findActivity()
+                if (activity != null) {
+                    try {
+                        val am = activity.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+                        val isPinned = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            am?.lockTaskModeState == android.app.ActivityManager.LOCK_TASK_MODE_LOCKED ||
+                            am?.lockTaskModeState == android.app.ActivityManager.LOCK_TASK_MODE_PINNED
+                        } else {
+                            @Suppress("DEPRECATION")
+                            am?.isInLockTaskMode ?: false
+                        }
+                        if (isPinned) {
+                            activity.stopLockTask()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
             
             printManager.print(jobName, object : PrintDocumentAdapter() {
                 override fun onLayout(
@@ -76,4 +99,15 @@ class ColorPrinterDriver : PrinterManager {
             PrintResult.Error("Gagal memulai proses cetak: ${e.message}")
         }
     }
+}
+
+private fun Context.findActivity(): android.app.Activity? {
+    var currentContext = this
+    while (currentContext is android.content.ContextWrapper) {
+        if (currentContext is android.app.Activity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
 }

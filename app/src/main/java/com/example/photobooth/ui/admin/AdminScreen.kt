@@ -459,18 +459,7 @@ fun AdminScreen(
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                Button(
-                                    onClick = {
-                                        configManager.backendUrl = backendUrl
-                                        configManager.adminPin = adminPin
-                                        configManager.useBiometric = useBiometric
-                                        Toast.makeText(context, "Setelan server disimpan!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                    modifier = Modifier.align(Alignment.End)
-                                ) {
-                                    Text("Simpan Setelan Server", fontWeight = FontWeight.Bold)
-                                }
+                                
                             }
                         }
 
@@ -542,19 +531,7 @@ fun AdminScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        val cd = countdownSeconds.toIntOrNull() ?: 5
-                                        val ts = totalShots.toIntOrNull() ?: 4
-                                        configManager.countdownSeconds = cd
-                                        configManager.totalShots = ts
-                                        Toast.makeText(context, "Setelan sesi disimpan!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                    modifier = Modifier.align(Alignment.End)
-                                ) {
-                                    Text("Simpan Setelan Sesi", fontWeight = FontWeight.Bold)
-                                }
+                                
                             }
                         }
 
@@ -625,17 +602,7 @@ fun AdminScreen(
                                     Spacer(modifier = Modifier.height(16.dp))
                                 }
                                 
-                                Button(
-                                    onClick = {
-                                        configManager.kioskMode = kioskMode
-                                        configManager.activeEventId = activeEventId
-                                        Toast.makeText(context, "Setelan mode event disimpan!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
-                                    modifier = Modifier.align(Alignment.End)
-                                ) {
-                                    Text("Simpan Setelan Event", fontWeight = FontWeight.Bold)
-                                }
+                                
                             }
                         }
 
@@ -868,48 +835,71 @@ fun AdminScreen(
                         }
 
                         // Responsive Column Layout
-                        if (isLandscape) {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            QuickStatsBlock()
+                            
+                            if (isLandscape) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    QuickStatsBlock()
-                                    ServerConfigBlock()
-                                    SyncTemplatesBlock()
-                                    CaptureTimingsBlock()
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        ServerConfigBlock()
+                                        SyncTemplatesBlock()
+                                        CaptureTimingsBlock()
+                                    }
+                                    
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        KioskModeBlock()
+                                        ThemeBlock()
+                                        AppUpdateBlock()
+                                    }
                                 }
-                                
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    KioskModeBlock()
-                                    ThemeBlock()
-                                    AppUpdateBlock()
-                                }
-                            }
-                        } else {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                QuickStatsBlock()
+                            } else {
                                 ServerConfigBlock()
                                 SyncTemplatesBlock()
                                 CaptureTimingsBlock()
                                 KioskModeBlock()
                                 ThemeBlock()
                                 AppUpdateBlock()
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Button(
+                                onClick = {
+                                    configManager.backendUrl = backendUrl
+                                    configManager.adminPin = adminPin
+                                    configManager.useBiometric = useBiometric
+                                    
+                                    val cd = countdownSeconds.toIntOrNull() ?: 5
+                                    val ts = totalShots.toIntOrNull() ?: 4
+                                    configManager.countdownSeconds = cd
+                                    configManager.totalShots = ts
+                                    
+                                    configManager.kioskMode = kioskMode
+                                    configManager.activeEventId = activeEventId
+                                    
+                                    Toast.makeText(context, "Semua setelan berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp)
+                            ) {
+                                Text("SIMPAN SEMUA PERUBAHAN", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                             }
                         }
 
@@ -1577,38 +1567,34 @@ fun AdminScreen(
                         }
 
                         // Responsive double-column or single-column layout for Tab 2
-                        if (isLandscape && isThermalEnabled) {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            if (isLandscape && isThermalEnabled) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    ThermalSettingsCard()
-                                    ColorPrinterCard()
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        ThermalSettingsCard()
+                                        ColorPrinterCard()
+                                    }
+                                    
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        PrinterHistoryCard()
+                                        ThermalConnectionCard()
+                                    }
                                 }
-                                
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    PrinterHistoryCard()
-                                    ThermalConnectionCard()
-                                }
-                            }
-                        } else {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
+                            } else {
                                 ThermalSettingsCard()
                                 if (isThermalEnabled) {
                                     PrinterHistoryCard()
