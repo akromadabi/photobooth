@@ -1906,47 +1906,7 @@ fun ThemePreviewCard(
 
 // Background dynamic frames syncing function
 private suspend fun syncFramesFromBackend(context: Context, baseUrl: String, configManager: ConfigManager): String {
-    return try {
-        val finalUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
-        val api = NetworkClient.getApi(finalUrl)
-        
-        // Fetch JSON configuration
-        val response = api.getFrameConfig("frames/config.json")
-        if (!response.isSuccessful || response.body() == null) {
-            return "Gagal mengunduh config.json: Code ${response.code()}"
-        }
-        
-        val frameConfig = response.body()!!
-        
-        // Save config JSON to SharedPreferences
-        val gson = com.google.gson.Gson()
-        val jsonStr = gson.toJson(frameConfig)
-        configManager.syncedFramesJson = jsonStr
-        
-        // Download all frame files
-        val framesDir = File(context.cacheDir, "frames")
-        if (!framesDir.exists()) framesDir.mkdirs()
-        
-        for (frame in frameConfig.frames) {
-            val relativePath = frame.imageUrl // e.g. "frames/classic_strip_black.png"
-            val fileUrl = URL("$finalUrl$relativePath")
-            val connection = withContext(Dispatchers.IO) { fileUrl.openConnection() }
-            
-            val localFile = File(framesDir, frame.id + ".png")
-            
-            withContext(Dispatchers.IO) {
-                connection.getInputStream().use { input ->
-                    FileOutputStream(localFile).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            }
-        }
-        
-        "Sinkronisasi berhasil! Berhasil mendownload ${frameConfig.frames.size} bingkai secara offline."
-    } catch (e: Exception) {
-        "Kesalahan sinkronisasi: ${e.localizedMessage}"
-    }
+    return com.example.photobooth.api.CatalogSync.syncFramesFromBackend(context, baseUrl, configManager)
 }
 
 // Run test print job

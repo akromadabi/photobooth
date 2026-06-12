@@ -4,6 +4,16 @@ session_start();
 $queueFile = __DIR__ . '/queue.json';
 $packagesFile = __DIR__ . '/packages.json';
 $configPath = __DIR__ . '/frames/config.json';
+$settingsFile = __DIR__ . '/settings.json';
+
+// Load settings to check active printer types
+$settings = [];
+if (file_exists($settingsFile)) {
+    $settings = json_decode(file_get_contents($settingsFile), true);
+}
+$printerType = isset($settings['printer_type']) ? $settings['printer_type'] : 'AUTO';
+$colorActive = ($printerType === 'COLOR' || $printerType === 'AUTO' || $printerType === 'NONE');
+$thermalActive = ($printerType === 'THERMAL' || $printerType === 'AUTO' || $printerType === 'NONE');
 
 // Helper to get state
 function getQueueState($file) {
@@ -215,6 +225,31 @@ $isRemoteMode = !empty($sessionId);
         }
         .btn-order:hover { background-color: #d62d3a; }
 
+        .package-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        .package-card.disabled:hover {
+            transform: none;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        .disabled-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         /* REMOTE SCREEN STYLES */
         .remote-container {
             width: 100%;
@@ -238,6 +273,7 @@ $isRemoteMode = !empty($sessionId);
             gap: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             text-align: center;
+            transition: all 0.3s ease;
         }
 
         .queue-badge {
@@ -253,18 +289,64 @@ $isRemoteMode = !empty($sessionId);
             justify-content: center;
             border: 1px solid rgba(230,57,70,0.2);
             box-shadow: 0 0 20px rgba(230,57,70,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .status-text-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        /* Compact Status Card when Active/Capturing */
+        .glass-card.compact {
+            flex-direction: row;
+            text-align: left;
+            padding: 12px 18px;
+            gap: 16px;
+            align-items: center;
+            border-radius: 18px;
+        }
+
+        .glass-card.compact .queue-badge {
+            width: 54px;
+            height: 54px;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px rgba(230,57,70,0.1);
+        }
+
+        .glass-card.compact .status-text-container {
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .glass-card.compact .waiting-status {
+            font-size: 1rem;
+            text-align: left;
+        }
+
+        .glass-card.compact .waiting-desc {
+            font-size: 0.75rem;
+            line-height: 1.3;
+            text-align: left;
         }
 
         .waiting-status {
             font-size: 1.15rem;
             font-weight: 700;
             color: white;
+            transition: all 0.3s ease;
         }
 
         .waiting-desc {
             font-size: 0.85rem;
             color: var(--text-muted);
             line-height: 1.5;
+            transition: all 0.3s ease;
         }
 
         /* Layout & Frame Selection UI */
@@ -434,58 +516,84 @@ $isRemoteMode = !empty($sessionId);
 
         .frame-scroll-select {
             display: flex;
-            gap: 16px;
+            gap: 20px;
             overflow-x: auto;
-            padding: 8px 4px 16px 4px;
+            padding: 16px 10px 24px 10px;
             width: 100%;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
 
+        .frame-scroll-select::-webkit-scrollbar {
+            height: 6px;
+        }
+        .frame-scroll-select::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+        .frame-scroll-select::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .frame-scroll-select::-webkit-scrollbar-thumb:hover {
+            background: rgba(247, 184, 1, 0.5);
+        }
+
         .frame-item-card {
-            width: 140px;
-            height: 220px;
-            border-radius: 12px;
-            border: 2px solid var(--border-color);
-            background-color: #0c0c0f;
-            overflow: hidden;
+            border-radius: 14px;
+            border: none;
+            background-color: transparent;
+            overflow: visible;
             flex-shrink: 0;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
-            padding: 6px;
-            gap: 6px;
+            padding: 0;
+            gap: 8px;
+            width: 140px;
+            height: 370px;
+        }
+
+        .frame-item-card.layout-strip {
+            width: 140px;
+            height: 370px;
+        }
+
+        .frame-item-card.layout-grid {
+            width: 190px;
+            height: 310px;
+        }
+
+        .frame-item-card.layout-postcard {
+            width: 220px;
+            height: 280px;
+        }
+
+        .frame-item-card:hover {
+            transform: translateY(-2px);
         }
 
         .frame-item-card.active {
-            border-color: var(--primary-gold);
-            transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(247, 184, 1, 0.3);
+            transform: scale(1.04);
         }
 
         .frame-item-preview {
             flex: 1;
-            border-radius: 6px;
-            overflow: hidden;
-            background-color: #08080a;
+            overflow: visible;
+            background-color: transparent;
             display: flex;
             justify-content: center;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="35" r="12" fill="rgb(40,40,50)"/><path d="M50 53c-15 0-25 8-25 20h50c0-12-10-20-25-20z" fill="rgb(40,40,50)"/></svg>');
-            background-repeat: repeat;
+            align-items: center;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .frame-item-preview.layout-strip {
-            background-size: 100% 25%;
+        .frame-item-card.active .frame-item-preview {
+            transform: translateY(-4px);
         }
-        
-        .frame-item-preview.layout-grid {
-            background-size: 50% 50%;
-        }
-        
-        .frame-item-preview.layout-postcard {
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
+
+        .frame-item-card.active .frame-item-preview img {
+            filter: drop-shadow(0 0 12px rgba(247, 184, 1, 0.75)) drop-shadow(0 0 4px rgba(247, 184, 1, 0.4));
         }
         
         .frame-item-preview img {
@@ -494,17 +602,33 @@ $isRemoteMode = !empty($sessionId);
             object-fit: contain;
             position: relative;
             z-index: 2;
+            transition: all 0.25s ease;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
         }
 
         .frame-item-name {
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             text-align: center;
-            font-weight: bold;
+            font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: var(--text-main);
+            color: var(--text-muted);
             padding: 2px 0;
+            transition: all 0.2s;
+        }
+
+        .frame-item-card:hover .frame-item-name {
+            color: var(--text-main);
+        }
+
+        .frame-item-card.active .frame-item-name {
+            color: var(--primary-gold);
+            font-weight: 700;
+        }
+
+        .frame-item-card.active:hover .frame-item-name {
+            color: var(--primary-gold);
         }
 
         /* Glowing red capture button */
@@ -557,8 +681,21 @@ $isRemoteMode = !empty($sessionId);
                 <input type="hidden" id="selectedPackageInput" name="package_id" value="">
                 
                 <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <?php foreach ($packages as $pkg): ?>
-                        <div class="package-card" onclick="selectPackage('<?php echo $pkg['id']; ?>', this)">
+                    <?php foreach ($packages as $pkg): 
+                        $flow = isset($pkg['print_flow']) ? $pkg['print_flow'] : '';
+                        $isAvailable = true;
+                        if (($flow === 'COLOR_PRINT' || $flow === 'ID_CARD') && !$colorActive) {
+                            $isAvailable = false;
+                        } elseif ($flow === 'RECEIPT' && !$thermalActive) {
+                            $isAvailable = false;
+                        }
+                        
+                        // Hide package if the required printer is disabled
+                        if (!$isAvailable) {
+                            continue;
+                        }
+                    ?>
+                        <div class="package-card" onclick="selectPackage('<?php echo htmlspecialchars($pkg['id']); ?>', this)">
                             <div class="package-header">
                                 <div class="package-name"><?php echo htmlspecialchars($pkg['name']); ?></div>
                                 <div class="package-price">Rp <?php echo number_format($pkg['price'], 0, ',', '.'); ?></div>
@@ -598,8 +735,10 @@ $isRemoteMode = !empty($sessionId);
             <!-- Dynamic state block populated by JS polling -->
             <div class="glass-card" id="remoteStatusCard">
                 <div class="queue-badge" id="queueNumBadge">-</div>
-                <div class="waiting-status" id="queueStatusTitle">Memuat status antrean...</div>
-                <div class="waiting-desc" id="queueStatusDesc">Menghubungkan ke sistem antrean Kiosk. Silakan tunggu sebentar.</div>
+                <div class="status-text-container">
+                    <div class="waiting-status" id="queueStatusTitle">Memuat status antrean...</div>
+                    <div class="waiting-desc" id="queueStatusDesc">Menghubungkan ke sistem antrean Kiosk. Silakan tunggu sebentar.</div>
+                </div>
             </div>
 
             <!-- Controller Selection Box (Visible only when ACTIVE) -->
@@ -682,16 +821,38 @@ $isRemoteMode = !empty($sessionId);
                             const title = document.getElementById('queueStatusTitle');
                             const desc = document.getElementById('queueStatusDesc');
                             const controller = document.getElementById('remoteControllerBox');
+                            const statusCard = document.getElementById('remoteStatusCard');
                             
+                            const btnCapture = document.getElementById('btnCaptureStart');
+
                             if (data.status === 'WAITING') {
                                 title.innerText = 'Menunggu Giliran Anda...';
                                 desc.innerHTML = `Antrean Aktif Kiosk saat ini: <b>#${data.active_queue_number}</b>.<br>Ada <b>${data.total_waiting} orang</b> lagi di depan Anda.`;
-                                controller.style.display = 'none';
+                                controller.style.display = 'flex';
+                                statusCard.classList.add('compact');
+                                
+                                if (btnCapture) {
+                                    btnCapture.disabled = true;
+                                    btnCapture.innerText = 'MENUNGGU GILIRAN ANDA...';
+                                }
+                                
+                                // Show layout step by default if frame step is not yet active
+                                if (document.getElementById('frameStepContainer').style.display !== 'block') {
+                                    document.getElementById('layoutStepContainer').style.display = 'block';
+                                    document.getElementById('frameStepContainer').style.display = 'none';
+                                }
                             } 
                             else if (data.status === 'ACTIVE') {
                                 title.innerText = 'GILIRAN ANDA AKTIF';
                                 desc.innerHTML = 'Silakan pilih layout dan bingkai foto Anda untuk memulai!';
                                 controller.style.display = 'flex';
+                                statusCard.classList.add('compact');
+                                
+                                if (btnCapture) {
+                                    btnCapture.disabled = false;
+                                    btnCapture.innerText = 'MULAI FOTO';
+                                }
+                                
                                 // Show layout step by default if frame step is not yet active
                                 if (document.getElementById('frameStepContainer').style.display !== 'block') {
                                     document.getElementById('layoutStepContainer').style.display = 'block';
@@ -702,11 +863,13 @@ $isRemoteMode = !empty($sessionId);
                                 title.innerText = 'PROSES MEMOTRET...';
                                 desc.innerHTML = 'Kamera depan tablet sedang aktif mengambil pose Anda. Bersiaplah berpose di depan Kiosk!';
                                 controller.style.display = 'none';
+                                statusCard.classList.add('compact');
                             }
                             else if (data.status === 'FINISHED') {
                                 title.innerText = 'SESI FOTO SELESAI';
                                 desc.innerHTML = 'Foto Anda sedang diproses. Menuju halaman portal unduhan...';
                                 controller.style.display = 'none';
+                                statusCard.classList.remove('compact');
                                 
                                 speakAssistiveCue("Sesi foto selesai. Terima kasih!");
                                 
@@ -736,7 +899,7 @@ $isRemoteMode = !empty($sessionId);
                 
                 filtered.forEach((f, idx) => {
                     const card = document.createElement('div');
-                    card.className = 'frame-item-card ' + (idx === 0 ? 'active' : '');
+                    card.className = 'frame-item-card layout-' + selectedLayout + ' ' + (idx === 0 ? 'active' : '');
                     if (idx === 0) selectedFrameId = f.id;
                     
                     card.onclick = () => {

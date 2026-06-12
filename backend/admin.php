@@ -1663,22 +1663,25 @@ foreach ($weeklyStats as $date => $cnt) {
         }
         .frame-card-preview-admin {
             width: 100%;
-            height: 180px;
-            background-color: #f8fafc;
-            background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
-            background-size: 12px 12px;
-            border-radius: 10px;
+            height: 250px;
+            background-color: transparent;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-            border: 1px solid #f1f5f9;
+            overflow: visible;
+            border: none;
             margin-bottom: 12px;
         }
         .frame-card-preview-admin img {
             max-height: 100%;
             max-width: 100%;
             object-fit: contain;
+            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.15));
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .frame-card-preview-admin:hover img {
+            transform: scale(1.05);
         }
         .frame-card-meta {
             width: 100%;

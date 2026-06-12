@@ -3,6 +3,8 @@ package com.example.photobooth.print
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.DashPathEffect
+import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +22,8 @@ import java.io.IOException
 
 class ColorPrinterDriver : PrinterManager {
     override suspend fun printBitmap(bitmap: Bitmap, context: Context): PrintResult = withContext(Dispatchers.IO) {
+        var bitmapToPrint = bitmap
+        val isStrip = bitmap.width.toFloat() / bitmap.height.toFloat() < 0.5f
         try {
             val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
                 ?: return@withContext PrintResult.Error("Print Service not available on this device")
@@ -46,6 +50,11 @@ class ColorPrinterDriver : PrinterManager {
                         e.printStackTrace()
                     }
                 }
+            }
+            
+            // Detect vertical strip layout (width/height ratio < 0.5) and duplicate
+            if (isStrip) {
+                bitmapToPrint = duplicateStripFor4R(bitmap)
             }
             
             printManager.print(jobName, object : PrintDocumentAdapter() {
@@ -76,11 +85,11 @@ class ColorPrinterDriver : PrinterManager {
                 ) {
                     val pdfDocument = PdfDocument()
                     // Use bitmap dimensions for page bounds
-                    val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, 1).create()
+                    val pageInfo = PdfDocument.PageInfo.Builder(bitmapToPrint.width, bitmapToPrint.height, 1).create()
                     val page = pdfDocument.startPage(pageInfo)
                     
                     val canvas: Canvas = page.canvas
-                    canvas.drawBitmap(bitmap, 0f, 0f, null)
+                    canvas.drawBitmap(bitmapToPrint, 0f, 0f, null)
                     pdfDocument.finishPage(page)
                     
                     try {
@@ -92,12 +101,77 @@ class ColorPrinterDriver : PrinterManager {
                         pdfDocument.close()
                     }
                 }
+
+                override fun onFinish() {
+                    super.onFinish()
+                    // Clean up temporary double strip bitmap if created
+                    if (bitmapToPrint != bitmap && !bitmapToPrint.isRecycled) {
+                        bitmapToPrint.recycle()
+                    }
+                }
             }, null)
             
             PrintResult.Success
         } catch (e: Exception) {
+            // Clean up temporary double strip bitmap if print fails to start
+            if (bitmapToPrint != bitmap && !bitmapToPrint.isRecycled) {
+                bitmapToPrint.recycle()
+            }
             PrintResult.Error("Gagal memulai proses cetak: ${e.message}")
         }
+    }
+
+    private fun duplicateStripFor4R(bitmap: Bitmap): Bitmap {
+        val stripW = bitmap.width
+        val stripH = bitmap.height
+
+        val gap = (stripW * 0.05f).toInt().coerceAtLeast(10)
+        val neededW = stripW * 2 + gap
+        val neededH = stripH
+
+        val finalW: Int
+        val finalH: Int
+        val marginX: Int
+        val marginY: Int
+
+        if (neededW.toFloat() / neededH.toFloat() > 2f / 3f) {
+            // Combined width is wider than 2:3 ratio. Add top/bottom margins.
+            finalW = neededW
+            finalH = (neededW * 3f / 2f).toInt()
+            marginX = 0
+            marginY = (finalH - neededH) / 2
+        } else {
+            // Combined width is narrower than 2:3 ratio. Add left/right margins.
+            finalH = neededH
+            finalW = (neededH * 2f / 3f).toInt()
+            marginX = (finalW - neededW) / 2
+            marginY = 0
+        }
+
+        val doubleBitmap = Bitmap.createBitmap(finalW, finalH, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(doubleBitmap)
+        canvas.drawColor(android.graphics.Color.WHITE)
+
+        val left1 = marginX
+        val left2 = marginX + stripW + gap
+        val top = marginY
+
+        // Draw first strip
+        canvas.drawBitmap(bitmap, left1.toFloat(), top.toFloat(), null)
+        // Draw second strip
+        canvas.drawBitmap(bitmap, left2.toFloat(), top.toFloat(), null)
+
+        // Draw vertical dashed cutting guide line down the middle
+        val midX = (left1 + stripW + left2) / 2f
+        val paint = Paint().apply {
+            color = android.graphics.Color.LTGRAY
+            style = Paint.Style.STROKE
+            strokeWidth = 2f
+            pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+        }
+        canvas.drawLine(midX, top.toFloat(), midX, (top + stripH).toFloat(), paint)
+
+        return doubleBitmap
     }
 }
 

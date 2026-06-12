@@ -581,39 +581,41 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
         .frame-card {
             width: 140px;
             height: 380px;
-            background-color: var(--sidebar-bg);
-            border: 2px solid var(--border-color);
+            background-color: transparent;
+            border: none;
             border-radius: 14px;
-            padding: 10px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             gap: 10px;
             cursor: pointer;
-            transition: all 0.25s;
+            transition: all 0.25s ease;
             flex-shrink: 0;
             position: relative;
+            overflow: visible;
         }
 
         .frame-card:hover {
-            border-color: var(--primary-red);
-            transform: translateY(-4px);
+            transform: scale(1.05) translateY(-4px);
         }
 
         .frame-card-preview {
             flex: 1;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             display: flex;
             justify-content: center;
             position: relative;
-            background-color: #0c0c0f;
-            border: 1px solid rgba(255,255,255,0.05);
+            background-color: transparent;
+            border: none;
         }
 
         .frame-card-preview img {
             height: 100%;
             width: auto;
             object-fit: contain;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+            transition: transform 0.25s ease;
         }
 
         .frame-card-name {

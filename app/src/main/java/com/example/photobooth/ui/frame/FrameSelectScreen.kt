@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -152,11 +153,8 @@ fun FrameCard(
     val isCutePastel = AppTheme.type == AppThemeType.CUTE_PASTEL
     Card(
         shape = RoundedCornerShape(if (isCutePastel) 12.dp else 20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(
-            width = if (isCutePastel) 3.dp else 1.dp,
-            color = MaterialTheme.colorScheme.outline
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = null,
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(cardAspectRatio)
@@ -169,15 +167,12 @@ fun FrameCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Large dynamic preview box with silhouettes
+            // Large dynamic preview box with silhouettes (completely transparent parent)
             BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = padding)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(parsedColor)
-                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                    .padding(horizontal = padding),
                 contentAlignment = Alignment.Center
             ) {
                 val frameWidth = frame.width.coerceAtLeast(1).toFloat()
@@ -198,8 +193,13 @@ fun FrameCard(
                     previewHeight = constraintHeight
                 }
                 
+                // Actual frame strip container (background and shadow only match this exact frame size)
                 Box(
-                    modifier = Modifier.size(previewWidth, previewHeight)
+                    modifier = Modifier
+                        .size(previewWidth, previewHeight)
+                        .shadow(elevation = 6.dp, shape = RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(parsedColor)
                 ) {
                     // Draw slot silhouettes
                     frame.slots.forEach { slot ->

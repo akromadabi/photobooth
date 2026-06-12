@@ -102,6 +102,13 @@ class MainActivity : FragmentActivity() {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+
+                try {
+                    // Automatically sync catalog / frames templates on app startup/resume
+                    com.example.photobooth.api.CatalogSync.syncFramesFromBackend(this@MainActivity, url, configManager)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
