@@ -22,6 +22,7 @@ class ConfigManager(context: Context) {
         private const val KEY_PRINT_DENSITY = "print_density"
         private const val KEY_AUTO_CUT = "printer_auto_cut"
         private const val KEY_LAST_REMOTE_SESSION_ID = "last_remote_session_id"
+        private const val KEY_COLOR_PRINTER_MODE = "color_printer_mode"
     }
 
     var printerPaperWidth: Int
@@ -66,6 +67,10 @@ class ConfigManager(context: Context) {
     var printerAddress: String
         get() = prefs.getString(KEY_PRINTER_ADDRESS, "") ?: ""
         set(value) = prefs.edit().putString(KEY_PRINTER_ADDRESS, value).apply()
+
+    var colorPrinterMode: String
+        get() = prefs.getString(KEY_COLOR_PRINTER_MODE, "SYSTEM") ?: "SYSTEM"
+        set(value) = prefs.edit().putString(KEY_COLOR_PRINTER_MODE, value).apply()
 
     var countdownSeconds: Int
         get() = prefs.getInt(KEY_COUNTDOWN_SECONDS, 5)

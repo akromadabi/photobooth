@@ -124,6 +124,8 @@ fun AdminScreen(
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
     var thermalMode by remember { mutableStateOf(configManager.thermalMode) }
     var printerPaperWidth by remember { mutableStateOf(configManager.printerPaperWidth) }
+    var colorPrinterMode by remember { mutableStateOf(configManager.colorPrinterMode) }
+    var isColorPrinterModeDropdownExpanded by remember { mutableStateOf(false) }
     var printDensity by remember { mutableStateOf(configManager.printDensity) }
     var printerAutoCut by remember { mutableStateOf(configManager.printerAutoCut) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
@@ -1490,7 +1492,7 @@ fun AdminScreen(
                         }
 
                         val ColorPrinterCard: @Composable () -> Unit = {
-                            AdminCard(title = "Printer Foto Warna (Sistem)") {
+                            AdminCard(title = "Printer Foto Warna") {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1498,7 +1500,7 @@ fun AdminScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text("Aktifkan Printer Warna", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                        Text("Gunakan printer warna sistem Android untuk mencetak hasil foto", color = Color.Gray, fontSize = 11.sp)
+                                        Text("Gunakan printer warna untuk mencetak hasil foto", color = Color.Gray, fontSize = 11.sp)
                                     }
                                     Switch(
                                         checked = isColorEnabled,
@@ -1523,7 +1525,64 @@ fun AdminScreen(
 
                                 if (isColorEnabled) {
                                     HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
-                                    
+
+                                    // Color Print Mode Dropdown Row
+                                    val colorPrinterModeList = listOf(
+                                        Pair("SYSTEM", "Sistem Android (Spooler)"),
+                                        Pair("NOKOPRINT", "Aplikasi NokoPrint"),
+                                        Pair("PRINTERSHARE", "Aplikasi PrinterShare"),
+                                        Pair("SHARE", "Android Share Sheet (Pilih Manual)")
+                                    )
+                                    val selectedColorModeText = colorPrinterModeList.firstOrNull { it.first == colorPrinterMode }?.second ?: "Pilih Metode..."
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Metode Cetak:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedButton(
+                                                onClick = { isColorPrinterModeDropdownExpanded = true },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(text = selectedColorModeText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
+                                                }
+                                            }
+                                            DropdownMenu(
+                                                expanded = isColorPrinterModeDropdownExpanded,
+                                                onDismissRequest = { isColorPrinterModeDropdownExpanded = false },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF1E1E24))
+                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            ) {
+                                                colorPrinterModeList.forEach { (modeVal, label) ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(label, color = Color.White) },
+                                                        onClick = {
+                                                            colorPrinterMode = modeVal
+                                                            configManager.colorPrinterMode = modeVal
+                                                            isColorPrinterModeDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
                                     Card(
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A35).copy(alpha = 0.4f)),
                                         border = BorderStroke(1.dp, Color(0xFF2A2A35)),
@@ -1531,10 +1590,32 @@ fun AdminScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text("Panduan Koneksi Printer Warna:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            Text("1. Hubungkan printer warna Anda ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Color.Gray, fontSize = 12.sp)
-                                            Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda.", color = Color.Gray, fontSize = 12.sp)
-                                            Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Silakan pilih printer Anda di jendela tersebut.", color = Color.Gray, fontSize = 12.sp)
+                                            when (colorPrinterMode) {
+                                                "SYSTEM" -> {
+                                                    Text("Panduan Koneksi (Sistem Android):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Hubungkan printer warna ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda (misal: Epson Print Service Plugin, HP Print Service, Mopria, dll) dan mengaktifkannya di Pengaturan Android -> Pencetakan.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Pilih printer Anda di jendela tersebut.", color = Color.Gray, fontSize = 12.sp)
+                                                }
+                                                "NOKOPRINT" -> {
+                                                    Text("Panduan Koneksi (Aplikasi NokoPrint):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Pastikan Anda telah menginstal aplikasi NokoPrint dari Google Play Store.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("2. Hubungkan printer warna ke tablet (USB OTG, Bluetooth, atau Wi-Fi), buka aplikasi NokoPrint, dan pilih printer untuk konfigurasi awal.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("3. Saat mencetak, foto akan otomatis dikirim dan dibuka di aplikasi NokoPrint untuk pencetakan langsung.", color = Color.Gray, fontSize = 12.sp)
+                                                }
+                                                "PRINTERSHARE" -> {
+                                                    Text("Panduan Koneksi (Aplikasi PrinterShare):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Pastikan Anda telah menginstal aplikasi PrinterShare dari Google Play Store.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("2. Hubungkan printer warna ke tablet (USB OTG, Bluetooth, atau Wi-Fi), buka aplikasi PrinterShare, dan pilih printer untuk konfigurasi awal.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("3. Saat mencetak, foto akan otomatis dikirim dan dibuka di aplikasi PrinterShare untuk pencetakan langsung.", color = Color.Gray, fontSize = 12.sp)
+                                                }
+                                                "SHARE" -> {
+                                                    Text("Panduan Koneksi (Android Share Sheet):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Cara ini cocok jika Anda ingin menggunakan aplikasi printer kustom lainnya (seperti Epson iPrint, Canon PRINT, Brother iPrint&Scan, dll).", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("2. Saat mencetak, dialog 'Berbagi' (Share Sheet) sistem Android akan muncul.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("3. Pilih aplikasi printer yang ingin Anda gunakan dari daftar aplikasi yang muncul.", color = Color.Gray, fontSize = 12.sp)
+                                                }
+                                            }
                                         }
                                     }
 
