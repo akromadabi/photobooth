@@ -13,13 +13,13 @@ object DitherHelper {
         val width = src.width
         val height = src.height
         
-        // 1. Grayscale conversion with Contrast and Brightness Boost
+        // 1. Grayscale conversion with Balanced Contrast and Brightness Boost
         val grayData = IntArray(width * height)
         val pixels = IntArray(width * height)
         src.getPixels(pixels, 0, width, 0, 0, width, height)
         
-        val contrast = 1.6
-        val brightness = 15.0
+        val contrast = 1.2
+        val brightness = 10.0
         
         for (i in pixels.indices) {
             val color = pixels[i]
@@ -27,33 +27,62 @@ object DitherHelper {
             val g = Color.green(color)
             val b = Color.blue(color)
             val luma = 0.299 * r + 0.587 * g + 0.114 * b
-            // Boost contrast and brightness
+            // Boost contrast and brightness (balanced for smoother gradients)
             val adjusted = ((luma - 128.0) * contrast + 128.0 + brightness).coerceIn(0.0, 255.0)
             grayData[i] = adjusted.toInt()
         }
 
-        // 2. Apply Laplacian Sharpening Filter (3x3 Kernel)
-        val sharpenedData = IntArray(width * height)
+        // 2. Denoise using a 3x3 Median Filter to remove salt-and-pepper noise and sensor grain
+        val denoisedData = IntArray(width * height)
+        val neighbor = IntArray(9)
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val idx = y * width + x
                 if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
-                    sharpenedData[idx] = grayData[idx]
+                    denoisedData[idx] = grayData[idx]
                     continue
                 }
                 
-                val center = grayData[idx]
-                val top = grayData[idx - width]
-                val bottom = grayData[idx + width]
-                val left = grayData[idx - 1]
-                val right = grayData[idx + 1]
+                neighbor[0] = grayData[idx - width - 1]
+                neighbor[1] = grayData[idx - width]
+                neighbor[2] = grayData[idx - width + 1]
+                neighbor[3] = grayData[idx - 1]
+                neighbor[4] = grayData[idx]
+                neighbor[5] = grayData[idx + 1]
+                neighbor[6] = grayData[idx + width - 1]
+                neighbor[7] = grayData[idx + width]
+                neighbor[8] = grayData[idx + width + 1]
                 
-                val sharpVal = 5 * center - top - bottom - left - right
-                sharpenedData[idx] = sharpVal.coerceIn(0, 255)
+                // Sort to find the median value
+                java.util.Arrays.sort(neighbor)
+                denoisedData[idx] = neighbor[4]
             }
         }
 
-        // 3. Apply Floyd-Steinberg dithering error diffusion
+        // 3. Apply Gentle Sharpening (strength = 0.4) on denoised data
+        val sharpenedData = IntArray(width * height)
+        val sharpStrength = 0.4f
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val idx = y * width + x
+                if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+                    sharpenedData[idx] = denoisedData[idx]
+                    continue
+                }
+                
+                val center = denoisedData[idx]
+                val top = denoisedData[idx - width]
+                val bottom = denoisedData[idx + width]
+                val left = denoisedData[idx - 1]
+                val right = denoisedData[idx + 1]
+                
+                // Dynamic sharpening: center + sharpStrength * (4 * center - top - bottom - left - right)
+                val sharpVal = center + sharpStrength * (4f * center - top - bottom - left - right)
+                sharpenedData[idx] = sharpVal.toInt().coerceIn(0, 255)
+            }
+        }
+
+        // 4. Apply Floyd-Steinberg dithering error diffusion
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val index = y * width + x
