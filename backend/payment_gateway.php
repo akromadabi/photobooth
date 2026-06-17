@@ -240,6 +240,65 @@ if (isset($_POST['action']) && $_POST['action'] === 'confirm_payment') {
     exit;
 }
 
+// Handle coupon validation / redemption
+if (isset($_POST['action']) && $_POST['action'] === 'redeem_coupon') {
+    header('Content-Type: application/json');
+    $orderId = isset($_POST['order_id']) ? $_POST['order_id'] : '';
+    $packageId = isset($_POST['package_id']) ? $_POST['package_id'] : '';
+    $couponCode = isset($_POST['coupon_code']) ? trim($_POST['coupon_code']) : '';
+    
+    if (!$orderId || !$packageId || !$couponCode) {
+        echo json_encode(['success' => false, 'message' => 'Data tidak lengkap.']);
+        exit;
+    }
+    
+    require_once __DIR__ . '/coupon_helper.php';
+    
+    // Validate and use coupon
+    $res = validateAndUseCoupon($couponCode, $packageId, $orderId);
+    
+    if ($res['success']) {
+        // Coupon redeemed successfully, now mark order as paid
+        $state = getQueueState($queueFile);
+        $found = false;
+        
+        foreach ($state['queue_list'] as &$item) {
+            if ($item['session_id'] === $orderId) {
+                if ($item['status'] === 'UNPAID') {
+                    $item['status'] = 'WAITING';
+                    
+                    $activeExists = false;
+                    foreach ($state['queue_list'] as $q) {
+                        if ($q['status'] === 'ACTIVE' || $q['status'] === 'CAPTURING') {
+                            $activeExists = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$activeExists) {
+                        $item['status'] = 'ACTIVE';
+                        $state['active_queue_number'] = $item['queue_number'];
+                        $state['active_session_id'] = $item['session_id'];
+                    }
+                }
+                $found = true;
+                break;
+            }
+        }
+        unset($item);
+        
+        if ($found) {
+            saveQueueState($queueFile, $state);
+            echo json_encode(['success' => true, 'message' => 'Kupon berhasil digunakan! Sesi Anda telah aktif.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Transaksi tidak ditemukan dalam antrean.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => $res['message']]);
+    }
+    exit;
+}
+
 // Visual Page Setup
 $orderId = isset($_GET['order_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['order_id']) : '';
 $packageId = isset($_GET['package_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['package_id']) : '';
@@ -572,47 +631,78 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             <div class="price-tag">Rp <?php echo number_format($selectedPackage['price'], 0, ',', '.'); ?></div>
         </div>
 
-        <?php if ($settings['payment_mode'] === 'midtrans'): ?>
-            <?php if ($midtransError): ?>
-                <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
-                    <div style="color: #ef4444; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
-                    <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; line-height: 1.4;"><?php echo htmlspecialchars($midtransError); ?></div>
-                    <button class="btn-verify" onclick="window.location.reload()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">Coba Lagi</button>
-                </div>
-            <?php else: ?>
-                <div class="qris-section" style="padding: 10px 0; text-align: center; display: flex; flex-direction: column; gap: 8px;">
-                    <div style="font-size: 1.5rem;">📱</div>
-                    <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Selesaikan Pembayaran Anda</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; max-width: 300px; margin: 0 auto;">
-                        Klik tombol di bawah untuk membuka pilihan pembayaran (QRIS, GoPay, ShopeePay, Virtual Account, dll).
+        <!-- Tab Navigation for Payment Methods -->
+        <div class="payment-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-top: 15px;">
+            <button class="pay-tab active" id="tab-btn-online" onclick="switchPayTab('online')" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                📱 <span>QRIS / Online</span>
+            </button>
+            <button class="pay-tab" id="tab-btn-coupon" onclick="switchPayTab('coupon')" style="flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                🎫 <span>Kupon Tunai</span>
+            </button>
+        </div>
+
+        <!-- ONLINE METHOD VIEW -->
+        <div id="payment-view-online" style="display: block;">
+            <?php if ($settings['payment_mode'] === 'midtrans'): ?>
+                <?php if ($midtransError): ?>
+                    <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
+                        <div style="color: #ef4444; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; line-height: 1.4;"><?php echo htmlspecialchars($midtransError); ?></div>
+                        <button class="btn-verify" onclick="window.location.reload()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">Coba Lagi</button>
                     </div>
+                <?php else: ?>
+                    <div class="qris-section" style="padding: 10px 0; text-align: center; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 1.5rem;">📱</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Selesaikan Pembayaran Anda</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; max-width: 300px; margin: 0 auto;">
+                            Klik tombol di bawah untuk membuka pilihan pembayaran (QRIS, GoPay, ShopeePay, Virtual Account, dll).
+                        </div>
+                    </div>
+
+                    <button class="btn-verify" id="btnPayMidtrans" onclick="payWithMidtrans()" style="background-color: #4f46e5; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25); margin-bottom: 4px;">BAYAR SEKARANG</button>
+                    <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.85rem; padding: 12px;">Cek Status Pembayaran Manual</button>
+
+                    <div class="instruction">
+                        *Menunggu pembayaran terdeteksi secara otomatis... Halaman ini akan dialihkan setelah transaksi sukses.
+                    </div>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <!-- DUMMY MODE -->
+                <div class="qris-section">
+                    <div class="qris-box">
+                        <!-- Static generic QRIS placeholder -->
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://github.com/akromadabi/photobooth" alt="QRIS Simulator">
+                        <div class="dummy-badge">DUMMY QRIS</div>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
                 </div>
 
-                <button class="btn-verify" id="btnPayMidtrans" onclick="payWithMidtrans()" style="background-color: #4f46e5; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25); margin-bottom: 4px;">BAYAR SEKARANG</button>
-                <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.85rem; padding: 12px;">Cek Status Pembayaran Manual</button>
+                <button class="btn-verify" onclick="simulatePaymentSuccess()">BAYAR SEKARANG (SIMULASI)</button>
 
                 <div class="instruction">
-                    *Menunggu pembayaran terdeteksi secara otomatis... Halaman ini akan dialihkan setelah transaksi sukses.
+                    *Ini adalah gerbang pembayaran dummy. Klik tombol hijau di atas untuk menyimulasikan transaksi sukses secara gratis tanpa saldo rekening Anda terpotong.
                 </div>
             <?php endif; ?>
+        </div>
 
-        <?php else: ?>
-            <!-- DUMMY MODE -->
-            <div class="qris-section">
-                <div class="qris-box">
-                    <!-- Static generic QRIS placeholder -->
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://github.com/akromadabi/photobooth" alt="QRIS Simulator">
-                    <div class="dummy-badge">DUMMY QRIS</div>
+        <!-- COUPON METHOD VIEW -->
+        <div id="payment-view-coupon" style="display: none; flex-direction: column; gap: 16px;">
+            <div style="text-align: center; display: flex; flex-direction: column; gap: 6px; margin: 10px 0;">
+                <div style="font-size: 1.5rem;">🎟️</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Gunakan Kupon Pembayaran</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; max-width: 280px; margin: 0 auto;">
+                    Bayar cash ke kasir untuk mendapatkan struk kupon, lalu masukkan kodenya di bawah ini.
                 </div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <input type="text" id="coupon_code_input" placeholder="MASUKKAN KODE KUPON" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: #fff; padding: 14px; border-radius: 12px; font-size: 1.05rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; width: 100%; box-sizing: border-box; font-family: monospace; outline: none; transition: border-color 0.2s;" maxlength="20">
+                <div id="coupon-error-msg" style="font-size: 0.8rem; font-weight: 600; text-align: center; display: none; line-height: 1.3;"></div>
             </div>
 
-            <button class="btn-verify" onclick="simulatePaymentSuccess()">BAYAR SEKARANG (SIMULASI)</button>
-
-            <div class="instruction">
-                *Ini adalah gerbang pembayaran dummy. Klik tombol hijau di atas untuk menyimulasikan transaksi sukses secara gratis tanpa saldo rekening Anda terpotong.
-            </div>
-        <?php endif; ?>
+            <button class="btn-verify" id="btnRedeemCoupon" onclick="redeemCoupon()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">GUNAKAN KUPON</button>
+        </div>
     </div>
 
     <!-- Script imports based on mode -->
@@ -627,6 +717,98 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
 
     <script>
         const orderId = '<?php echo $orderId; ?>';
+        
+        // Tab switching logic for payment gateway
+        function switchPayTab(tab) {
+            const btnOnline = document.getElementById('tab-btn-online');
+            const btnCoupon = document.getElementById('tab-btn-coupon');
+            const viewOnline = document.getElementById('payment-view-online');
+            const viewCoupon = document.getElementById('payment-view-coupon');
+
+            if (tab === 'online') {
+                viewOnline.style.display = 'block';
+                viewCoupon.style.display = 'none';
+
+                btnOnline.style.background = 'rgba(255, 255, 255, 0.05)';
+                btnOnline.style.borderColor = 'var(--border-color)';
+                btnOnline.style.color = '#fff';
+
+                btnCoupon.style.background = 'transparent';
+                btnCoupon.style.borderColor = 'transparent';
+                btnCoupon.style.color = 'var(--text-muted)';
+            } else {
+                viewOnline.style.display = 'none';
+                viewCoupon.style.display = 'flex';
+
+                btnCoupon.style.background = 'rgba(255, 255, 255, 0.05)';
+                btnCoupon.style.borderColor = 'var(--border-color)';
+                btnCoupon.style.color = '#fff';
+
+                btnOnline.style.background = 'transparent';
+                btnOnline.style.borderColor = 'transparent';
+                btnOnline.style.color = 'var(--text-muted)';
+                
+                setTimeout(() => {
+                    document.getElementById('coupon_code_input').focus();
+                }, 100);
+            }
+        }
+
+        // Coupon redemption AJAX call
+        function redeemCoupon() {
+            const codeInput = document.getElementById('coupon_code_input');
+            const code = codeInput.value.trim().toUpperCase();
+            const errorDiv = document.getElementById('coupon-error-msg');
+            const btn = document.getElementById('btnRedeemCoupon');
+
+            if (!code) {
+                errorDiv.innerText = 'Silakan masukkan kode kupon terlebih dahulu.';
+                errorDiv.style.color = '#ef4444';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.innerText = 'MEMVERIFIKASI...';
+
+            const formData = new FormData();
+            formData.append('action', 'redeem_coupon');
+            formData.append('order_id', orderId);
+            formData.append('package_id', '<?php echo $packageId; ?>');
+            formData.append('coupon_code', code);
+
+            fetch('payment_gateway.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    errorDiv.style.color = '#52b788';
+                    errorDiv.innerText = data.message;
+                    errorDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = 'order.php?session_id=' + orderId;
+                    }, 1000);
+                } else {
+                    errorDiv.style.color = '#ef4444';
+                    errorDiv.innerText = data.message;
+                    errorDiv.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerText = 'GUNAKAN KUPON';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                errorDiv.style.color = '#ef4444';
+                errorDiv.innerText = 'Koneksi error. Silakan coba beberapa saat lagi.';
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = 'GUNAKAN KUPON';
+            });
+        }
         
         // Dummy Mode Success handler
         function simulatePaymentSuccess() {

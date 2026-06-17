@@ -13,6 +13,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,6 +73,63 @@ fun HomeScreen(
     val context = LocalContext.current
     val configManager = remember { ConfigManager(context) }
     
+    val prefs = remember { context.getSharedPreferences("photobooth_prefs", Context.MODE_PRIVATE) }
+    var syncedFramesJsonState by remember { mutableStateOf(prefs.getString("synced_frames_json", "") ?: "") }
+    
+    DisposableEffect(prefs) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "synced_frames_json") {
+                syncedFramesJsonState = p.getString("synced_frames_json", "") ?: ""
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    // Auto Update States
+    val updateManager = remember { com.example.photobooth.data.UpdateManager(context) }
+    val currentVersionCode = remember { updateManager.getCurrentVersionCode() }
+    val currentVersionName = remember { updateManager.getCurrentVersionName() }
+    
+    var autoUpdateInfo by remember { mutableStateOf<com.example.photobooth.data.UpdateInfo?>(null) }
+    var isCheckingAutoUpdate by remember { mutableStateOf(false) }
+    var autoUpdateError by remember { mutableStateOf<String?>(null) }
+    var autoDownloadProgress by remember { mutableStateOf<Float?>(null) }
+    var isAutoDownloading by remember { mutableStateOf(false) }
+    var isAutoInstallPermissionNeeded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // Background sync and update check on startup
+    LaunchedEffect(configManager.backendUrl) {
+        val backendUrl = configManager.backendUrl
+        if (backendUrl.isNotEmpty()) {
+            delay(1500) // Small delay to let network stabilize if the app just booted
+            
+            // 1. Silent sync frames
+            try {
+                com.example.photobooth.api.CatalogSync.syncFramesFromBackend(context, backendUrl, configManager)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            
+            // 2. Check for updates
+            isCheckingAutoUpdate = true
+            autoUpdateError = null
+            try {
+                val info = updateManager.checkUpdate(backendUrl)
+                if (info != null && info.versionCode > currentVersionCode) {
+                    autoUpdateInfo = info
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isCheckingAutoUpdate = false
+            }
+        }
+    }
+
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     
@@ -85,6 +145,17 @@ fun HomeScreen(
 
     // Exit states
     var showExitPinDialog by remember { mutableStateOf(false) }
+
+    // Quick Settings states
+    var showQuickSettings by remember { mutableStateOf(false) }
+    var cameraTapCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(cameraTapCount) {
+        if (cameraTapCount > 0) {
+            delay(2000)
+            cameraTapCount = 0
+        }
+    }
 
     val exitKioskApp = {
         context.findActivity()?.let { act ->
@@ -115,12 +186,12 @@ fun HomeScreen(
     }
 
     // Dynamic Event Name and Logo Resolution
-    val resolvedEventName = remember(configManager.syncedFramesJson, configManager.activeEventId, configManager.kioskMode, unlockedEventId) {
+    val resolvedEventName = remember(syncedFramesJsonState, configManager.activeEventId, configManager.kioskMode, unlockedEventId) {
         val activeId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
         if (activeId == "general") null
         else {
             try {
-                val config = com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+                val config = com.google.gson.Gson().fromJson(syncedFramesJsonState, com.example.photobooth.data.FrameConfig::class.java)
                 config?.events?.firstOrNull { it.id == activeId }?.name
             } catch (e: Exception) {
                 null
@@ -461,7 +532,7 @@ fun HomeScreen(
                             Button(
                                 onClick = {
                                     val config = try {
-                                        com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+                                        com.google.gson.Gson().fromJson(syncedFramesJsonState, com.example.photobooth.data.FrameConfig::class.java)
                                     } catch (e: Exception) {
                                         null
                                     }
@@ -543,6 +614,210 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        // Hidden/subtle Camera Button in top-right corner for Quick Settings (3 taps)
+        IconButton(
+            onClick = {
+                cameraTapCount++
+                if (cameraTapCount >= 3) {
+                    cameraTapCount = 0
+                    showQuickSettings = true
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 40.dp, end = 16.dp)
+                .size(48.dp)
+                .background(Color.Black.copy(alpha = 0.2f), shape = CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Quick Settings Trigger",
+                tint = Color.White.copy(alpha = 0.4f),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // Auto Update Dialog
+        if (autoUpdateInfo != null) {
+            Dialog(onDismissRequest = {
+                if (!isAutoDownloading) {
+                    autoUpdateInfo = null
+                }
+            }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
+                    border = BorderStroke(1.dp, Color(0xFFE63946).copy(alpha = 0.5f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "🚀 Pembaruan Aplikasi",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        Text(
+                            text = "Versi Baru: v${autoUpdateInfo!!.versionName} (${autoUpdateInfo!!.versionCode})\nVersi Sekarang: v$currentVersionName ($currentVersionCode)",
+                            color = Color.LightGray,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        Text(
+                            text = "Catatan Rilis:\n${autoUpdateInfo!!.changeLog}",
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 16.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Black.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        )
+
+                        if (autoUpdateError != null) {
+                            Text(
+                                text = autoUpdateError!!,
+                                color = Color(0xFFE63946),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        if (isAutoDownloading) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                LinearProgressIndicator(
+                                    progress = autoDownloadProgress ?: 0f,
+                                    color = Color(0xFFE63946),
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                )
+                                val pct = ((autoDownloadProgress ?: 0f) * 100).toInt()
+                                Text(
+                                    text = "Mengunduh pembaruan: $pct%",
+                                    color = Color.Gray,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        } else if (isAutoInstallPermissionNeeded) {
+                            Text(
+                                text = "Izin instalasi dari sumber tidak dikenal diperlukan untuk melanjutkan pembaruan.",
+                                color = Color.Yellow,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                TextButton(
+                                    onClick = { isAutoInstallPermissionNeeded = false },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Batal", color = Color.Gray)
+                                }
+                                Button(
+                                    onClick = {
+                                        updateManager.openInstallPermissionSettings()
+                                        isAutoInstallPermissionNeeded = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                    modifier = Modifier.weight(1.5f)
+                                ) {
+                                    Text("Buka Pengaturan", color = Color.White, fontSize = 13.sp)
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                TextButton(
+                                    onClick = { autoUpdateInfo = null },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Nanti", color = Color.Gray)
+                                }
+                                Button(
+                                    onClick = {
+                                        if (!updateManager.canRequestPackageInstalls()) {
+                                            isAutoInstallPermissionNeeded = true
+                                        } else {
+                                            isAutoDownloading = true
+                                            autoUpdateError = null
+                                            scope.launch {
+                                                val backendUrl = configManager.backendUrl
+                                                val sanitizedBase = if (backendUrl.endsWith("/")) backendUrl else "$backendUrl/"
+                                                val fullApkUrl = if (autoUpdateInfo!!.apkUrl.startsWith("http")) {
+                                                    autoUpdateInfo!!.apkUrl
+                                                } else {
+                                                    "$sanitizedBase${autoUpdateInfo!!.apkUrl}"
+                                                }
+                                                
+                                                // Stop Lock Task Mode before updating
+                                                context.findActivity()?.let { act ->
+                                                    try {
+                                                        act.stopLockTask()
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
+                                                }
+                                                
+                                                val file = updateManager.downloadApk(fullApkUrl) { progress ->
+                                                    autoDownloadProgress = progress
+                                                }
+                                                isAutoDownloading = false
+                                                if (file != null) {
+                                                    updateManager.installApk(file)
+                                                } else {
+                                                    autoUpdateError = "Gagal mengunduh APK. Silakan periksa koneksi."
+                                                }
+                                            }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF52B788)),
+                                    modifier = Modifier.weight(2f)
+                                ) {
+                                    Text("Unduh & Instal", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sliding side drawer from the right
+        AnimatedVisibility(
+            visible = showQuickSettings,
+            enter = slideInHorizontally(initialOffsetX = { it }),
+            exit = slideOutHorizontally(targetOffsetX = { it }),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            QuickSettingsDialog(
+                configManager = configManager,
+                onDismissRequest = { showQuickSettings = false }
+            )
         }
     }
 }

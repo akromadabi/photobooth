@@ -163,6 +163,17 @@ switch ($action) {
         }
         break;
 
+    case 'create_coupon':
+        require_once __DIR__ . '/coupon_helper.php';
+        $packageId = isset($_REQUEST['package_id']) ? $_REQUEST['package_id'] : 'any';
+        $customCode = isset($_REQUEST['custom_code']) ? $_REQUEST['custom_code'] : null;
+        if (empty($customCode)) {
+            $customCode = null;
+        }
+        $res = createCoupon($packageId, $customCode);
+        echo json_encode($res);
+        break;
+
     case 'kiosk_reset':
         // Reset state entirely
         $state = [

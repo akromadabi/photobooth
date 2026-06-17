@@ -1,6 +1,12 @@
 package com.example.photobooth.ui.admin
 
 import android.annotation.SuppressLint
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.content.ContentValues
 import android.provider.MediaStore
 import java.io.OutputStream
@@ -95,12 +101,27 @@ fun AdminScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
+    
+    val prefs = remember { context.getSharedPreferences("photobooth_prefs", Context.MODE_PRIVATE) }
+    var syncedJsonState by remember { mutableStateOf(prefs.getString("synced_frames_json", "") ?: "") }
+    DisposableEffect(prefs) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "synced_frames_json") {
+                syncedJsonState = p.getString("synced_frames_json", "") ?: ""
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+    
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    val syncedFramesCount = remember(configManager.syncedFramesJson) {
+    val syncedFramesCount = remember(syncedJsonState) {
         try {
-            val config = com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+            val config = com.google.gson.Gson().fromJson(syncedJsonState, com.example.photobooth.data.FrameConfig::class.java)
             config?.frames?.size ?: 0
         } catch (e: Exception) {
             0
@@ -129,15 +150,17 @@ fun AdminScreen(
     var printDensity by remember { mutableStateOf(configManager.printDensity) }
     var printerAutoCut by remember { mutableStateOf(configManager.printerAutoCut) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
+    var wifiIpAddress by remember { mutableStateOf("") }
+    var wifiPort by remember { mutableStateOf("9100") }
     
     var kioskMode by remember { mutableStateOf(configManager.kioskMode) }
     var activeEventId by remember { mutableStateOf(configManager.activeEventId) }
     var showEventDialog by remember { mutableStateOf(false) }
 
-    val eventsList = remember(configManager.syncedFramesJson) {
+    val eventsList = remember(syncedJsonState) {
         val list = mutableListOf<com.example.photobooth.data.EventInfo>()
         list.add(com.example.photobooth.data.EventInfo("general", "Umum (Default)", "UMUM"))
-        val syncedJson = configManager.syncedFramesJson
+        val syncedJson = syncedJsonState
         if (syncedJson.isNotEmpty()) {
             try {
                 val config = com.google.gson.Gson().fromJson(syncedJson, com.example.photobooth.data.FrameConfig::class.java)
@@ -176,6 +199,43 @@ fun AdminScreen(
     var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isReprinting by remember { mutableStateOf(false) }
 
+    val requestBtPermissionsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            val connectGranted = permissions[android.Manifest.permission.BLUETOOTH_CONNECT] ?: false
+            if (connectGranted) {
+                // Perform the USB and BT scans
+                usbDevices.clear()
+                bluetoothDevices.clear()
+                val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
+                usbManager?.deviceList?.values?.forEach { device ->
+                    var isPrinter = false
+                    for (i in 0 until device.interfaceCount) {
+                        if (device.getInterface(i).interfaceClass == 7) {
+                            isPrinter = true
+                            break
+                        }
+                    }
+                    if (isPrinter) usbDevices.add(device)
+                }
+                try {
+                    val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                    val adapter = bluetoothManager?.adapter
+                    if (adapter != null && adapter.isEnabled) {
+                        @SuppressLint("MissingPermission")
+                        adapter.bondedDevices.forEach { device ->
+                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                Toast.makeText(context, "Izin Bluetooth ditolak. Gagal memindai printer Bluetooth.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
     // Scan function
     val scanPrinters = {
         usbDevices.clear()
@@ -196,17 +256,50 @@ fun AdminScreen(
         }
         
         // Bluetooth
-        try {
-            val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-            val adapter = bluetoothManager?.adapter
-            if (adapter != null && adapter.isEnabled) {
-                @SuppressLint("MissingPermission")
-                adapter.bondedDevices.forEach { device ->
-                    bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val hasConnect = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+            val hasScan = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.BLUETOOTH_SCAN
+            ) == PackageManager.PERMISSION_GRANTED
+            
+            if (!hasConnect || !hasScan) {
+                requestBtPermissionsLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.BLUETOOTH_CONNECT,
+                        android.Manifest.permission.BLUETOOTH_SCAN
+                    )
+                )
+            } else {
+                try {
+                    val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                    val adapter = bluetoothManager?.adapter
+                    if (adapter != null && adapter.isEnabled) {
+                        @SuppressLint("MissingPermission")
+                        adapter.bondedDevices.forEach { device ->
+                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } else {
+            try {
+                val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                val adapter = bluetoothManager?.adapter
+                if (adapter != null && adapter.isEnabled) {
+                    @SuppressLint("MissingPermission")
+                    adapter.bondedDevices.forEach { device ->
+                        bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -1268,9 +1361,13 @@ fun AdminScreen(
                                                         val pid = parts[1].toIntOrNull() ?: 0
                                                         usbDevices.any { it.vendorId == vid && it.productId == pid }
                                                     } else false
-                                                } else {
+                                                } else if (printer.type == "BT") {
                                                     val mac = printer.address.substring(3)
                                                     bluetoothDevices.any { it.second.equals(mac, ignoreCase = true) }
+                                                } else if (printer.type == "NET") {
+                                                    isNetworkConnected(context)
+                                                } else {
+                                                    false
                                                 }
                                             }
                                             
@@ -1461,6 +1558,71 @@ fun AdminScreen(
                                 if (printerOptions.isEmpty() && usbDevices.isEmpty() && bluetoothDevices.isEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text("Tidak ada printer terdeteksi. Hubungkan printer struk menggunakan kabel USB OTG atau koneksi Bluetooth.", color = Color.Gray, fontSize = 12.sp)
+                                }
+
+                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
+                                
+                                Text("Atau Hubungkan Printer WiFi / Network (LAN):", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = wifiIpAddress,
+                                        onValueChange = { wifiIpAddress = it },
+                                        placeholder = { Text("IP Address (cth: 192.168.1.100)", color = Color.Gray, fontSize = 12.sp) },
+                                        modifier = Modifier.weight(2f),
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color(0xFFE63946),
+                                            unfocusedBorderColor = Color(0xFF2A2A35),
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = wifiPort,
+                                        onValueChange = { wifiPort = it },
+                                        placeholder = { Text("Port", color = Color.Gray, fontSize = 12.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color(0xFFE63946),
+                                            unfocusedBorderColor = Color(0xFF2A2A35),
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            if (wifiIpAddress.trim().isNotEmpty()) {
+                                                val portVal = wifiPort.trim().ifEmpty { "9100" }
+                                                val addr = "NET:${wifiIpAddress.trim()}:$portVal"
+                                                printerAddress = addr
+                                                configManager.printerAddress = addr
+                                                configManager.addPrinterToHistory(addr, "WiFi Printer (${wifiIpAddress.trim()})", "NET")
+                                                historyListState = configManager.getPrinterHistory()
+                                                Toast.makeText(context, "Printer WiFi berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "IP Address tidak boleh kosong", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp)
+                                    ) {
+                                        Text("Hubungkan", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -2755,4 +2917,20 @@ private fun Context.findActivity(): FragmentActivity? {
         context = context.baseContext
     }
     return null
+}
+
+private fun isNetworkConnected(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager?.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+    } else {
+        @Suppress("DEPRECATION")
+        val networkInfo = connectivityManager?.activeNetworkInfo
+        @Suppress("DEPRECATION")
+        return networkInfo != null && networkInfo.isConnected
+    }
 }

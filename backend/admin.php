@@ -6,6 +6,9 @@ $uploadDir = __DIR__ . '/uploads/';
 $queueFile = __DIR__ . '/queue.json';
 $packagesFile = __DIR__ . '/packages.json';
 
+// Load coupon helper logic
+require_once __DIR__ . '/coupon_helper.php';
+
 // Load settings from JSON
 function loadSettings($file) {
     $defaults = [
@@ -400,6 +403,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     
     $falKey = isset($_POST['fal_key']) ? trim($_POST['fal_key']) : '';
     $appTheme = isset($_POST['app_theme']) ? $_POST['app_theme'] : 'NEON_RED';
+    $couponPromoText = isset($_POST['coupon_promo_text']) ? $_POST['coupon_promo_text'] : '';
     
     $settings = [
         "admin_pin" => $newPin ? $newPin : '1234',
@@ -416,11 +420,122 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         "midtrans_production_client_key" => $midtransProductionClientKey,
         "midtrans_environment" => $midtransEnv,
         "fal_key" => $falKey,
-        "app_theme" => $appTheme
+        "app_theme" => $appTheme,
+        "coupon_promo_text" => $couponPromoText
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
     header('Location: admin.php?status=saved');
+    exit;
+}
+
+// Action: Create Coupon
+if (isset($_POST['action']) && $_POST['action'] === 'create_coupon') {
+    if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        header('Location: admin.php');
+        exit;
+    }
+    
+    $packageId = isset($_POST['package_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['package_id']) : 'any';
+    $customCode = !empty($_POST['custom_code']) ? trim($_POST['custom_code']) : null;
+    $isBulk = isset($_POST['is_bulk']) && $_POST['is_bulk'] == '1';
+    $bulkQty = isset($_POST['bulk_quantity']) ? intval($_POST['bulk_quantity']) : 5;
+    
+    // Load packages in case "any" is selected to print all packages
+    $packagesFile = __DIR__ . '/packages.json';
+    $pkgs = [];
+    if (file_exists($packagesFile)) {
+        $pkgs = json_decode(file_get_contents($packagesFile), true);
+    }
+    if (!is_array($pkgs)) {
+        $pkgs = [];
+    }
+
+    $targetPackages = [];
+    if ($packageId === 'any') {
+        foreach ($pkgs as $p) {
+            $targetPackages[] = $p['id'];
+        }
+    } else {
+        $targetPackages[] = $packageId;
+    }
+
+    if (empty($targetPackages)) {
+        header("Location: admin.php?status=coupon_error&msg=" . urlencode("Tidak ada paket yang terdaftar.") . "#coupons");
+        exit;
+    }
+
+    if ($isBulk) {
+        $successCount = 0;
+        $createdCodes = [];
+        foreach ($targetPackages as $tgtPkgId) {
+            for ($i = 0; $i < $bulkQty; $i++) {
+                $res = createCoupon($tgtPkgId);
+                if ($res['success']) {
+                    $successCount++;
+                    $createdCodes[] = $res['coupon']['code'];
+                }
+            }
+        }
+        $printCodes = implode(',', $createdCodes);
+        header("Location: admin.php?status=bulk_created&count=$successCount&print_codes=" . urlencode($printCodes) . "#coupons");
+        exit;
+    } else {
+        $successCount = 0;
+        $createdCodes = [];
+        $lastError = '';
+        foreach ($targetPackages as $tgtPkgId) {
+            $res = createCoupon($tgtPkgId, $customCode);
+            if ($res['success']) {
+                $successCount++;
+                $createdCodes[] = $res['coupon']['code'];
+            } else {
+                $lastError = $res['message'];
+            }
+        }
+        
+        if ($successCount > 0) {
+            $printCodes = implode(',', $createdCodes);
+            if ($packageId === 'any') {
+                header("Location: admin.php?status=bulk_created&count=$successCount&print_codes=" . urlencode($printCodes) . "#coupons");
+            } else {
+                header("Location: admin.php?status=coupon_created&print_code=" . $createdCodes[0] . "#coupons");
+            }
+            exit;
+        } else {
+            $errorMsg = urlencode($lastError ? $lastError : "Gagal membuat kupon.");
+            header("Location: admin.php?status=coupon_error&msg=$errorMsg#coupons");
+            exit;
+        }
+    }
+}
+
+// Action: Delete Coupon
+if (isset($_GET['action']) && $_GET['action'] === 'delete_coupon') {
+    if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        header('Location: admin.php');
+        exit;
+    }
+    
+    $code = isset($_GET['code']) ? strtoupper(trim($_GET['code'])) : '';
+    if ($code) {
+        $coupons = loadCoupons();
+        $updatedCoupons = [];
+        $deleted = false;
+        foreach ($coupons as $c) {
+            if (strtoupper($c['code']) === $code) {
+                $deleted = true;
+                continue;
+            }
+            $updatedCoupons[] = $c;
+        }
+        if ($deleted) {
+            saveCoupons($updatedCoupons);
+            header("Location: admin.php?status=coupon_deleted#coupons");
+            exit;
+        }
+    }
+    header("Location: admin.php#coupons");
     exit;
 }
 
@@ -2038,6 +2153,9 @@ foreach ($weeklyStats as $date => $cnt) {
                 <a href="#" class="nav-item" data-tab="packages">
                     <span class="nav-icon"><i class="fa-solid fa-box-archive"></i></span> Manage Packages
                 </a>
+                <a href="#" class="nav-item" data-tab="coupons">
+                    <span class="nav-icon"><i class="fa-solid fa-ticket"></i></span> Kelola Kupon
+                </a>
                 <a href="#" class="nav-item" data-tab="frames">
                     <span class="nav-icon"><i class="fa-solid fa-image"></i></span> Bingkai Kiosk
                 </a>
@@ -2107,6 +2225,40 @@ foreach ($weeklyStats as $date => $cnt) {
                         <div class="alert-status alert-cleared">
                             <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
                             <span>Gagal menyimpan bingkai! Harap unggah gambar PNG transparan yang valid.</span>
+                        </div>
+                    <?php elseif ($_GET['status'] === 'bulk_created'): ?>
+                        <div class="alert-status alert-saved">
+                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                            <span>Berhasil men-generate <?php echo intval($_GET['count'] ?? 0); ?> kupon massal baru!</span>
+                            <?php if (!empty($_GET['print_codes'])): ?>
+                            <!-- JavaScript to auto open printing page for bulk codes -->
+                            <script>
+                                window.addEventListener('DOMContentLoaded', () => {
+                                    window.open('print_coupon.php?code=<?php echo urlencode($_GET['print_codes']); ?>', '_blank');
+                                });
+                            </script>
+                            <?php endif; ?>
+                        </div>
+                    <?php elseif ($_GET['status'] === 'coupon_created'): ?>
+                        <div class="alert-status alert-saved">
+                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                            <span>Kupon <strong><?php echo htmlspecialchars($_GET['print_code'] ?? ''); ?></strong> berhasil dibuat dan sedang dikirim ke printer!</span>
+                            <!-- JavaScript to auto open printing page -->
+                            <script>
+                                window.addEventListener('DOMContentLoaded', () => {
+                                    window.open('print_coupon.php?code=<?php echo urlencode($_GET['print_code'] ?? ''); ?>', '_blank');
+                                });
+                            </script>
+                        </div>
+                    <?php elseif ($_GET['status'] === 'coupon_error'): ?>
+                        <div class="alert-status alert-cleared">
+                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                            <span>Gagal membuat kupon: <?php echo htmlspecialchars($_GET['msg'] ?? 'Error tidak diketahui'); ?></span>
+                        </div>
+                    <?php elseif ($_GET['status'] === 'coupon_deleted'): ?>
+                        <div class="alert-status alert-deleted">
+                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                            <span>Kupon berhasil dihapus secara permanen!</span>
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -2279,6 +2431,11 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <option value="dummy" <?php echo $settings['payment_mode'] === 'dummy' ? 'selected' : ''; ?>>Simulasi / Dummy (Tanpa Kunci API)</option>
                                         <option value="midtrans" <?php echo $settings['payment_mode'] === 'midtrans' ? 'selected' : ''; ?>>Midtrans (Real / Sandbox)</option>
                                     </select>
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label for="coupon_promo_text">Teks Promosi Kupon (Thermal Struk)</label>
+                                    <textarea id="coupon_promo_text" name="coupon_promo_text" class="form-input" rows="4" style="font-family: monospace; resize: vertical;"><?php echo htmlspecialchars($settings['coupon_promo_text'] ?? ''); ?></textarea>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">Teks promosi statis yang akan tercetak di bagian bawah struk kupon thermal.</span>
                                 </div>
                             </div>
 
@@ -2603,6 +2760,164 @@ foreach ($weeklyStats as $date => $cnt) {
                     }
                     </script>
                 </div>
+
+                <!-- TAB: Coupons (Kelola Kupon & Voucher) -->
+                <div class="tab-pane" id="tab-coupons">
+                    <div class="card-section" style="margin-bottom: 24px;">
+                        <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 20px;">
+                            <div class="card-title"><i class="fa-solid fa-ticket"></i> Buat Kupon Baru</div>
+                        </div>
+                        <form method="POST" action="admin.php">
+                            <input type="hidden" name="action" value="create_coupon">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="coupon_package_id">Berlaku Untuk Paket</label>
+                                    <select id="coupon_package_id" name="package_id" class="form-select">
+                                        <option value="any">Semua Paket (Cetak Semua Paket)</option>
+                                        <?php 
+                                        if (file_exists($packagesFile)) {
+                                            $pkgs = json_decode(file_get_contents($packagesFile), true);
+                                            foreach ($pkgs as $p) {
+                                                echo '<option value="' . htmlspecialchars($p['id']) . '">' . htmlspecialchars($p['name']) . ' (Rp ' . number_format($p['price'], 0, ',', '.') . ')</option>';
+                                            }
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="group_custom_code">
+                                    <label for="coupon_custom_code">Kode Kupon Kustom (Opsional)</label>
+                                    <input type="text" id="coupon_custom_code" name="custom_code" class="form-input" placeholder="Misal: PROMO50 (Kosongkan untuk acak)">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">Kosongkan untuk membuat kode acak unik secara otomatis.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="coupon_is_bulk">Mode Pembuatan</label>
+                                    <select id="coupon_is_bulk" name="is_bulk" class="form-select" onchange="toggleBulkQty(this.value)">
+                                        <option value="0">Kupon Tunggal (Buat & Cetak Instan)</option>
+                                        <option value="1">Kupon Massal (Bulk Generate)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="group_bulk_qty" style="display: none;">
+                                    <label for="coupon_bulk_qty">Jumlah Kupon</label>
+                                    <input type="number" id="coupon_bulk_qty" name="bulk_quantity" class="form-input" value="5" min="1" max="100">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">Jumlah kupon massal yang ingin dibuat sekaligus (maks 100).</span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <button type="submit" class="btn-primary">
+                                    <i class="fa-solid fa-plus-circle"></i> Buat Kupon
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card-section">
+                        <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 20px;">
+                            <div class="card-title"><i class="fa-solid fa-list-check"></i> Daftar Kupon & Voucher</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">No.</th>
+                                        <th>Kode Kupon</th>
+                                        <th>Paket Berlaku</th>
+                                        <th>Status</th>
+                                        <th>Tanggal Dibuat</th>
+                                        <th>Digunakan Pada</th>
+                                        <th style="text-align: center; width: 180px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $allCoupons = loadCoupons();
+                                    usort($allCoupons, function($a, $b) {
+                                        return $b['created_at'] - $a['created_at'];
+                                    });
+                                    $pkgNames = ['any' => 'Semua Paket'];
+                                    if (file_exists($packagesFile)) {
+                                        $pkgs = json_decode(file_get_contents($packagesFile), true);
+                                        foreach ($pkgs as $p) {
+                                            $pkgNames[$p['id']] = $p['name'];
+                                        }
+                                    }
+                                    ?>
+                                    <?php if (empty($allCoupons)): ?>
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px 0;">Belum ada kupon yang dibuat.</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php $counter = 1; foreach ($allCoupons as $coupon): ?>
+                                            <tr>
+                                                <td style="color: var(--text-muted);"><?php echo $counter++; ?>.</td>
+                                                <td style="font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--primary); letter-spacing: 0.5px;">
+                                                    <?php echo htmlspecialchars($coupon['code']); ?>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-gray">
+                                                        <?php echo htmlspecialchars($pkgNames[$coupon['package_id']] ?? $coupon['package_id']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php if ($coupon['status'] === 'ACTIVE'): ?>
+                                                        <?php if (time() - $coupon['created_at'] > 86400): ?>
+                                                            <span class="badge badge-danger">Kedaluwarsa</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-success">Aktif</span>
+                                                        <?php endif; ?>
+                                                    <?php elseif ($coupon['status'] === 'EXPIRED'): ?>
+                                                        <span class="badge badge-danger">Kedaluwarsa</span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-gray">Terpakai</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td style="color: var(--text-muted); font-size: 0.9rem;">
+                                                    <?php echo date('d M Y, H:i', $coupon['created_at']); ?>
+                                                </td>
+                                                <td style="color: var(--text-muted); font-size: 0.9rem;">
+                                                    <?php 
+                                                    if ($coupon['status'] === 'USED' && !empty($coupon['used_at'])) {
+                                                        echo date('d M H:i', $coupon['used_at']);
+                                                        if (!empty($coupon['used_by_session'])) {
+                                                            echo ' <span style="font-family: monospace; font-size: 0.75rem;">(' . htmlspecialchars($coupon['used_by_session']) . ')</span>';
+                                                        }
+                                                    } else {
+                                                        echo '-';
+                                                    }
+                                                    ?>
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    <a href="print_coupon.php?code=<?php echo urlencode($coupon['code']); ?>" target="_blank" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; background-color: var(--info-dark); border: none;">
+                                                        <i class="fa-solid fa-print"></i> Cetak
+                                                    </a>
+                                                    <a href="admin.php?action=delete_coupon&code=<?php echo urlencode($coupon['code']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus kupon <?php echo htmlspecialchars($coupon['code']); ?>?');" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; background-color: var(--danger-dark); border: none; margin-left: 5px;">
+                                                        <i class="fa-solid fa-trash"></i> Hapus
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function toggleBulkQty(val) {
+                    const qtyGroup = document.getElementById('group_bulk_qty');
+                    const codeGroup = document.getElementById('group_custom_code');
+                    if (qtyGroup && codeGroup) {
+                        if (val === '1') {
+                            qtyGroup.style.display = 'block';
+                            codeGroup.style.display = 'none';
+                            document.getElementById('coupon_custom_code').value = '';
+                        } else {
+                            qtyGroup.style.display = 'none';
+                            codeGroup.style.display = 'block';
+                        }
+                    }
+                }
+                </script>
 
                 <!-- TAB: Frames (Manajemen Bingkai & Visual Editor) -->
                 <div class="tab-pane" id="tab-frames">
@@ -4552,6 +4867,8 @@ foreach ($weeklyStats as $date => $cnt) {
                     activeTab = 'queue';
                 } else if (status === 'frame_saved' || status === 'frame_deleted' || status === 'frame_error') {
                     activeTab = 'frames';
+                } else if (status === 'coupon_created' || status === 'bulk_created' || status === 'coupon_error' || status === 'coupon_deleted') {
+                    activeTab = 'coupons';
                 } else {
                     activeTab = localStorage.getItem('active_admin_tab') || 'dashboard';
                 }

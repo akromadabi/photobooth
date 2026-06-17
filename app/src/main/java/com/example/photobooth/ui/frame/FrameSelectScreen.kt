@@ -15,6 +15,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import android.content.SharedPreferences
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,8 +64,22 @@ fun FrameSelectScreen(
         }
     }
 
+    val prefs = remember { context.getSharedPreferences("photobooth_prefs", Context.MODE_PRIVATE) }
+    var syncedJsonState by remember { mutableStateOf(prefs.getString("synced_frames_json", "") ?: "") }
+    DisposableEffect(prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "synced_frames_json") {
+                syncedJsonState = p.getString("synced_frames_json", "") ?: ""
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
     // Load synced frames or get fallbacks
-    val frames = remember(layoutType, eventId) {
+    val frames = remember(layoutType, eventId, syncedJsonState) {
         getFramesForLayout(context, layoutType, configManager, eventId)
     }
 
@@ -365,6 +384,152 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     backgroundColor = "#0a0b10",
                     imageUrl = "frames/cyber_neon.png",
                     slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "magazine_strip",
+                    name = "Vogue Magazine",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#ffffff",
+                    imageUrl = "frames/magazine_strip.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "magazine_sports",
+                    name = "Active Sports Magazine",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#0f172a",
+                    imageUrl = "frames/magazine_sports.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "magazine_music",
+                    name = "Rock & Rhythm Magazine",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#111111",
+                    imageUrl = "frames/magazine_music.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "magazine_gaming",
+                    name = "Pixel Game Magazine",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#1e1b4b",
+                    imageUrl = "frames/magazine_gaming.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "magazine_travel",
+                    name = "Wanderlust Explorer",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#f2efe9",
+                    imageUrl = "frames/magazine_travel.png",
+                    slots = stripSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "magazine_manga",
+                    name = "Manga Weekly",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#ffffff",
+                    imageUrl = "frames/magazine_manga.png",
+                    slots = stripSlots
+                )
+            )
+            
+            val receiptSlots = listOf(
+                Slot(0, 50, 100, 500, 375),
+                Slot(1, 50, 505, 500, 375),
+                Slot(2, 50, 910, 500, 375),
+                Slot(3, 50, 1315, 500, 375)
+            )
+            val cinemaSlots = listOf(
+                Slot(0, 55, 100, 490, 365),
+                Slot(1, 55, 495, 490, 365),
+                Slot(2, 55, 890, 490, 365),
+                Slot(3, 55, 1285, 490, 365)
+            )
+            
+            framesList.add(
+                Frame(
+                    id = "receipt_supermarket",
+                    name = "Supermarket Struk",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#f8f7f2",
+                    imageUrl = "frames/receipt_supermarket.png",
+                    slots = receiptSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "receipt_coffee",
+                    name = "Coffee Shop Invoice",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#fbf8f3",
+                    imageUrl = "frames/receipt_coffee.png",
+                    slots = receiptSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "receipt_cinema",
+                    name = "Retro Cinema Ticket",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#faf4e1",
+                    imageUrl = "frames/receipt_cinema.png",
+                    slots = cinemaSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "receipt_bank",
+                    name = "Minimalist Bank Slip",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#f4f6fa",
+                    imageUrl = "frames/receipt_bank.png",
+                    slots = receiptSlots
+                )
+            )
+            framesList.add(
+                Frame(
+                    id = "receipt_clinic",
+                    name = "Clinic Prescription",
+                    type = "strip",
+                    width = 600,
+                    height = 2000,
+                    backgroundColor = "#eef2f6",
+                    imageUrl = "frames/receipt_clinic.png",
+                    slots = receiptSlots
                 )
             )
         } else if (layoutType.equals("grid", ignoreCase = true)) {

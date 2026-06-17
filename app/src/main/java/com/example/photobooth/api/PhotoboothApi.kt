@@ -118,4 +118,28 @@ interface PhotoboothApi {
     suspend fun completeSession(
         @Field("session_id") sessionId: String
     ): Response<GenericResponse>
+
+    @GET("kiosk_control.php?action=kiosk_reset")
+    suspend fun resetQueue(): Response<GenericResponse>
+
+    @GET("kiosk_control.php?action=create_coupon")
+    suspend fun createCoupon(
+        @retrofit2.http.Query("package_id") packageId: String = "any",
+        @retrofit2.http.Query("custom_code") customCode: String? = null
+    ): Response<CouponResponse>
 }
+
+@Keep
+data class CouponDto(
+    @SerializedName("code") val code: String,
+    @SerializedName("package_id") val packageId: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("created_at") val createdAt: Long
+)
+
+@Keep
+data class CouponResponse(
+    val success: Boolean,
+    val coupon: CouponDto? = null,
+    val message: String? = null
+)

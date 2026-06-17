@@ -1,0 +1,66 @@
+[
+    {
+        "code": "2H3MGR-1",
+        "package_id": "paket_receipt",
+        "status": "EXPIRED",
+        "created_at": 1781617976,
+        "used_at": null,
+        "used_by_session": null
+    },
+    {
+        "code": "WARNAOK-2",
+        "package_id": "paket_warna",
+        "status": "USED",
+        "created_at": 1781707976,
+        "used_at": 1781707976,
+        "used_by_session": "session_test_01"
+    },
+    {
+        "code": "WQWKEJ-0",
+        "package_id": "any",
+        "status": "ACTIVE",
+        "created_at": 1781707976,
+        "used_at": null,
+        "used_by_session": null
+    },
+    {
+        "code": "TES-1",
+        "package_id": "paket_receipt",
+        "status": "ACTIVE",
+        "created_at": 1781708776,
+        "used_at": null,
+        "used_by_session": null
+    },
+    {
+        "code": "TES-2",
+        "package_id": "paket_warna",
+        "status": "ACTIVE",
+        "created_at": 1781708776,
+        "used_at": null,
+        "used_by_session": null
+    },
+    {
+        "code": "TES-3",
+        "package_id": "paket_idcard",
+        "status": "ACTIVE",
+        "created_at": 1781708776,
+        "used_at": null,
+        "used_by_session": null
+    },
+    {
+        "code": "CL5LK4-1",
+        "package_id": "paket_receipt",
+        "status": "ACTIVE",
+        "created_at": 1781708793,
+        "used_at": null,
+        "used_by_session": null
+    },
+    {
+        "code": "QE3UBV-1",
+        "package_id": "paket_receipt",
+        "status": "ACTIVE",
+        "created_at": 1781708793,
+        "used_at": null,
+        "used_by_session": null
+    }
+]

@@ -1106,11 +1106,9 @@ fun FrameSelectorPanel(
             fontWeight = FontWeight.SemiBold
         )
         
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+        LazyRow(
             modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(compatibleFrames) { frame ->
@@ -1324,6 +1322,8 @@ fun MiniFrameCard(
 ) {
     val context = LocalContext.current
     val frameFile = remember(frame.id) { File(context.cacheDir, "frames/${frame.id}.png") }
+    val frameAspectRatio = frame.width.toFloat() / frame.height.toFloat()
+    
     val parsedColor = remember(frame.backgroundColor) {
         try {
             Color(android.graphics.Color.parseColor(frame.backgroundColor))
@@ -1332,24 +1332,27 @@ fun MiniFrameCard(
         }
     }
 
-    Box(
+    Column(
         modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(0.67f)
+            .fillMaxHeight()
+            .width((140f * frameAspectRatio).dp)
             .clip(RoundedCornerShape(12.dp))
             .background(parsedColor)
             .border(
-                width = if (isSelected) 3.dp else 0.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                width = if (isSelected) 3.dp else 1.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable { onClick() },
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp)
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(4.dp),
+            contentAlignment = Alignment.Center
         ) {
             val frameWidth = frame.width.coerceAtLeast(1).toFloat()
             val frameHeight = frame.height.coerceAtLeast(1).toFloat()
@@ -1358,18 +1361,20 @@ fun MiniFrameCard(
                 val previewWidth = maxWidth
                 val previewHeight = maxHeight
                 
-                frame.slots.forEach { slot ->
-                    val slotLeft = (slot.x.toFloat() / frameWidth * previewWidth.value).dp
-                    val slotTop = (slot.y.toFloat() / frameHeight * previewHeight.value).dp
-                    val slotWidth = (slot.width.toFloat() / frameWidth * previewWidth.value).dp
-                    val slotHeight = (slot.height.toFloat() / frameHeight * previewHeight.value).dp
-                    
-                    Box(
-                        modifier = Modifier
-                            .offset(x = slotLeft, y = slotTop)
-                            .size(slotWidth, slotHeight)
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
-                    )
+                if (!frameFile.exists()) {
+                    frame.slots.forEach { slot ->
+                        val slotLeft = (slot.x.toFloat() / frameWidth * previewWidth.value).dp
+                        val slotTop = (slot.y.toFloat() / frameHeight * previewHeight.value).dp
+                        val slotWidth = (slot.width.toFloat() / frameWidth * previewWidth.value).dp
+                        val slotHeight = (slot.height.toFloat() / frameHeight * previewHeight.value).dp
+                        
+                        Box(
+                            modifier = Modifier
+                                .offset(x = slotLeft, y = slotTop)
+                                .size(slotWidth, slotHeight)
+                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                        )
+                    }
                 }
                 
                 if (frameFile.exists()) {
@@ -1384,17 +1389,17 @@ fun MiniFrameCard(
         
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                .padding(vertical = 2.dp)
+                .padding(vertical = 4.dp)
         ) {
             Text(
                 text = frame.name,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 8.sp,
+                fontSize = 10.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 1
             )
         }
     }

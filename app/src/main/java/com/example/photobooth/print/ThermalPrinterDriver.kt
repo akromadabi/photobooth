@@ -76,8 +76,42 @@ class ThermalPrinterDriver : PrinterManager {
             } else {
                 PrintResult.Error("Format alamat USB printer tidak valid")
             }
+        } else if (address.startsWith("NET:")) {
+            val netAddr = address.substring(4)
+            printViaNetwork(bitmap, netAddr, context)
         } else {
             PrintResult.Error("Tipe printer tidak dikenal")
+        }
+    }
+
+    private suspend fun printViaNetwork(bitmap: Bitmap, netAddress: String, context: Context): PrintResult = withContext(Dispatchers.IO) {
+        val parts = netAddress.split(":")
+        val ip = parts[0]
+        val port = if (parts.size > 1) parts[1].toIntOrNull() ?: 9100 else 9100
+        
+        var socket: java.net.Socket? = null
+        try {
+            socket = java.net.Socket()
+            socket.connect(java.net.InetSocketAddress(ip, port), 5000)
+            
+            val configManager = ConfigManager(context)
+            val printData = if (configManager.thermalMode == "ESC_POS") {
+                generateEscPosData(bitmap, configManager)
+            } else {
+                generateTsplData(bitmap, configManager)
+            }
+            
+            val outputStream = socket.getOutputStream()
+            outputStream.write(printData)
+            outputStream.flush()
+            
+            PrintResult.Success
+        } catch (e: Exception) {
+            PrintResult.Error("Koneksi WiFi/Network ke printer gagal: ${e.message}")
+        } finally {
+            try {
+                socket?.close()
+            } catch (e: Exception) {}
         }
     }
 

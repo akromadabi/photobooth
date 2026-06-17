@@ -96,6 +96,10 @@ class ConfigManager(context: Context) {
         get() = prefs.getString("app_theme", "NEON_RED") ?: "NEON_RED"
         set(value) = prefs.edit().putString("app_theme", value).apply()
 
+    var isAdminDarkMode: Boolean
+        get() = prefs.getBoolean("is_admin_dark_mode", true)
+        set(value) = prefs.edit().putBoolean("is_admin_dark_mode", value).apply()
+
     var printerHistoryJson: String
         get() = prefs.getString("printer_history_json", "[]") ?: "[]"
         set(value) = prefs.edit().putString("printer_history_json", value).apply()
