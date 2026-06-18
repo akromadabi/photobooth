@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.photobooth"
         minSdk = 24
         targetSdk = 36
-        versionCode = 31
-        versionName = "1.23.0"
+        versionCode = 32
+        versionName = "1.24.0"
     }
 
     buildTypes {

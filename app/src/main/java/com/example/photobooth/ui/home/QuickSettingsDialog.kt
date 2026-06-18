@@ -13,6 +13,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.hardware.usb.UsbConstants
 import android.bluetooth.BluetoothManager
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -49,6 +50,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+data class QuickSettingsThemeColors(
+    val bgMain: Color,
+    val bgCard: Color,
+    val borderColor: Color,
+    val textMain: Color,
+    val textMuted: Color
+)
+
+val LocalQuickSettingsThemeColors = staticCompositionLocalOf {
+    QuickSettingsThemeColors(
+        bgMain = Color(0xFF0F0F14),
+        bgCard = Color(0xFF1E1E24),
+        borderColor = Color(0xFF2A2A35),
+        textMain = Color.White,
+        textMuted = Color.Gray
+    )
+}
+
 @Composable
 fun QuickSettingsDialog(
     configManager: ConfigManager,
@@ -57,6 +76,26 @@ fun QuickSettingsDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    var isAdminDarkModeState by remember { mutableStateOf(configManager.isAdminDarkMode) }
+    
+    val themeColors = remember(isAdminDarkModeState) {
+        QuickSettingsThemeColors(
+            bgMain = if (isAdminDarkModeState) Color(0xFF0F0F14) else Color(0xFFF8FAFC),
+            bgCard = if (isAdminDarkModeState) Color(0xFF1E1E24) else Color(0xFFFFFFFF),
+            borderColor = if (isAdminDarkModeState) Color(0xFF2A2A35) else Color(0xFFE2E8F0),
+            textMain = if (isAdminDarkModeState) Color.White else Color(0xFF0F172A),
+            textMuted = if (isAdminDarkModeState) Color.Gray else Color(0xFF64748B)
+        )
+    }
+
+    CompositionLocalProvider(LocalQuickSettingsThemeColors provides themeColors) {
+        val colors = LocalQuickSettingsThemeColors.current
+        val BgMain = colors.bgMain
+        val BgCard = colors.bgCard
+        val BorderColor = colors.borderColor
+        val White = colors.textMain
+        val Gray = colors.textMuted
 
     // 1. Theme Configuration States
     var activeThemeState by remember { mutableStateOf(configManager.appTheme) }
@@ -82,6 +121,7 @@ fun QuickSettingsDialog(
     // USB and BT lists
     val usbDevices = remember { mutableStateListOf<UsbDevice>() }
     val bluetoothDevices = remember { mutableStateListOf<Pair<String, String>>() } // Name, MAC
+    var historyListState by remember { mutableStateOf(configManager.getPrinterHistory()) }
 
     val requestBtPermissionsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -94,10 +134,19 @@ fun QuickSettingsDialog(
                 usbManager?.deviceList?.values?.forEach { device ->
                     var isPrinter = false
                     for (i in 0 until device.interfaceCount) {
-                        if (device.getInterface(i).interfaceClass == 7) {
+                        val intr = device.getInterface(i)
+                        if (intr.interfaceClass == 7) {
                             isPrinter = true
                             break
                         }
+                        for (j in 0 until intr.endpointCount) {
+                            val ep = intr.getEndpoint(j)
+                            if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
+                                isPrinter = true
+                                break
+                            }
+                        }
+                        if (isPrinter) break
                     }
                     if (isPrinter) usbDevices.add(device)
                 }
@@ -129,10 +178,19 @@ fun QuickSettingsDialog(
         usbManager?.deviceList?.values?.forEach { device ->
             var isPrinter = false
             for (i in 0 until device.interfaceCount) {
-                if (device.getInterface(i).interfaceClass == 7) {
+                val intr = device.getInterface(i)
+                if (intr.interfaceClass == 7) {
                     isPrinter = true
                     break
                 }
+                for (j in 0 until intr.endpointCount) {
+                    val ep = intr.getEndpoint(j)
+                    if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
+                        isPrinter = true
+                        break
+                    }
+                }
+                if (isPrinter) break
             }
             if (isPrinter) usbDevices.add(device)
         }
@@ -189,16 +247,31 @@ fun QuickSettingsDialog(
         scanPrinters()
     }
 
-    val printerOptions = remember(usbDevices, bluetoothDevices) {
+    val printerOptions = remember(usbDevices, bluetoothDevices, historyListState) {
         val list = mutableListOf<Pair<String, Pair<String, String>>>() // Pair(address, Pair(displayName, type))
+        
+        // 1. USB scanned
         usbDevices.forEach { device ->
             val addr = "USB:${device.vendorId},${device.productId}"
             val name = device.productName ?: "Printer USB"
             list.add(Pair(addr, Pair("$name (VID:${device.vendorId} PID:${device.productId})", "USB")))
         }
+        
+        // 2. Bluetooth scanned
         bluetoothDevices.forEach { (name, mac) ->
             val addr = "BT:$mac"
             list.add(Pair(addr, Pair("$name ($mac)", "BT")))
+        }
+        
+        // 3. History printers
+        historyListState.forEach { hp ->
+            if (list.none { it.first == hp.address }) {
+                val displayName = when (hp.type) {
+                    "NET" -> hp.name
+                    else -> "${hp.name} (Tersimpan)"
+                }
+                list.add(Pair(hp.address, Pair(displayName, hp.type)))
+            }
         }
         list
     }
@@ -209,30 +282,9 @@ fun QuickSettingsDialog(
     // Printer Warna Configuration States
     val isColorEnabled = remember(printerType) { printerType == "AUTO" || printerType == "COLOR" }
 
-    // 4. Coupon Fast Print States
-    var packagesList by remember { mutableStateOf<List<PackageDto>>(emptyList()) }
-    var selectedPackageId by remember { mutableStateOf("any") }
-    var isPackageDropdownExpanded by remember { mutableStateOf(false) }
-    var isCreatingCoupon by remember { mutableStateOf(false) }
-
-    LaunchedEffect(configManager.backendUrl) {
-        try {
-            val api = NetworkClient.getApi(configManager.backendUrl)
-            val response = api.getPackages()
-            if (response.isSuccessful && response.body() != null) {
-                packagesList = response.body()!!
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    val selectedPackageName = if (selectedPackageId == "any") "Semua Paket" else packagesList.find { it.id == selectedPackageId }?.name ?: selectedPackageId
-
     // Actions triggers
     var isTestingThermalPrint by remember { mutableStateOf(false) }
     var isTestingColorPrint by remember { mutableStateOf(false) }
-    var isSyncingCatalog by remember { mutableStateOf(false) }
     var isResettingQueue by remember { mutableStateOf(false) }
 
     // Dialog layout content
@@ -248,8 +300,8 @@ fun QuickSettingsDialog(
                 .align(Alignment.TopEnd)
                 .fillMaxHeight()
                 .width(380.dp)
-                .background(Color(0xFF0F0F14)) // Dark graphite color
-                .border(BorderStroke(1.dp, Color(0xFF2A2A35)))
+                .background(BgMain) // Dark graphite color
+                .border(BorderStroke(1.dp, BorderColor))
                 .padding(20.dp)
                 .clickable(enabled = false) {} // Prevent click propagation to background
         ) {
@@ -264,32 +316,32 @@ fun QuickSettingsDialog(
                         text = "PENGATURAN CEPAT",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = White,
                         letterSpacing = 1.sp
                     )
                     Text(
                         text = "Kiosk Operator Panel (Pinless Access)",
                         fontSize = 11.sp,
-                        color = Color.Gray
+                        color = Gray
                     )
                 }
                 IconButton(
                     onClick = onDismissRequest,
                     modifier = Modifier
                         .size(36.dp)
-                        .background(Color(0xFF1E1E24), CircleShape)
+                        .background(BgCard, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
-                        tint = Color.White,
+                        tint = White,
                         modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = Color(0xFF2A2A35), modifier = Modifier.fillMaxWidth())
+            Divider(color = BorderColor, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(16.dp))
 
             // Scrollable Settings Box
@@ -305,8 +357,8 @@ fun QuickSettingsDialog(
                         OutlinedButton(
                             onClick = { isThemeDropdownExpanded = true },
                             modifier = Modifier.fillMaxWidth(),
-                            border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, BorderColor),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                             shape = RoundedCornerShape(8.dp),
                             contentPadding = PaddingValues(12.dp)
                         ) {
@@ -315,7 +367,7 @@ fun QuickSettingsDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = activeThemeName, color = Color.White, fontSize = 13.sp)
+                                Text(text = activeThemeName, color = White, fontSize = 13.sp)
                                 Text(text = "▼", color = Color(0xFFE63946), fontSize = 10.sp)
                             }
                         }
@@ -324,12 +376,12 @@ fun QuickSettingsDialog(
                             onDismissRequest = { isThemeDropdownExpanded = false },
                             modifier = Modifier
                                 .width(340.dp)
-                                .background(Color(0xFF1E1E24))
-                                .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                .background(BgCard)
+                                .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                         ) {
                             themeList.forEach { (themeId, themeName) ->
                                 DropdownMenuItem(
-                                    text = { Text(themeName, color = Color.White, fontSize = 13.sp) },
+                                    text = { Text(themeName, color = White, fontSize = 13.sp) },
                                     onClick = {
                                         activeThemeState = themeId
                                         configManager.appTheme = themeId
@@ -339,6 +391,33 @@ fun QuickSettingsDialog(
                                 )
                             }
                         }
+                    }
+                }
+                
+                // Section 1.5: Mode Gelap Admin
+                QuickSettingsSection(title = "Mode Gelap Admin") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Mode Gelap", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text("Ubah tampilan panel ini & menu admin ke mode terang/gelap", color = Gray, fontSize = 11.sp)
+                        }
+                        Switch(
+                            checked = isAdminDarkModeState,
+                            onCheckedChange = { isChecked ->
+                                isAdminDarkModeState = isChecked
+                                configManager.isAdminDarkMode = isChecked
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFFE63946),
+                                uncheckedThumbColor = Color.Gray,
+                                uncheckedTrackColor = BorderColor
+                            )
+                        )
                     }
                 }
 
@@ -351,7 +430,7 @@ fun QuickSettingsDialog(
                     ) {
                         Text(
                             text = "$countdownSecs Detik",
-                            color = Color.White,
+                            color = White,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -367,10 +446,10 @@ fun QuickSettingsDialog(
                                     }
                                 },
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E24)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BgCard),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                             ) {
-                                Text("-", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("-", color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                             Button(
                                 onClick = {
@@ -380,10 +459,10 @@ fun QuickSettingsDialog(
                                     }
                                 },
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E24)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BgCard),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                             ) {
-                                Text("+", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("+", color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -398,10 +477,10 @@ fun QuickSettingsDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Aktifkan Printer Thermal", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("Aktifkan Printer Thermal", color = White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Text(
                                     text = if (isThermalEnabled) "Terdeteksi: $selectedPrinterText" else "Mode Digital Saja",
-                                    color = Color.Gray,
+                                    color = Gray,
                                     fontSize = 10.sp
                                 )
                             }
@@ -432,8 +511,8 @@ fun QuickSettingsDialog(
                                         isPrinterPortDropdownExpanded = true
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                    border = BorderStroke(1.dp, BorderColor),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(10.dp)
                                 ) {
@@ -442,7 +521,7 @@ fun QuickSettingsDialog(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = selectedPrinterText, color = Color.White, fontSize = 12.sp)
+                                        Text(text = selectedPrinterText, color = White, fontSize = 12.sp)
                                         Text(text = "▼", color = Color(0xFFE63946), fontSize = 10.sp)
                                     }
                                 }
@@ -451,22 +530,25 @@ fun QuickSettingsDialog(
                                     onDismissRequest = { isPrinterPortDropdownExpanded = false },
                                     modifier = Modifier
                                         .width(340.dp)
-                                        .background(Color(0xFF1E1E24))
-                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                        .background(BgCard)
+                                        .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                 ) {
                                     if (printerOptions.isEmpty()) {
                                         DropdownMenuItem(
-                                            text = { Text("Tidak ada printer terdeteksi", color = Color.Gray, fontSize = 12.sp) },
+                                            text = { Text("Tidak ada printer terdeteksi", color = Gray, fontSize = 12.sp) },
                                             onClick = { isPrinterPortDropdownExpanded = false }
                                         )
                                     } else {
                                         printerOptions.forEach { (addr, details) ->
                                             val (name, type) = details
                                             DropdownMenuItem(
-                                                text = { Text("[$type] $name", color = Color.White, fontSize = 12.sp) },
+                                                text = { Text("[$type] $name", color = White, fontSize = 12.sp) },
                                                 onClick = {
                                                     printerAddress = addr
                                                     configManager.printerAddress = addr
+                                                    val cleanName = name.replace(" (Tersimpan)", "").split(" (")[0]
+                                                    configManager.addPrinterToHistory(addr, cleanName, type)
+                                                    historyListState = configManager.getPrinterHistory()
                                                     isPrinterPortDropdownExpanded = false
                                                     Toast.makeText(context, "Port printer disetel!", Toast.LENGTH_SHORT).show()
                                                 }
@@ -487,14 +569,14 @@ fun QuickSettingsDialog(
                                 OutlinedTextField(
                                     value = wifiIpAddress,
                                     onValueChange = { wifiIpAddress = it },
-                                    placeholder = { Text("IP Printer (cth: 192.168.1.100)", color = Color.Gray, fontSize = 11.sp) },
+                                    placeholder = { Text("IP Printer (cth: 192.168.1.100)", color = Gray, fontSize = 11.sp) },
                                     modifier = Modifier.weight(2f),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color(0xFFE63946),
-                                        unfocusedBorderColor = Color(0xFF2A2A35),
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        unfocusedBorderColor = BorderColor,
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White,
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent
                                     ),
@@ -503,15 +585,15 @@ fun QuickSettingsDialog(
                                 OutlinedTextField(
                                     value = wifiPort,
                                     onValueChange = { wifiPort = it },
-                                    placeholder = { Text("Port", color = Color.Gray, fontSize = 11.sp) },
+                                    placeholder = { Text("Port", color = Gray, fontSize = 11.sp) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color(0xFFE63946),
-                                        unfocusedBorderColor = Color(0xFF2A2A35),
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        unfocusedBorderColor = BorderColor,
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White,
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent
                                     ),
@@ -525,6 +607,7 @@ fun QuickSettingsDialog(
                                             printerAddress = addr
                                             configManager.printerAddress = addr
                                             configManager.addPrinterToHistory(addr, "WiFi Printer (${wifiIpAddress.trim()})", "NET")
+                                            historyListState = configManager.getPrinterHistory()
                                             Toast.makeText(context, "Printer WiFi disetel!", Toast.LENGTH_SHORT).show()
                                         } else {
                                             Toast.makeText(context, "IP tidak boleh kosong", Toast.LENGTH_SHORT).show()
@@ -534,7 +617,7 @@ fun QuickSettingsDialog(
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
                                 ) {
-                                    Text("Set", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("Set", color = White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                             
@@ -555,13 +638,13 @@ fun QuickSettingsDialog(
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E24)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BgCard),
                                 contentPadding = PaddingValues(10.dp)
                             ) {
                                 if (isTestingThermalPrint) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = White, strokeWidth = 2.dp)
                                 } else {
-                                    Text("Test Print Struk Thermal", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Test Print Struk Thermal", color = White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -577,8 +660,8 @@ fun QuickSettingsDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Aktifkan Printer Warna", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                Text("Mencetak halaman foto warna utama (A4/4R)", color = Color.Gray, fontSize = 10.sp)
+                                Text("Aktifkan Printer Warna", color = White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("Mencetak halaman foto warna utama (A4/4R)", color = Gray, fontSize = 10.sp)
                             }
                             Switch(
                                 checked = isColorEnabled,
@@ -613,177 +696,25 @@ fun QuickSettingsDialog(
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E24)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BgCard),
                                 contentPadding = PaddingValues(10.dp)
                             ) {
                                 if (isTestingColorPrint) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = White, strokeWidth = 2.dp)
                                 } else {
-                                    Text("Test Print Halaman Warna", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Test Print Halaman Warna", color = White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
                     }
                 }
 
-                // Section 5: Cetak Kupon Cepat
-                QuickSettingsSection(title = "Cetak Kupon Cepat") {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = "Buat dan cetak kupon/voucher pembayaran secara instan menggunakan printer struk lokal.",
-                            color = Color.Gray,
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
 
-                        // Dropdown choice for package
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedButton(
-                                onClick = { isPackageDropdownExpanded = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(10.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(text = "Paket: $selectedPackageName", color = Color.White, fontSize = 12.sp)
-                                    Text(text = "▼", color = Color(0xFFE63946), fontSize = 10.sp)
-                                }
-                            }
-                            DropdownMenu(
-                                expanded = isPackageDropdownExpanded,
-                                onDismissRequest = { isPackageDropdownExpanded = false },
-                                modifier = Modifier
-                                    .width(340.dp)
-                                    .background(Color(0xFF1E1E24))
-                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Semua Paket (Bisa Pilih Bebas)", color = Color.White, fontSize = 12.sp) },
-                                    onClick = {
-                                        selectedPackageId = "any"
-                                        isPackageDropdownExpanded = false
-                                    }
-                                )
-                                packagesList.forEach { pkg ->
-                                    DropdownMenuItem(
-                                        text = { Text("${pkg.name} (Rp ${pkg.price})", color = Color.White, fontSize = 12.sp) },
-                                        onClick = {
-                                            selectedPackageId = pkg.id
-                                            isPackageDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                if (isCreatingCoupon) return@Button
-                                isCreatingCoupon = true
-                                scope.launch(Dispatchers.IO) {
-                                    try {
-                                        val api = NetworkClient.getApi(configManager.backendUrl)
-                                        val res = api.createCoupon(packageId = selectedPackageId)
-                                        if (res.isSuccessful && res.body() != null && res.body()!!.success) {
-                                            val coupon = res.body()!!.coupon!!
-                                            val printRes = PrintTestHelper.printCouponReceipt(
-                                                context = context,
-                                                configManager = configManager,
-                                                couponCode = coupon.code,
-                                                packageName = selectedPackageName
-                                            )
-                                            withContext(Dispatchers.Main) {
-                                                Toast.makeText(context, "Kupon ${coupon.code} terbit! $printRes", Toast.LENGTH_LONG).show()
-                                            }
-                                        } else {
-                                            val errorMsg = res.body()?.message ?: "Gagal membuat kupon dari backend"
-                                            withContext(Dispatchers.Main) {
-                                                Toast.makeText(context, "Error: $errorMsg", Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Kesalahan: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                                        }
-                                    } finally {
-                                        withContext(Dispatchers.Main) {
-                                            isCreatingCoupon = false
-                                        }
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)), // Red brand color
-                            contentPadding = PaddingValues(11.dp),
-                            enabled = isThermalEnabled && !isCreatingCoupon
-                        ) {
-                            if (isCreatingCoupon) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                            } else {
-                                Text(
-                                    text = if (isThermalEnabled) "Cetak Kupon Baru 🎫" else "Aktifkan printer thermal untuk mencetak",
-                                    color = if (isThermalEnabled) Color.White else Color.Gray,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
 
                 // Section 6: Fitur Utilitas Lainnya
                 QuickSettingsSection(title = "Fitur Utilitas Kiosk") {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // 1. Sync catalog/frames
-                        Button(
-                            onClick = {
-                                if (isSyncingCatalog) return@Button
-                                isSyncingCatalog = true
-                                scope.launch(Dispatchers.IO) {
-                                    try {
-                                        val resJson = com.example.photobooth.api.CatalogSync.syncFramesFromBackend(
-                                            context,
-                                            configManager.backendUrl,
-                                            configManager
-                                        )
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Sinkronisasi Bingkai Berhasil!", Toast.LENGTH_SHORT).show()
-                                        }
-                                    } catch (e: Exception) {
-                                        withContext(Dispatchers.Main) {
-                                            Toast.makeText(context, "Gagal Sync: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                                        }
-                                    } finally {
-                                        withContext(Dispatchers.Main) {
-                                            isSyncingCatalog = false
-                                        }
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E24)),
-                            contentPadding = PaddingValues(10.dp)
-                        ) {
-                            if (isSyncingCatalog) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                            } else {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(imageVector = Icons.Default.Refresh, contentDescription = "Sync", tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Text("Sinkronisasi Bingkai & Acara", color = Color.White, fontSize = 12.sp)
-                                }
-                            }
-                        }
+
 
                         // 2. Reset queue
                         Button(
@@ -814,41 +745,23 @@ fun QuickSettingsDialog(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E24)),
+                            colors = ButtonDefaults.buttonColors(containerColor = BgCard),
                             contentPadding = PaddingValues(10.dp)
                         ) {
                             if (isResettingQueue) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = White, strokeWidth = 2.dp)
                             } else {
                                 Text("Reset Antrean Kiosk (Server)", color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
 
-                        // 3. Exit application
-                        Button(
-                            onClick = {
-                                context.findActivity()?.let { act ->
-                                    try {
-                                        act.stopLockTask()
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                    act.finishAndRemoveTask()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444).copy(alpha = 0.15f)),
-                            border = BorderStroke(1.dp, Color(0xFFEF4444)),
-                            contentPadding = PaddingValues(10.dp)
-                        ) {
-                            Text("Tutup & Keluar Aplikasi Kiosk", color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
+
                     }
                 }
             }
         }
     }
+}
 }
 
 @Composable
@@ -856,11 +769,16 @@ fun QuickSettingsSection(
     title: String,
     content: @Composable () -> Unit
 ) {
+    val colors = LocalQuickSettingsThemeColors.current
+    val bgSection = if (colors.textMain == Color.White) Color(0xFF141419) else Color(0xFFF1F5F9)
+    val borderColor = colors.borderColor
+    val textColor = colors.textMain
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF141419), RoundedCornerShape(12.dp))
-            .border(BorderStroke(1.dp, Color(0xFF2A2A35)), RoundedCornerShape(12.dp))
+            .background(bgSection, RoundedCornerShape(12.dp))
+            .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(12.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -868,7 +786,7 @@ fun QuickSettingsSection(
             text = title,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White.copy(alpha = 0.9f),
+            color = textColor.copy(alpha = 0.9f),
             letterSpacing = 0.5.sp
         )
         content()

@@ -19,6 +19,7 @@ import android.graphics.Paint
 import androidx.compose.ui.graphics.Color
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.hardware.usb.UsbConstants
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -92,6 +93,27 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 
+data class AdminThemeColors(
+    val bgMain: Color,
+    val bgCard: Color,
+    val bgInnerCard: Color,
+    val borderColor: Color,
+    val textMain: Color,
+    val textMuted: Color,
+    val accentColor: Color = Color(0xFFE63946)
+)
+
+val LocalAdminThemeColors = staticCompositionLocalOf {
+    AdminThemeColors(
+        bgMain = Color(0xFF0F0F12),
+        bgCard = Color(0xFF18181F),
+        bgInnerCard = Color(0xFF1E1E24),
+        borderColor = Color(0xFF2A2A35),
+        textMain = Color.White,
+        textMuted = Color.Gray
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminScreen(
@@ -101,6 +123,16 @@ fun AdminScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
+    
+    var isAdminDarkModeState by remember { mutableStateOf(configManager.isAdminDarkMode) }
+    
+    val BgMain = if (isAdminDarkModeState) Color(0xFF0F0F12) else Color(0xFFF8FAFC)
+    val BgCard = if (isAdminDarkModeState) Color(0xFF18181F) else Color(0xFFFFFFFF)
+    val BgInnerCard = if (isAdminDarkModeState) Color(0xFF1E1E24) else Color(0xFFF1F5F9)
+    val BorderColor = if (isAdminDarkModeState) Color(0xFF2A2A35) else Color(0xFFE2E8F0)
+    val White = if (isAdminDarkModeState) Color.White else Color(0xFF0F172A)
+    val Gray = if (isAdminDarkModeState) Color.Gray else Color(0xFF64748B)
+    val LightGray = if (isAdminDarkModeState) Color.LightGray else Color(0xFF475569)
     
     val prefs = remember { context.getSharedPreferences("photobooth_prefs", Context.MODE_PRIVATE) }
     var syncedJsonState by remember { mutableStateOf(prefs.getString("synced_frames_json", "") ?: "") }
@@ -211,10 +243,19 @@ fun AdminScreen(
                 usbManager?.deviceList?.values?.forEach { device ->
                     var isPrinter = false
                     for (i in 0 until device.interfaceCount) {
-                        if (device.getInterface(i).interfaceClass == 7) {
+                        val intr = device.getInterface(i)
+                        if (intr.interfaceClass == 7) {
                             isPrinter = true
                             break
                         }
+                        for (j in 0 until intr.endpointCount) {
+                            val ep = intr.getEndpoint(j)
+                            if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
+                                isPrinter = true
+                                break
+                            }
+                        }
+                        if (isPrinter) break
                     }
                     if (isPrinter) usbDevices.add(device)
                 }
@@ -245,10 +286,19 @@ fun AdminScreen(
         usbManager?.deviceList?.values?.forEach { device ->
             var isPrinter = false
             for (i in 0 until device.interfaceCount) {
-                if (device.getInterface(i).interfaceClass == 7) {
+                val intr = device.getInterface(i)
+                if (intr.interfaceClass == 7) {
                     isPrinter = true
                     break
                 }
+                for (j in 0 until intr.endpointCount) {
+                    val ep = intr.getEndpoint(j)
+                    if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
+                        isPrinter = true
+                        break
+                    }
+                }
+                if (isPrinter) break
             }
             if (isPrinter) {
                 usbDevices.add(device)
@@ -335,22 +385,34 @@ fun AdminScreen(
         }
     }
 
-    Scaffold(
+    val themeColors = remember(isAdminDarkModeState) {
+        AdminThemeColors(
+            bgMain = BgMain,
+            bgCard = BgCard,
+            bgInnerCard = BgInnerCard,
+            borderColor = BorderColor,
+            textMain = White,
+            textMuted = Gray
+        )
+    }
+
+    CompositionLocalProvider(LocalAdminThemeColors provides themeColors) {
+        Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("MENU ADMIN KIOSK", fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 1.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = White)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF0F0F12),
-                    titleContentColor = Color.White
+                    containerColor = BgMain,
+                    titleContentColor = White
                 )
             )
         },
-        containerColor = Color(0xFF0F0F12),
+        containerColor = BgMain,
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         Column(
@@ -361,7 +423,7 @@ fun AdminScreen(
             // Elegant Navigation Tab Row
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = Color(0xFF18181F),
+                containerColor = BgCard,
                 contentColor = Color(0xFFE63946),
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
@@ -380,7 +442,7 @@ fun AdminScreen(
                                 text = title,
                                 fontSize = 14.sp,
                                 fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedTab == index) Color.White else Color.Gray
+                                color = if (selectedTab == index) Color.White else Gray
                             )
                         }
                     )
@@ -420,12 +482,12 @@ fun AdminScreen(
                                         .weight(1f)
                                         .height(90.dp)
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF18181F))
-                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                        .background(BgCard)
+                                        .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
                                         .padding(12.dp)
                                 ) {
                                     Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                                        Text("SERVER STATUS", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        Text("SERVER STATUS", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(
                                                 modifier = Modifier
@@ -446,7 +508,7 @@ fun AdminScreen(
                                                     false -> "OFFLINE"
                                                     else -> "CHECKING"
                                                 },
-                                                color = Color.White,
+                                                color = White,
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -460,15 +522,15 @@ fun AdminScreen(
                                         .weight(1f)
                                         .height(90.dp)
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF18181F))
-                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                        .background(BgCard)
+                                        .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
                                         .padding(12.dp)
                                 ) {
                                     Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                                        Text("SYNCED FRAMES", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        Text("SYNCED FRAMES", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                         Text(
                                             text = "$syncedFramesCount Bingkai",
-                                            color = Color.White,
+                                            color = White,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -481,12 +543,12 @@ fun AdminScreen(
                                         .weight(1f)
                                         .height(90.dp)
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFF18181F))
-                                        .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                                        .background(BgCard)
+                                        .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
                                         .padding(12.dp)
                                 ) {
                                     Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                                        Text("ACTIVE PRINTER", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        Text("ACTIVE PRINTER", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                         Text(
                                             text = when (printerType) {
                                                 "THERMAL" -> "XP-420B"
@@ -494,7 +556,7 @@ fun AdminScreen(
                                                 "AUTO" -> "AUTO (THERMAL & COLOR)"
                                                 else -> "NONE"
                                             },
-                                            color = Color.White,
+                                            color = White,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -510,8 +572,8 @@ fun AdminScreen(
                                     onValueChange = { backendUrl = it },
                                     label = { Text("Base URL API Server") },
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White,
                                         focusedBorderColor = Color(0xFFE63946)
                                     ),
                                     modifier = Modifier.fillMaxWidth()
@@ -523,8 +585,8 @@ fun AdminScreen(
                                     label = { Text("PIN Akses Kiosk") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White,
                                         focusedBorderColor = Color(0xFFE63946)
                                     ),
                                     modifier = Modifier.fillMaxWidth()
@@ -538,8 +600,8 @@ fun AdminScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("Gunakan Sensor Sidik Jari (Biometrik)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                        Text("Otentikasi biometrik cepat untuk masuk menu admin tanpa PIN", color = Color.Gray, fontSize = 12.sp)
+                                        Text("Gunakan Sensor Sidik Jari (Biometrik)", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Otentikasi biometrik cepat untuk masuk menu admin tanpa PIN", color = Gray, fontSize = 12.sp)
                                     }
                                     Switch(
                                         checked = useBiometric,
@@ -547,8 +609,8 @@ fun AdminScreen(
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = Color.White,
                                             checkedTrackColor = Color(0xFFE63946),
-                                            uncheckedThumbColor = Color.Gray,
-                                            uncheckedTrackColor = Color(0xFF2A2A35)
+                                            uncheckedThumbColor = Gray,
+                                            uncheckedTrackColor = BorderColor
                                         )
                                     )
                                 }
@@ -562,7 +624,7 @@ fun AdminScreen(
                             AdminCard(title = "Sinkronisasi Bingkai (Dynamic Sync)") {
                                 Text(
                                     text = "Mendownload katalog bingkai (.json) dan ornamen bingkai (.png) dari aaPanel agar aplikasi dapat bekerja 100% offline.",
-                                    color = Color.Gray,
+                                    color = Gray,
                                     fontSize = 12.sp,
                                     lineHeight = 16.sp
                                 )
@@ -575,7 +637,7 @@ fun AdminScreen(
                                     ) {
                                         CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(24.dp))
                                         Spacer(modifier = Modifier.width(12.dp))
-                                        Text("Menghubungkan & mengunduh...", color = Color.Gray, fontSize = 13.sp)
+                                        Text("Menghubungkan & mengunduh...", color = Gray, fontSize = 13.sp)
                                     }
                                 } else {
                                     Button(
@@ -589,7 +651,7 @@ fun AdminScreen(
                                                 }
                                             }
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Text("SYNC KATALOG SEKARANG", fontWeight = FontWeight.Bold)
@@ -606,8 +668,8 @@ fun AdminScreen(
                                     label = { Text("Durasi Hitung Mundur (Detik)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White,
                                         focusedBorderColor = Color(0xFFE63946)
                                     ),
                                     modifier = Modifier.fillMaxWidth()
@@ -619,8 +681,8 @@ fun AdminScreen(
                                     label = { Text("Jumlah Jepretan Foto per Sesi") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White,
                                         focusedBorderColor = Color(0xFFE63946)
                                     ),
                                     modifier = Modifier.fillMaxWidth()
@@ -632,7 +694,7 @@ fun AdminScreen(
 
                         val KioskModeBlock: @Composable () -> Unit = {
                             AdminCard(title = "Mode Kiosk & Pengelolaan Event") {
-                                Text("Pilih Mode Operasional Kiosk:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text("Pilih Mode Operasional Kiosk:", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 
                                 // Kiosk mode options
@@ -652,7 +714,7 @@ fun AdminScreen(
                                             colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Multi-Event (Kode)", color = Color.White, fontSize = 12.sp)
+                                        Text("Multi-Event (Kode)", color = White, fontSize = 12.sp)
                                     }
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -666,7 +728,7 @@ fun AdminScreen(
                                             colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFE63946))
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Satu Event Terkunci", color = Color.White, fontSize = 12.sp)
+                                        Text("Satu Event Terkunci", color = White, fontSize = 12.sp)
                                     }
                                 }
                                 
@@ -674,13 +736,13 @@ fun AdminScreen(
                                 
                                 if (kioskMode == "DEDICATED") {
                                     val currentEventName = eventsList.firstOrNull { it.id == activeEventId }?.name ?: "Pilih Event"
-                                    Text("Pilih Event Aktif Acara:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text("Pilih Event Aktif Acara:", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFF2A2A35))
+                                            .background(BorderColor)
                                             .border(1.dp, Color(0xFF3F3F4F), RoundedCornerShape(8.dp))
                                             .clickable { showEventDialog = true }
                                             .padding(16.dp)
@@ -690,7 +752,7 @@ fun AdminScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(currentEventName, color = Color.White, fontSize = 14.sp)
+                                            Text(currentEventName, color = White, fontSize = 14.sp)
                                             Text("Ubah ▾", color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
@@ -716,7 +778,7 @@ fun AdminScreen(
                             AdminCard(title = "Tema Tampilan Kiosk (Total Layout)") {
                                 Text(
                                     text = "Pilih gaya visual total untuk Kiosk. Tema akan merubah keseluruhan tata letak, gaya tombol, ornamen, dan tipografi.",
-                                    color = Color.Gray,
+                                    color = Gray,
                                     fontSize = 12.sp,
                                     lineHeight = 16.sp
                                 )
@@ -726,8 +788,8 @@ fun AdminScreen(
                                     OutlinedButton(
                                         onClick = { isThemeDropdownExpanded = true },
                                         modifier = Modifier.fillMaxWidth(),
-                                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                        border = BorderStroke(1.dp, BorderColor),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Row(
@@ -735,7 +797,7 @@ fun AdminScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(text = activeThemeName, color = Color.White, fontSize = 14.sp)
+                                            Text(text = activeThemeName, color = White, fontSize = 14.sp)
                                             Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                         }
                                     }
@@ -744,12 +806,12 @@ fun AdminScreen(
                                         onDismissRequest = { isThemeDropdownExpanded = false },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(Color(0xFF1E1E24))
-                                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            .background(BgInnerCard)
+                                            .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                     ) {
                                         themeList.forEach { (themeId, themeName) ->
                                             DropdownMenuItem(
-                                                text = { Text(themeName, color = Color.White) },
+                                                text = { Text(themeName, color = White) },
                                                 onClick = {
                                                     activeThemeState = themeId
                                                     configManager.appTheme = themeId
@@ -759,6 +821,34 @@ fun AdminScreen(
                                             )
                                         }
                                     }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Mode Gelap Admin", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Ubah tampilan menu admin ini menjadi mode gelap atau terang.", color = Gray, fontSize = 11.sp)
+                                    }
+                                    Switch(
+                                        checked = isAdminDarkModeState,
+                                        onCheckedChange = { isChecked ->
+                                            isAdminDarkModeState = isChecked
+                                            configManager.isAdminDarkMode = isChecked
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFFE63946),
+                                            uncheckedThumbColor = Gray,
+                                            uncheckedTrackColor = BorderColor
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -784,18 +874,18 @@ fun AdminScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column {
-                                            Text("Versi Sekarang", color = Color.Gray, fontSize = 11.sp)
-                                            Text("v$currentVersionName ($currentVersionCode)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text("Versi Sekarang", color = Gray, fontSize = 11.sp)
+                                            Text("v$currentVersionName ($currentVersionCode)", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                         }
                                         if (updateInfo != null) {
                                             Column(horizontalAlignment = Alignment.End) {
-                                                Text("Versi Terbaru", color = Color.Gray, fontSize = 11.sp)
+                                                Text("Versi Terbaru", color = Gray, fontSize = 11.sp)
                                                 Text("v${updateInfo!!.versionName} (${updateInfo!!.versionCode})", color = Color(0xFF52B788), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
                                     
-                                    HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 4.dp))
+                                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
                                     
                                     if (updateError != null) {
                                         Text(updateError!!, color = Color(0xFFE63946), fontSize = 12.sp)
@@ -810,7 +900,7 @@ fun AdminScreen(
                                             ) {
                                                 CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(20.dp))
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Memeriksa pembaruan...", color = Color.Gray, fontSize = 13.sp)
+                                                Text("Memeriksa pembaruan...", color = Gray, fontSize = 13.sp)
                                             }
                                         } else {
                                             Button(
@@ -827,7 +917,7 @@ fun AdminScreen(
                                                         }
                                                     }
                                                 },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                                colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
                                                 Text("PERIKSA PEMBARUAN", fontWeight = FontWeight.Bold)
@@ -838,7 +928,7 @@ fun AdminScreen(
                                         if (hasNewVersion) {
                                             Text(
                                                 text = "Pembaruan tersedia! Catatan rilis:\n${updateInfo!!.changeLog}",
-                                                color = Color.White,
+                                                color = White,
                                                 fontSize = 12.sp,
                                                 lineHeight = 16.sp
                                             )
@@ -854,11 +944,11 @@ fun AdminScreen(
                                                     LinearProgressIndicator(
                                                         progress = downloadProgress ?: 0f,
                                                         color = Color(0xFFE63946),
-                                                        trackColor = Color(0xFF2A2A35),
+                                                        trackColor = BorderColor,
                                                         modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
                                                     )
                                                     val pct = ((downloadProgress ?: 0f) * 100).toInt()
-                                                    Text("Mengunduh update: $pct%", color = Color.Gray, fontSize = 11.sp)
+                                                    Text("Mengunduh update: $pct%", color = Gray, fontSize = 11.sp)
                                                 }
                                             } else {
                                                 Button(
@@ -900,7 +990,7 @@ fun AdminScreen(
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF52B788)),
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
-                                                    Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = Color.White)
+                                                    Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = White)
                                                 }
                                             }
                                         } else {
@@ -918,7 +1008,7 @@ fun AdminScreen(
                                                     updateInfo = null
                                                     updateError = null
                                                 },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                                colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
                                                 Text("OK", fontWeight = FontWeight.Bold)
@@ -994,7 +1084,7 @@ fun AdminScreen(
                                     .fillMaxWidth()
                                     .height(54.dp)
                             ) {
-                                Text("SIMPAN SEMUA PERUBAHAN", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                Text("SIMPAN SEMUA PERUBAHAN", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White)
                             }
                         }
 
@@ -1002,11 +1092,11 @@ fun AdminScreen(
                         if (isInstallPermissionNeeded) {
                             AlertDialog(
                                 onDismissRequest = { isInstallPermissionNeeded = false },
-                                title = { Text("Izin Instalasi Diperlukan", color = Color.White) },
+                                title = { Text("Izin Instalasi Diperlukan", color = White) },
                                 text = { 
                                     Text(
                                         "Untuk memperbarui aplikasi Photobooth langsung dari kiosk, Anda harus memberikan izin untuk menginstal aplikasi dari sumber tidak dikenal.",
-                                        color = Color.Gray
+                                        color = Gray
                                     ) 
                                 },
                                 confirmButton = {
@@ -1029,10 +1119,10 @@ fun AdminScreen(
                                 },
                                 dismissButton = {
                                     TextButton(onClick = { isInstallPermissionNeeded = false }) {
-                                        Text("Batal", color = Color.Gray)
+                                        Text("Batal", color = Gray)
                                     }
                                 },
-                                containerColor = Color(0xFF1E1E24)
+                                containerColor = BgInnerCard
                             )
                         }
 
@@ -1041,13 +1131,13 @@ fun AdminScreen(
                             Dialog(onDismissRequest = { showEventDialog = false }) {
                                 Card(
                                     shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24))
+                                    colors = CardDefaults.cardColors(containerColor = BgInnerCard)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(16.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text("Pilih Event Aktif", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                        Text("Pilih Event Aktif", color = White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                         Spacer(modifier = Modifier.height(8.dp))
                                         eventsList.forEach { event ->
                                             Row(
@@ -1061,7 +1151,7 @@ fun AdminScreen(
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(event.name, color = Color.White, fontSize = 14.sp)
+                                                Text(event.name, color = White, fontSize = 14.sp)
                                                 if (activeEventId == event.id) {
                                                     Icon(
                                                         imageVector = Icons.Default.Check,
@@ -1123,8 +1213,8 @@ fun AdminScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("Aktifkan Printer Struk", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                        Text("Gunakan printer thermal untuk mencetak struk jepretan", color = Color.Gray, fontSize = 11.sp)
+                                        Text("Aktifkan Printer Struk", color = White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                        Text("Gunakan printer thermal untuk mencetak struk jepretan", color = Gray, fontSize = 11.sp)
                                     }
                                     Switch(
                                         checked = isThermalEnabled,
@@ -1141,14 +1231,14 @@ fun AdminScreen(
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = Color.White,
                                             checkedTrackColor = Color(0xFFE63946),
-                                            uncheckedThumbColor = Color.Gray,
-                                            uncheckedTrackColor = Color(0xFF2A2A35)
+                                            uncheckedThumbColor = Gray,
+                                            uncheckedTrackColor = BorderColor
                                         )
                                     )
                                 }
 
                                 if (isThermalEnabled) {
-                                    HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 4.dp))
+                                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
 
                                     // Protocol Dropdown Row
                                     Row(
@@ -1156,13 +1246,13 @@ fun AdminScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Protokol:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Text("Protokol:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
                                         Box(modifier = Modifier.weight(1f)) {
                                             OutlinedButton(
                                                 onClick = { isProtocolDropdownExpanded = true },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                border = BorderStroke(1.dp, BorderColor),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                                 shape = RoundedCornerShape(8.dp),
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                             ) {
@@ -1171,7 +1261,7 @@ fun AdminScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(text = selectedProtocolText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = selectedProtocolText, color = White, fontSize = 13.sp)
                                                     Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                                 }
                                             }
@@ -1180,12 +1270,12 @@ fun AdminScreen(
                                                 onDismissRequest = { isProtocolDropdownExpanded = false },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .background(Color(0xFF1E1E24))
-                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                    .background(BgInnerCard)
+                                                    .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                             ) {
                                                 protocolList.forEach { (mode, label) ->
                                                     DropdownMenuItem(
-                                                        text = { Text(label, color = Color.White) },
+                                                        text = { Text(label, color = White) },
                                                         onClick = {
                                                             thermalMode = mode
                                                             configManager.thermalMode = mode
@@ -1205,13 +1295,13 @@ fun AdminScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Lebar Kertas:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Text("Lebar Kertas:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
                                         Box(modifier = Modifier.weight(1f)) {
                                             OutlinedButton(
                                                 onClick = { isPaperWidthDropdownExpanded = true },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                border = BorderStroke(1.dp, BorderColor),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                                 shape = RoundedCornerShape(8.dp),
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                             ) {
@@ -1220,7 +1310,7 @@ fun AdminScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(text = selectedPaperWidthText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = selectedPaperWidthText, color = White, fontSize = 13.sp)
                                                     Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                                 }
                                             }
@@ -1229,12 +1319,12 @@ fun AdminScreen(
                                                 onDismissRequest = { isPaperWidthDropdownExpanded = false },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .background(Color(0xFF1E1E24))
-                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                    .background(BgInnerCard)
+                                                    .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                             ) {
                                                 paperWidthList.forEach { (width, label) ->
                                                     DropdownMenuItem(
-                                                        text = { Text(label, color = Color.White) },
+                                                        text = { Text(label, color = White) },
                                                         onClick = {
                                                             printerPaperWidth = width
                                                             configManager.printerPaperWidth = width
@@ -1254,13 +1344,13 @@ fun AdminScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Kepekatan:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Text("Kepekatan:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
                                         Box(modifier = Modifier.weight(1f)) {
                                             OutlinedButton(
                                                 onClick = { isDensityDropdownExpanded = true },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                border = BorderStroke(1.dp, BorderColor),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                                 shape = RoundedCornerShape(8.dp),
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                             ) {
@@ -1269,7 +1359,7 @@ fun AdminScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(text = selectedDensityText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = selectedDensityText, color = White, fontSize = 13.sp)
                                                     Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                                 }
                                             }
@@ -1278,12 +1368,12 @@ fun AdminScreen(
                                                 onDismissRequest = { isDensityDropdownExpanded = false },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .background(Color(0xFF1E1E24))
-                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                    .background(BgInnerCard)
+                                                    .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                             ) {
                                                 densityList.forEach { valDensity ->
                                                     DropdownMenuItem(
-                                                        text = { Text("Level $valDensity", color = Color.White) },
+                                                        text = { Text("Level $valDensity", color = White) },
                                                         onClick = {
                                                             printDensity = valDensity
                                                             configManager.printDensity = valDensity
@@ -1303,8 +1393,8 @@ fun AdminScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Potong Kertas Otomatis (Auto-Cut)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                            Text("Memotong kertas struk secara otomatis setelah selesai mencetak", color = Color.Gray, fontSize = 11.sp)
+                                            Text("Potong Kertas Otomatis (Auto-Cut)", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text("Memotong kertas struk secara otomatis setelah selesai mencetak", color = Gray, fontSize = 11.sp)
                                         }
                                         Switch(
                                             checked = printerAutoCut,
@@ -1315,8 +1405,8 @@ fun AdminScreen(
                                             colors = SwitchDefaults.colors(
                                                 checkedThumbColor = Color.White,
                                                 checkedTrackColor = Color(0xFFE63946),
-                                                uncheckedThumbColor = Color.Gray,
-                                                uncheckedTrackColor = Color(0xFF2A2A35)
+                                                uncheckedThumbColor = Gray,
+                                                uncheckedTrackColor = BorderColor
                                             )
                                         )
                                     }
@@ -1326,8 +1416,8 @@ fun AdminScreen(
 
                         val PrinterHistoryCard: @Composable () -> Unit = {
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                colors = CardDefaults.cardColors(containerColor = BgCard),
+                                border = BorderStroke(1.dp, BorderColor),
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -1335,10 +1425,10 @@ fun AdminScreen(
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    Text("Riwayat & Prioritas Printer (Auto-Connect)", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text("Riwayat & Prioritas Printer (Auto-Connect)", color = White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                                     Text(
                                         text = "Aplikasi akan otomatis mendeteksi dan menggunakan printer teratas yang berstatus TERSEDIA saat dibuka (startup) atau sebagai cadangan jika printer utama offline.",
-                                        color = Color.Gray,
+                                        color = Gray,
                                         fontSize = 11.sp,
                                         lineHeight = 15.sp
                                     )
@@ -1346,7 +1436,7 @@ fun AdminScreen(
                                     if (historyListState.isEmpty()) {
                                         Text(
                                             text = "Belum ada riwayat printer terhubung. Pilih printer di bawah untuk menambahkannya.",
-                                            color = Color.Gray,
+                                            color = Gray,
                                             fontSize = 12.sp,
                                             textAlign = TextAlign.Center,
                                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
@@ -1375,8 +1465,8 @@ fun AdminScreen(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .clip(RoundedCornerShape(8.dp))
-                                                    .background(if (printerAddress == printer.address) Color(0xFFE63946).copy(alpha = 0.08f) else Color(0xFF2A2A35).copy(alpha = 0.4f))
-                                                    .border(1.dp, if (printerAddress == printer.address) Color(0xFFE63946) else Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                    .background(if (printerAddress == printer.address) Color(0xFFE63946).copy(alpha = 0.08f) else BorderColor.copy(alpha = 0.4f))
+                                                    .border(1.dp, if (printerAddress == printer.address) Color(0xFFE63946) else BorderColor, RoundedCornerShape(8.dp))
                                                     .padding(12.dp)
                                             ) {
                                                 Row(
@@ -1395,28 +1485,28 @@ fun AdminScreen(
                                                             ) {
                                                                 Text(
                                                                     text = (index + 1).toString(),
-                                                                    color = Color.White,
+                                                                    color = White,
                                                                     fontSize = 10.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
                                                             }
                                                             Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(printer.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                            Text(printer.name, color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                                         }
                                                         Spacer(modifier = Modifier.height(4.dp))
-                                                        Text("${printer.type} | ${printer.address}", color = Color.Gray, fontSize = 10.sp)
+                                                        Text("${printer.type} | ${printer.address}", color = Gray, fontSize = 10.sp)
                                                         Spacer(modifier = Modifier.height(4.dp))
                                                         
                                                         // Availability label
                                                         Box(
                                                             modifier = Modifier
                                                                 .clip(RoundedCornerShape(4.dp))
-                                                                .background(if (isAvailable) Color(0xFF52B788).copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.15f))
+                                                                .background(if (isAvailable) Color(0xFF52B788).copy(alpha = 0.15f) else Gray.copy(alpha = 0.15f))
                                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                                         ) {
                                                             Text(
                                                                 text = if (isAvailable) "TERSEDIA" else "OFFLINE",
-                                                                color = if (isAvailable) Color(0xFF52B788) else Color.Gray,
+                                                                color = if (isAvailable) Color(0xFF52B788) else Gray,
                                                                 fontSize = 8.sp,
                                                                 fontWeight = FontWeight.Bold
                                                             )
@@ -1440,7 +1530,7 @@ fun AdminScreen(
                                                                 },
                                                                 modifier = Modifier.size(28.dp)
                                                             ) {
-                                                                Text("▲", color = Color.White, fontSize = 10.sp)
+                                                                Text("▲", color = White, fontSize = 10.sp)
                                                             }
                                                         }
                                                         
@@ -1457,7 +1547,7 @@ fun AdminScreen(
                                                                 },
                                                                 modifier = Modifier.size(28.dp)
                                                             ) {
-                                                                Text("▼", color = Color.White, fontSize = 10.sp)
+                                                                Text("▼", color = White, fontSize = 10.sp)
                                                             }
                                                         }
                                                         
@@ -1489,7 +1579,7 @@ fun AdminScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Pilih Port Printer Thermal Terdeteksi:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text("Pilih Port Printer Thermal Terdeteksi:", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     IconButton(
                                         onClick = {
                                             scanPrinters()
@@ -1510,8 +1600,8 @@ fun AdminScreen(
                                     OutlinedButton(
                                         onClick = { isPrinterPortDropdownExpanded = true },
                                         modifier = Modifier.fillMaxWidth(),
-                                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                        border = BorderStroke(1.dp, BorderColor),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                         shape = RoundedCornerShape(8.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                     ) {
@@ -1520,7 +1610,7 @@ fun AdminScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(text = selectedPrinterText, color = Color.White, fontSize = 13.sp)
+                                            Text(text = selectedPrinterText, color = White, fontSize = 13.sp)
                                             Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                         }
                                     }
@@ -1529,19 +1619,19 @@ fun AdminScreen(
                                         onDismissRequest = { isPrinterPortDropdownExpanded = false },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(Color(0xFF1E1E24))
-                                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                            .background(BgInnerCard)
+                                            .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                     ) {
                                         if (printerOptions.isEmpty()) {
                                             DropdownMenuItem(
-                                                text = { Text("Tidak ada printer terdeteksi", color = Color.Gray) },
+                                                text = { Text("Tidak ada printer terdeteksi", color = Gray) },
                                                 onClick = { isPrinterPortDropdownExpanded = false }
                                             )
                                         } else {
                                             printerOptions.forEach { (addr, info) ->
                                                 val (dispName, type) = info
                                                 DropdownMenuItem(
-                                                    text = { Text("[$type] $dispName", color = Color.White) },
+                                                    text = { Text("[$type] $dispName", color = White) },
                                                     onClick = {
                                                         printerAddress = addr
                                                         configManager.printerAddress = addr
@@ -1557,12 +1647,12 @@ fun AdminScreen(
 
                                 if (printerOptions.isEmpty() && usbDevices.isEmpty() && bluetoothDevices.isEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Tidak ada printer terdeteksi. Hubungkan printer struk menggunakan kabel USB OTG atau koneksi Bluetooth.", color = Color.Gray, fontSize = 12.sp)
+                                    Text("Tidak ada printer terdeteksi. Hubungkan printer struk menggunakan kabel USB OTG atau koneksi Bluetooth.", color = Gray, fontSize = 12.sp)
                                 }
 
-                                HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
+                                HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 12.dp))
                                 
-                                Text("Atau Hubungkan Printer WiFi / Network (LAN):", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text("Atau Hubungkan Printer WiFi / Network (LAN):", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 
                                 Row(
@@ -1573,14 +1663,14 @@ fun AdminScreen(
                                     OutlinedTextField(
                                         value = wifiIpAddress,
                                         onValueChange = { wifiIpAddress = it },
-                                        placeholder = { Text("IP Address (cth: 192.168.1.100)", color = Color.Gray, fontSize = 12.sp) },
+                                        placeholder = { Text("IP Address (cth: 192.168.1.100)", color = Gray, fontSize = 12.sp) },
                                         modifier = Modifier.weight(2f),
                                         singleLine = true,
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedBorderColor = Color(0xFFE63946),
-                                            unfocusedBorderColor = Color(0xFF2A2A35),
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
+                                            unfocusedBorderColor = BorderColor,
+                                            focusedTextColor = White,
+                                            unfocusedTextColor = White,
                                             focusedContainerColor = Color.Transparent,
                                             unfocusedContainerColor = Color.Transparent
                                         ),
@@ -1589,15 +1679,15 @@ fun AdminScreen(
                                     OutlinedTextField(
                                         value = wifiPort,
                                         onValueChange = { wifiPort = it },
-                                        placeholder = { Text("Port", color = Color.Gray, fontSize = 12.sp) },
+                                        placeholder = { Text("Port", color = Gray, fontSize = 12.sp) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedBorderColor = Color(0xFFE63946),
-                                            unfocusedBorderColor = Color(0xFF2A2A35),
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
+                                            unfocusedBorderColor = BorderColor,
+                                            focusedTextColor = White,
+                                            unfocusedTextColor = White,
                                             focusedContainerColor = Color.Transparent,
                                             unfocusedContainerColor = Color.Transparent
                                         ),
@@ -1621,7 +1711,7 @@ fun AdminScreen(
                                         shape = RoundedCornerShape(8.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp)
                                     ) {
-                                        Text("Hubungkan", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text("Hubungkan", color = White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
@@ -1647,7 +1737,7 @@ fun AdminScreen(
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("UJI COBA CETAK STRUK", fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("UJI COBA CETAK STRUK", fontWeight = FontWeight.Bold, color = White)
                                     }
                                 }
                             }
@@ -1661,8 +1751,8 @@ fun AdminScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("Aktifkan Printer Warna", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                        Text("Gunakan printer warna untuk mencetak hasil foto", color = Color.Gray, fontSize = 11.sp)
+                                        Text("Aktifkan Printer Warna", color = White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                        Text("Gunakan printer warna untuk mencetak hasil foto", color = Gray, fontSize = 11.sp)
                                     }
                                     Switch(
                                         checked = isColorEnabled,
@@ -1679,14 +1769,14 @@ fun AdminScreen(
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = Color.White,
                                             checkedTrackColor = Color(0xFFE63946),
-                                            uncheckedThumbColor = Color.Gray,
-                                            uncheckedTrackColor = Color(0xFF2A2A35)
+                                            uncheckedThumbColor = Gray,
+                                            uncheckedTrackColor = BorderColor
                                         )
                                     )
                                 }
 
                                 if (isColorEnabled) {
-                                    HorizontalDivider(color = Color(0xFF2A2A35), modifier = Modifier.padding(vertical = 12.dp))
+                                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 12.dp))
 
                                     // Color Print Mode Dropdown Row
                                     val colorPrinterModeList = listOf(
@@ -1702,13 +1792,13 @@ fun AdminScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Metode Cetak:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                                        Text("Metode Cetak:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
                                         Box(modifier = Modifier.weight(1f)) {
                                             OutlinedButton(
                                                 onClick = { isColorPrinterModeDropdownExpanded = true },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                border = BorderStroke(1.dp, BorderColor),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                                 shape = RoundedCornerShape(8.dp),
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                             ) {
@@ -1717,7 +1807,7 @@ fun AdminScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(text = selectedColorModeText, color = Color.White, fontSize = 13.sp)
+                                                    Text(text = selectedColorModeText, color = White, fontSize = 13.sp)
                                                     Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                                 }
                                             }
@@ -1726,12 +1816,12 @@ fun AdminScreen(
                                                 onDismissRequest = { isColorPrinterModeDropdownExpanded = false },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .background(Color(0xFF1E1E24))
-                                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(8.dp))
+                                                    .background(BgInnerCard)
+                                                    .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
                                             ) {
                                                 colorPrinterModeList.forEach { (modeVal, label) ->
                                                     DropdownMenuItem(
-                                                        text = { Text(label, color = Color.White) },
+                                                        text = { Text(label, color = White) },
                                                         onClick = {
                                                             colorPrinterMode = modeVal
                                                             configManager.colorPrinterMode = modeVal
@@ -1746,36 +1836,36 @@ fun AdminScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
 
                                     Card(
-                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A35).copy(alpha = 0.4f)),
-                                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                        colors = CardDefaults.cardColors(containerColor = BorderColor.copy(alpha = 0.4f)),
+                                        border = BorderStroke(1.dp, BorderColor),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             when (colorPrinterMode) {
                                                 "SYSTEM" -> {
-                                                    Text("Panduan Koneksi (Sistem Android):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                    Text("1. Hubungkan printer warna ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda (misal: Epson Print Service Plugin, HP Print Service, Mopria, dll) dan mengaktifkannya di Pengaturan Android -> Pencetakan.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Pilih printer Anda di jendela tersebut.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("Panduan Koneksi (Sistem Android):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Hubungkan printer warna ke tablet menggunakan kabel USB OTG atau jaringan Wi-Fi.", color = Gray, fontSize = 12.sp)
+                                                    Text("2. Pastikan Anda telah menginstal plugin cetak (Print Service Plugin) yang sesuai dari Google Play Store sesuai merek printer Anda (misal: Epson Print Service Plugin, HP Print Service, Mopria, dll) dan mengaktifkannya di Pengaturan Android -> Pencetakan.", color = Gray, fontSize = 12.sp)
+                                                    Text("3. Saat mencetak, dialog cetak sistem Android akan muncul. Pilih printer Anda di jendela tersebut.", color = Gray, fontSize = 12.sp)
                                                 }
                                                 "NOKOPRINT" -> {
-                                                    Text("Panduan Koneksi (Aplikasi NokoPrint):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                    Text("1. Pastikan Anda telah menginstal aplikasi NokoPrint dari Google Play Store.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("2. Hubungkan printer warna ke tablet (USB OTG, Bluetooth, atau Wi-Fi), buka aplikasi NokoPrint, dan pilih printer untuk konfigurasi awal.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("3. Saat mencetak, foto akan otomatis dikirim dan dibuka di aplikasi NokoPrint untuk pencetakan langsung.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("Panduan Koneksi (Aplikasi NokoPrint):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Pastikan Anda telah menginstal aplikasi NokoPrint dari Google Play Store.", color = Gray, fontSize = 12.sp)
+                                                    Text("2. Hubungkan printer warna ke tablet (USB OTG, Bluetooth, atau Wi-Fi), buka aplikasi NokoPrint, dan pilih printer untuk konfigurasi awal.", color = Gray, fontSize = 12.sp)
+                                                    Text("3. Saat mencetak, foto akan otomatis dikirim dan dibuka di aplikasi NokoPrint untuk pencetakan langsung.", color = Gray, fontSize = 12.sp)
                                                 }
                                                 "PRINTERSHARE" -> {
-                                                    Text("Panduan Koneksi (Aplikasi PrinterShare):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                    Text("1. Pastikan Anda telah menginstal aplikasi PrinterShare dari Google Play Store.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("2. Hubungkan printer warna ke tablet (USB OTG, Bluetooth, atau Wi-Fi), buka aplikasi PrinterShare, dan pilih printer untuk konfigurasi awal.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("3. Saat mencetak, foto akan otomatis dikirim dan dibuka di aplikasi PrinterShare untuk pencetakan langsung.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("Panduan Koneksi (Aplikasi PrinterShare):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Pastikan Anda telah menginstal aplikasi PrinterShare dari Google Play Store.", color = Gray, fontSize = 12.sp)
+                                                    Text("2. Hubungkan printer warna ke tablet (USB OTG, Bluetooth, atau Wi-Fi), buka aplikasi PrinterShare, dan pilih printer untuk konfigurasi awal.", color = Gray, fontSize = 12.sp)
+                                                    Text("3. Saat mencetak, foto akan otomatis dikirim dan dibuka di aplikasi PrinterShare untuk pencetakan langsung.", color = Gray, fontSize = 12.sp)
                                                 }
                                                 "SHARE" -> {
-                                                    Text("Panduan Koneksi (Android Share Sheet):", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                                    Text("1. Cara ini cocok jika Anda ingin menggunakan aplikasi printer kustom lainnya (seperti Epson iPrint, Canon PRINT, Brother iPrint&Scan, dll).", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("2. Saat mencetak, dialog 'Berbagi' (Share Sheet) sistem Android akan muncul.", color = Color.Gray, fontSize = 12.sp)
-                                                    Text("3. Pilih aplikasi printer yang ingin Anda gunakan dari daftar aplikasi yang muncul.", color = Color.Gray, fontSize = 12.sp)
+                                                    Text("Panduan Koneksi (Android Share Sheet):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                    Text("1. Cara ini cocok jika Anda ingin menggunakan aplikasi printer kustom lainnya (seperti Epson iPrint, Canon PRINT, Brother iPrint&Scan, dll).", color = Gray, fontSize = 12.sp)
+                                                    Text("2. Saat mencetak, dialog 'Berbagi' (Share Sheet) sistem Android akan muncul.", color = Gray, fontSize = 12.sp)
+                                                    Text("3. Pilih aplikasi printer yang ingin Anda gunakan dari daftar aplikasi yang muncul.", color = Gray, fontSize = 12.sp)
                                                 }
                                             }
                                         }
@@ -1802,7 +1892,7 @@ fun AdminScreen(
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = White)
                                         }
                                     }
                                 }
@@ -1856,7 +1946,7 @@ fun AdminScreen(
                             }
                         } else if (photoHistory.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Belum ada foto yang diunggah ke server.", color = Color.Gray)
+                                Text("Belum ada foto yang diunggah ke server.", color = Gray)
                             }
                         } else {
                             LazyVerticalGrid(
@@ -1871,8 +1961,8 @@ fun AdminScreen(
                                             .fillMaxWidth()
                                             .aspectRatio(0.45f)
                                             .clip(RoundedCornerShape(12.dp))
-                                            .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(12.dp))
-                                            .background(Color(0xFF18181F))
+                                            .border(1.dp, BorderColor, RoundedCornerShape(12.dp))
+                                            .background(BgCard)
                                             .clickable { selectedHistoryItem = item }
                                     ) {
                                         AsyncImage(
@@ -1895,7 +1985,7 @@ fun AdminScreen(
                                         ) {
                                             Text(
                                                 text = timeStr,
-                                                color = Color.White,
+                                                color = White,
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 modifier = Modifier.fillMaxWidth(),
@@ -1928,8 +2018,8 @@ fun AdminScreen(
             }) {
                 Card(
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-                    border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                    colors = CardDefaults.cardColors(containerColor = BgCard),
+                    border = BorderStroke(1.dp, BorderColor),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp)
@@ -1941,13 +2031,13 @@ fun AdminScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(text = "Rincian Foto Kiosk", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                        Text(text = "Rincian Foto Kiosk", fontWeight = FontWeight.Bold, color = White, fontSize = 18.sp)
                         
                         val dateStr = remember(item.timestamp) {
                             val sdf = SimpleDateFormat("dd MMMM yyyy, HH:mm:ss", Locale.getDefault())
                             sdf.format(Date(item.timestamp * 1000))
                         }
-                        Text(text = "Waktu Jepret: $dateStr", color = Color.Gray, fontSize = 12.sp)
+                        Text(text = "Waktu Jepret: $dateStr", color = Gray, fontSize = 12.sp)
 
                         Row(
                             modifier = Modifier
@@ -1961,7 +2051,7 @@ fun AdminScreen(
                                     .weight(1f)
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(12.dp))
+                                    .border(1.dp, BorderColor, RoundedCornerShape(12.dp))
                                     .background(Color.Black),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -1998,7 +2088,7 @@ fun AdminScreen(
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Text(text = "Scan QR Code untuk\nDownload Ulang", color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center)
+                                        Text(text = "Scan QR Code untuk\nDownload Ulang", color = Gray, fontSize = 10.sp, textAlign = TextAlign.Center)
                                     } else {
                                         CircularProgressIndicator(color = Color(0xFFE63946))
                                     }
@@ -2045,12 +2135,12 @@ fun AdminScreen(
                                     }
                                 },
                                 enabled = !isSaving,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A35)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 if (isSaving) {
-                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                                    CircularProgressIndicator(color = White, modifier = Modifier.size(20.dp))
                                 } else {
                                     Text("SIMPAN FOTO KE GALERI", fontWeight = FontWeight.Bold)
                                 }
@@ -2061,9 +2151,9 @@ fun AdminScreen(
                                     selectedHistoryItem = null
                                     qrCodeBitmap = null
                                 },
-                                border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                                border = BorderStroke(1.dp, BorderColor),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("Tutup")
@@ -2073,6 +2163,7 @@ fun AdminScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -2081,11 +2172,12 @@ fun AdminCard(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val colors = LocalAdminThemeColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-        border = BorderStroke(1.dp, Color(0xFF2A2A35))
+        colors = CardDefaults.cardColors(containerColor = colors.bgCard),
+        border = BorderStroke(1.dp, colors.borderColor)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -2093,7 +2185,7 @@ fun AdminCard(
         ) {
             Text(
                 text = title,
-                color = Color.White,
+                color = colors.textMain,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -2110,14 +2202,15 @@ fun ThemePreviewCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAdminThemeColors.current
     Card(
         modifier = modifier
             .fillMaxWidth()
             .height(130.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
-        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) Color(0xFFE63946) else Color(0xFF2A2A35))
+        colors = CardDefaults.cardColors(containerColor = colors.bgInnerCard),
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) Color(0xFFE63946) else colors.borderColor)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -2137,7 +2230,7 @@ fun ThemePreviewCard(
             ) {
                 Text(
                     text = name,
-                    color = if (isSelected) Color(0xFFE63946) else Color.White,
+                    color = if (isSelected) Color(0xFFE63946) else colors.textMain,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -2351,6 +2444,12 @@ fun DashboardTab(
     onRefresh: () -> Unit,
     onNavigateToTab: (Int) -> Unit
 ) {
+    val colors = LocalAdminThemeColors.current
+    val BgCard = colors.bgCard
+    val BorderColor = colors.borderColor
+    val White = colors.textMain
+    val Gray = colors.textMuted
+
     if (isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -2481,15 +2580,15 @@ fun DashboardTab(
                     .weight(1f)
                     .height(95.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF18181F))
-                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                    .background(BgCard)
+                    .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
                     .padding(12.dp)
             ) {
                 Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                    Text("TOTAL SESI FOTO", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("TOTAL SESI FOTO", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = "${photoHistory.size} Sesi",
-                        color = Color.White,
+                        color = White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -2502,12 +2601,12 @@ fun DashboardTab(
                     .weight(1f)
                     .height(95.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF18181F))
-                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                    .background(BgCard)
+                    .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
                     .padding(12.dp)
             ) {
                 Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                    Text("SESI HARI INI", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("SESI HARI INI", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = "$todayCount Sesi",
                         color = Color(0xFF52B788),
@@ -2523,12 +2622,12 @@ fun DashboardTab(
                     .weight(1f)
                     .height(95.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF18181F))
-                    .border(1.dp, Color(0xFF2A2A35), RoundedCornerShape(16.dp))
+                    .background(BgCard)
+                    .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
                     .padding(12.dp)
             ) {
                 Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
-                    Text("JAM TERAMAI", color = Color.Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("JAM TERAMAI", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = peakHourStr,
                         color = Color(0xFFF7B801),
@@ -2544,7 +2643,7 @@ fun DashboardTab(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF18181F))
+                .background(BgCard)
                 .padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -2553,7 +2652,7 @@ fun DashboardTab(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (selectedChartMode == "WEEKLY") Color(0xFFE63946) else Color.Transparent,
-                    contentColor = if (selectedChartMode == "WEEKLY") Color.White else Color.Gray
+                    contentColor = if (selectedChartMode == "WEEKLY") Color.White else Gray
                 ),
                 shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(vertical = 10.dp)
@@ -2565,7 +2664,7 @@ fun DashboardTab(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (selectedChartMode == "TIMEOFDAY") Color(0xFFE63946) else Color.Transparent,
-                    contentColor = if (selectedChartMode == "TIMEOFDAY") Color.White else Color.Gray
+                    contentColor = if (selectedChartMode == "TIMEOFDAY") Color.White else Gray
                 ),
                 shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(vertical = 10.dp)
@@ -2595,8 +2694,8 @@ fun DashboardTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-            border = BorderStroke(1.dp, Color(0xFF2A2A35))
+            colors = CardDefaults.cardColors(containerColor = BgCard),
+            border = BorderStroke(1.dp, BorderColor)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -2607,13 +2706,13 @@ fun DashboardTab(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Status Sistem & Koneksi Kiosk", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("Status Sistem & Koneksi Kiosk", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     IconButton(onClick = onRefresh) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh Data", tint = Color.White)
                     }
                 }
 
-                HorizontalDivider(color = Color(0xFF2A2A35))
+                HorizontalDivider(color = BorderColor)
 
                 // Detail connection row 1
                 Row(
@@ -2621,7 +2720,7 @@ fun DashboardTab(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("API Server:", color = Color.Gray, fontSize = 12.sp)
+                    Text("API Server:", color = Gray, fontSize = 12.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
@@ -2643,7 +2742,7 @@ fun DashboardTab(
                                 false -> "OFFLINE"
                                 else -> "CHECKING"
                             },
-                            color = Color.White,
+                            color = White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -2655,7 +2754,7 @@ fun DashboardTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Printer Driver Terpilih:", color = Color.Gray, fontSize = 12.sp)
+                    Text("Printer Driver Terpilih:", color = Gray, fontSize = 12.sp)
                     Text(
                         text = when (printerType) {
                             "THERMAL" -> "THERMAL (XP-420B)"
@@ -2663,7 +2762,7 @@ fun DashboardTab(
                             "AUTO" -> "OTOMATIS (THERMAL & WARNA)"
                             else -> "NONE"
                         },
-                        color = Color.White,
+                        color = White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -2674,10 +2773,10 @@ fun DashboardTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Katalog Bingkai Offline:", color = Color.Gray, fontSize = 12.sp)
+                    Text("Katalog Bingkai Offline:", color = Gray, fontSize = 12.sp)
                     Text(
                         text = "$syncedFramesCount Bingkai",
-                        color = Color.White,
+                        color = White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -2689,14 +2788,14 @@ fun DashboardTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-            border = BorderStroke(1.dp, Color(0xFF2A2A35))
+            colors = CardDefaults.cardColors(containerColor = BgCard),
+            border = BorderStroke(1.dp, BorderColor)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("Pintasan Navigasi Cepat", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Pintasan Navigasi Cepat", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2704,30 +2803,30 @@ fun DashboardTab(
                 ) {
                     OutlinedButton(
                         onClick = { onNavigateToTab(1) },
-                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        border = BorderStroke(1.dp, BorderColor),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = White)
                     ) {
                         Text("Pengaturan", fontSize = 11.sp, maxLines = 1)
                     }
 
                     OutlinedButton(
                         onClick = { onNavigateToTab(2) },
-                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        border = BorderStroke(1.dp, BorderColor),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = White)
                     ) {
                         Text("Setel Printer", fontSize = 11.sp, maxLines = 1)
                     }
 
                     OutlinedButton(
                         onClick = { onNavigateToTab(3) },
-                        border = BorderStroke(1.dp, Color(0xFF2A2A35)),
+                        border = BorderStroke(1.dp, BorderColor),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = White)
                     ) {
                         Text("Riwayat Foto", fontSize = 11.sp, maxLines = 1)
                     }
@@ -2747,14 +2846,19 @@ fun InteractiveBarChart(
     accentColor: Color = Color(0xFFE63946),
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAdminThemeColors.current
+    val BgCard = colors.bgCard
+    val BorderColor = colors.borderColor
+    val White = colors.textMain
+    val Gray = colors.textMuted
     var selectedBarIndex by remember(labels, values) { mutableStateOf<Int?>(null) }
     val maxVal = if (values.maxOrNull() ?: 0 > 0) values.maxOrNull()!! else 10
 
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF18181F)),
-        border = BorderStroke(1.dp, Color(0xFF2A2A35))
+        colors = CardDefaults.cardColors(containerColor = BgCard),
+        border = BorderStroke(1.dp, BorderColor)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -2764,7 +2868,7 @@ fun InteractiveBarChart(
             ) {
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -2778,7 +2882,7 @@ fun InteractiveBarChart(
                 } else {
                     Text(
                         text = "Sentuh batang untuk detail",
-                        color = Color.Gray,
+                        color = Gray,
                         fontSize = 11.sp
                     )
                 }
@@ -2841,7 +2945,7 @@ fun InteractiveBarChart(
                         
                         Text(
                             text = labels[index],
-                            color = if (isSelected) Color.White else Color.Gray,
+                            color = if (isSelected) Color.White else Gray,
                             fontSize = 10.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
