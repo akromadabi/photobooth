@@ -2127,6 +2127,264 @@ foreach ($weeklyStats as $date => $cnt) {
             position: absolute;
             transition: all 0.1s ease;
         }
+
+        /* Ensure input fields fit container to prevent overflow */
+        .form-input, .form-select {
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Bottom Navigation Bar for Mobile */
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid #f1f5f9;
+            z-index: 1000;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+            font-weight: 700;
+            gap: 4px;
+            flex: 1;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .bottom-nav-item:hover, .bottom-nav-item.active {
+            color: var(--primary);
+        }
+
+        .bottom-nav-item .icon {
+            font-size: 1.25rem;
+            transition: transform 0.2s ease;
+        }
+        
+        .bottom-nav-item:active .icon {
+            transform: scale(0.9);
+        }
+
+        /* Elevated Middle Button (More) */
+        .bottom-nav-item.middle-btn {
+            position: relative;
+            top: -16px;
+            background-color: var(--primary);
+            color: white;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            flex: none;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+            border: 4px solid var(--bg-main);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bottom-nav-item.middle-btn:hover, .bottom-nav-item.middle-btn.active {
+            color: white;
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(79, 70, 229, 0.45);
+        }
+
+        /* Bottom Sheet Drawer */
+        .bottom-sheet-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .bottom-sheet-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border-radius: 28px 28px 0 0;
+            padding: 24px 24px 40px 24px;
+            z-index: 1002;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.08);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .bottom-sheet.show {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 44px;
+            height: 5px;
+            background-color: #cbd5e1;
+            border-radius: 99px;
+            margin: 0 auto 20px auto;
+            cursor: pointer;
+        }
+
+        .bottom-sheet-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .bottom-sheet-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 8px;
+            border-radius: 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
+            user-select: none;
+        }
+
+        .bottom-sheet-item:hover, .bottom-sheet-item.active {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .bottom-sheet-item .icon {
+            font-size: 1.4rem;
+        }
+
+        .bottom-sheet-item.logout {
+            border: 1px solid rgba(239, 68, 68, 0.1);
+        }
+
+        .bottom-sheet-item.logout:hover {
+            background-color: var(--danger-light);
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        /* Responsive Layout Rules */
+        @media (max-width: 1024px) {
+            .sidebar {
+                display: none !important;
+            }
+
+            .main-wrapper {
+                margin-left: 0 !important;
+                padding-bottom: 85px !important;
+                width: 100%;
+            }
+
+            .bottom-nav {
+                display: flex !important;
+            }
+            
+            .top-header {
+                padding: 14px 24px;
+            }
+            
+            .content-body {
+                padding: 24px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+            }
+
+            .dashboard-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content-body {
+                padding: 16px 12px;
+            }
+            
+            .top-header {
+                padding: 12px 16px;
+            }
+
+            .card-section {
+                padding: 20px 16px;
+                border-radius: 16px;
+                margin-bottom: 20px;
+            }
+
+            .card-header {
+                margin-bottom: 16px;
+                padding-bottom: 10px;
+            }
+
+            body {
+                font-size: 14px;
+            }
+
+            .page-title {
+                font-size: 1.15rem;
+            }
+
+            .current-time {
+                display: none; /* Hide time on very small screens to save space */
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .btn-primary, .btn-secondary, .btn-danger {
+                width: 100%;
+                padding: 10px 18px;
+            }
+
+            .alert-status {
+                padding: 10px 14px;
+                font-size: 0.8rem;
+            }
+        }
     </style>
     <!-- Include QRCode Generator Library for Web -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -3238,24 +3496,37 @@ foreach ($weeklyStats as $date => $cnt) {
     </div>
 
     <script>
-        // Tab switching logic
-        const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+        // Tab switching logic (Supports Desktop sidebar, Mobile bottom-nav, and Bottom Sheet)
         const tabPanes = document.querySelectorAll('.tab-pane');
         const pageTitle = document.querySelector('.page-title');
 
         function switchTab(tabId, updateHash = true) {
-            navItems.forEach(item => item.classList.remove('active'));
+            // Remove active classes from all nav sources
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.bottom-sheet-item').forEach(item => item.classList.remove('active'));
             tabPanes.forEach(pane => pane.classList.remove('active'));
             
             const selectedNavItem = document.querySelector(`.sidebar-nav .nav-item[data-tab="${tabId}"]`);
+            const selectedBottomItem = document.querySelector(`.bottom-nav-item[data-tab="${tabId}"]`);
+            const selectedSheetItem = document.querySelector(`.bottom-sheet-item[data-tab="${tabId}"]`);
             const selectedTabPane = document.getElementById(`tab-${tabId}`);
             
-            if (selectedNavItem && selectedTabPane) {
-                selectedNavItem.classList.add('active');
+            if (selectedTabPane) {
+                if (selectedNavItem) selectedNavItem.classList.add('active');
+                if (selectedBottomItem) selectedBottomItem.classList.add('active');
+                if (selectedSheetItem) selectedSheetItem.classList.add('active');
                 selectedTabPane.classList.add('active');
                 
                 // Set Header title
-                let titleText = selectedNavItem.textContent.trim();
+                let titleText = "";
+                if (selectedNavItem) {
+                    titleText = selectedNavItem.textContent.trim();
+                } else if (selectedBottomItem) {
+                    titleText = selectedBottomItem.textContent.trim();
+                } else if (selectedSheetItem) {
+                    titleText = selectedSheetItem.textContent.trim();
+                }
                 titleText = titleText.replace(/^[\p{Emoji}\s]+/u, '');
                 pageTitle.textContent = titleText;
                 
@@ -3267,13 +3538,62 @@ foreach ($weeklyStats as $date => $cnt) {
             }
         }
 
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tabId = item.getAttribute('data-tab');
-                switchTab(tabId);
+        // Bind event listeners to all navigation items
+        function setupNavigationEvents() {
+            // Sidebar Nav Items
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(item.getAttribute('data-tab'));
+                });
             });
-        });
+
+            // Bottom Nav Items (excluding middle button)
+            document.querySelectorAll('.bottom-nav-item:not(.middle-btn)').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(item.getAttribute('data-tab'));
+                });
+            });
+
+            // Bottom Sheet Menu Items
+            document.querySelectorAll('.bottom-sheet-item:not(.logout)').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(item.getAttribute('data-tab'));
+                    closeBottomSheet(); // Close bottom sheet when a menu item is clicked
+                });
+            });
+        }
+
+        // Bottom Sheet Toggle Logic
+        const bottomSheet = document.getElementById('bottomSheet');
+        const bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
+        const bottomSheetToggle = document.getElementById('bottomSheetToggle');
+        const bottomSheetHandle = document.getElementById('bottomSheetHandle');
+
+        function openBottomSheet() {
+            bottomSheet.classList.add('show');
+            bottomSheetOverlay.classList.add('show');
+        }
+
+        function closeBottomSheet() {
+            bottomSheet.classList.remove('show');
+            bottomSheetOverlay.classList.remove('show');
+        }
+
+        if (bottomSheetToggle) {
+            bottomSheetToggle.addEventListener('click', openBottomSheet);
+        }
+        if (bottomSheetOverlay) {
+            bottomSheetOverlay.addEventListener('click', closeBottomSheet);
+        }
+        if (bottomSheetHandle) {
+            bottomSheetHandle.addEventListener('click', closeBottomSheet);
+        }
+
+        // Run navigation setup
+        setupNavigationEvents();
 
         // Chart.js render
         const ctx = document.getElementById('weeklyChart').getContext('2d');
@@ -4877,5 +5197,53 @@ foreach ($weeklyStats as $date => $cnt) {
             switchTab(activeTab);
         });
     </script>
+
+    <!-- Bottom Navigation Bar (Mobile) -->
+    <div class="bottom-nav">
+        <div class="bottom-nav-item active" data-tab="dashboard">
+            <span class="icon"><i class="fa-solid fa-chart-simple"></i></span>
+            <span>Dashboard</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="settings">
+            <span class="icon"><i class="fa-solid fa-sliders"></i></span>
+            <span>Settings</span>
+        </div>
+        <div class="bottom-nav-item middle-btn" id="bottomSheetToggle">
+            <span class="icon" style="font-size: 1.4rem; display: flex; align-items: center; justify-content: center; height: 100%;"><i class="fa-solid fa-ellipsis"></i></span>
+        </div>
+        <div class="bottom-nav-item" data-tab="queue">
+            <span class="icon"><i class="fa-solid fa-hourglass-half"></i></span>
+            <span>Queue</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="packages">
+            <span class="icon"><i class="fa-solid fa-box-archive"></i></span>
+            <span>Packages</span>
+        </div>
+    </div>
+
+    <!-- Bottom Sheet Overlay -->
+    <div class="bottom-sheet-overlay" id="bottomSheetOverlay"></div>
+
+    <!-- Bottom Sheet Drawer -->
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="bottom-sheet-handle" id="bottomSheetHandle"></div>
+        <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 18px; color: var(--text-main); text-align: center; font-family: 'Outfit', sans-serif;">
+            Menu Lainnya
+        </div>
+        <div class="bottom-sheet-grid">
+            <div class="bottom-sheet-item" data-tab="coupons">
+                <span class="icon" style="color: var(--warning);"><i class="fa-solid fa-ticket"></i></span>
+                <span style="margin-top: 4px;">Kelola Kupon</span>
+            </div>
+            <div class="bottom-sheet-item" data-tab="frames">
+                <span class="icon" style="color: var(--info);"><i class="fa-solid fa-image"></i></span>
+                <span style="margin-top: 4px;">Bingkai Kiosk</span>
+            </div>
+            <a href="admin.php?action=logout" class="bottom-sheet-item logout">
+                <span class="icon" style="color: var(--danger);"><i class="fa-solid fa-right-from-bracket"></i></span>
+                <span style="margin-top: 4px;">Logout</span>
+            </a>
+        </div>
+    </div>
 </body>
 </html>
