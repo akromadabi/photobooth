@@ -607,7 +607,79 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             text-align: center;
             line-height: 1.5;
         }
+
+        /* Camera Scanner Styles */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #09090b;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        #coupon-qr-reader {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Hide any unwanted built-in video borders/anchors from html5-qrcode */
+        #coupon-qr-reader video {
+            object-fit: cover !important;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 12px;
+        }
+        
+        #coupon-qr-reader__header_message {
+            display: none !important;
+        }
+
+        .scanner-laser {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #25D366, transparent);
+            box-shadow: 0 0 8px #25D366;
+            animation: scan-anim 2.5s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @keyframes scan-anim {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        .scanner-status {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(15, 15, 18, 0.85);
+            backdrop-filter: blur(4px);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #fff;
+            text-align: center;
+            pointer-events: none;
+            z-index: 5;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+        }
     </style>
+    <script src="html5-qrcode.min.js"></script>
 </head>
 <body>
 
@@ -702,6 +774,13 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
                 </div>
             </div>
             
+            <!-- Camera Scanner Container -->
+            <div class="scanner-container" id="scanner-wrapper">
+                <div id="coupon-qr-reader"></div>
+                <div class="scanner-laser" id="scanner-laser-line"></div>
+                <div class="scanner-status" id="scanner-status">Menginisialisasi kamera...</div>
+            </div>
+            
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <input type="text" id="coupon_code_input" placeholder="MASUKKAN KODE KUPON" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: #fff; padding: 14px; border-radius: 12px; font-size: 1.05rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; width: 100%; box-sizing: border-box; font-family: monospace; outline: none; transition: border-color 0.2s;" maxlength="20">
                 <div id="coupon-error-msg" style="font-size: 0.8rem; font-weight: 600; text-align: center; display: none; line-height: 1.3;"></div>
@@ -724,6 +803,89 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
     <script>
         const orderId = '<?php echo $orderId; ?>';
         
+        let html5QrCode = null;
+
+        function startScanner() {
+            const statusDiv = document.getElementById('scanner-status');
+            const laser = document.getElementById('scanner-laser-line');
+            const wrapper = document.getElementById('scanner-wrapper');
+            
+            if (html5QrCode) {
+                return; // Already initialized
+            }
+
+            statusDiv.style.display = 'block';
+            statusDiv.innerText = 'Menginisialisasi kamera...';
+            statusDiv.style.color = '#fff';
+            laser.style.display = 'block';
+            wrapper.style.borderColor = 'var(--border-color)';
+
+            html5QrCode = new Html5Qrcode("coupon-qr-reader");
+            
+            const config = {
+                fps: 10,
+                qrbox: function(width, height) {
+                    const size = Math.min(width, height) * 0.75;
+                    return { width: size, height: size };
+                }
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    console.log("Scanned Coupon Code:", decodedText);
+                    
+                    const codeInput = document.getElementById('coupon_code_input');
+                    codeInput.value = decodedText;
+                    
+                    statusDiv.innerText = 'Kupon Terdeteksi: ' + decodedText;
+                    statusDiv.style.color = '#25D366';
+                    
+                    wrapper.style.borderColor = '#25D366';
+                    
+                    // Stop camera scanning after successful read to prevent duplicate triggers
+                    stopScanner();
+                    
+                    // Auto submit coupon
+                    redeemCoupon();
+                },
+                (errorMessage) => {
+                    // Suppress verbose scanning output log to keep console clean
+                }
+            )
+            .then(() => {
+                statusDiv.innerText = 'Arahkan QR Code kupon ke kamera';
+            })
+            .catch((err) => {
+                console.error("Scanner Error:", err);
+                statusDiv.innerText = 'Gagal mengakses kamera (Izin ditolak atau sedang digunakan).';
+                statusDiv.style.color = '#ef4444';
+                laser.style.display = 'none';
+                html5QrCode = null;
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode = null;
+                    const statusDiv = document.getElementById('scanner-status');
+                    if (statusDiv) {
+                        statusDiv.innerText = 'Kamera dinonaktifkan';
+                        statusDiv.style.color = 'var(--text-muted)';
+                    }
+                    const laser = document.getElementById('scanner-laser-line');
+                    if (laser) {
+                        laser.style.display = 'none';
+                    }
+                }).catch(err => {
+                    console.error("Gagal menghentikan kamera:", err);
+                    html5QrCode = null;
+                });
+            }
+        }
+
         // Tab switching logic for payment gateway
         function switchPayTab(tab) {
             const btnOnline = document.getElementById('tab-btn-online');
@@ -742,6 +904,9 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
                 btnCoupon.style.background = 'transparent';
                 btnCoupon.style.borderColor = 'transparent';
                 btnCoupon.style.color = 'var(--text-muted)';
+                
+                // Stop camera scanner when leaving Coupon tab
+                stopScanner();
             } else {
                 viewOnline.style.display = 'none';
                 viewCoupon.style.display = 'flex';
@@ -757,6 +922,9 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
                 setTimeout(() => {
                     document.getElementById('coupon_code_input').focus();
                 }, 100);
+
+                // Start camera scanner when entering Coupon tab
+                startScanner();
             }
         }
 
