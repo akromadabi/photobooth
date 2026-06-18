@@ -26,7 +26,11 @@ function loadSettings($file) {
         "midtrans_production_client_key" => "",
         "midtrans_environment" => "sandbox",
         "fal_key" => "",
-        "app_theme" => "NEON_RED"
+        "app_theme" => "NEON_RED",
+        "thermal_contrast" => 1.2,
+        "thermal_brightness" => 10.0,
+        "thermal_sharpness" => 0.4,
+        "thermal_denoise" => true
     ];
     if (file_exists($file)) {
         $loaded = json_decode(file_get_contents($file), true);
@@ -401,6 +405,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         $midtransServerKey = $midtransSandboxServerKey;
     }
     
+    $thermalContrast = isset($_POST['thermal_contrast']) ? floatval($_POST['thermal_contrast']) : 1.2;
+    $thermalBrightness = isset($_POST['thermal_brightness']) ? floatval($_POST['thermal_brightness']) : 10.0;
+    $thermalSharpness = isset($_POST['thermal_sharpness']) ? floatval($_POST['thermal_sharpness']) : 0.4;
+    $thermalDenoise = isset($_POST['thermal_denoise']) && $_POST['thermal_denoise'] == '1';
+
     $falKey = isset($_POST['fal_key']) ? trim($_POST['fal_key']) : '';
     $appTheme = isset($_POST['app_theme']) ? $_POST['app_theme'] : 'NEON_RED';
     $couponPromoText = isset($_POST['coupon_promo_text']) ? $_POST['coupon_promo_text'] : '';
@@ -421,7 +430,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         "midtrans_environment" => $midtransEnv,
         "fal_key" => $falKey,
         "app_theme" => $appTheme,
-        "coupon_promo_text" => $couponPromoText
+        "coupon_promo_text" => $couponPromoText,
+        "thermal_contrast" => $thermalContrast,
+        "thermal_brightness" => $thermalBrightness,
+        "thermal_sharpness" => $thermalSharpness,
+        "thermal_denoise" => $thermalDenoise
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -2865,7 +2878,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                     <label for="printer_type">Mode Pencetakan</label>
                                     <select id="printer_type" name="printer_type" class="form-select">
                                         <option value="NONE" <?php echo $settings['printer_type'] === 'NONE' ? 'selected' : ''; ?>>Digital (Tanpa Struk)</option>
-                                        <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>Thermal (XP-420B)</option>
+                                        <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>Thermal (Struk/Kasir)</option>
                                         <option value="COLOR" <?php echo $settings['printer_type'] === 'COLOR' ? 'selected' : ''; ?>>Warna (Sistem)</option>
                                         <option value="AUTO" <?php echo $settings['printer_type'] === 'AUTO' ? 'selected' : ''; ?>>Auto (Warna & Thermal)</option>
                                     </select>
@@ -2996,6 +3009,330 @@ foreach ($weeklyStats as $date => $cnt) {
                                     if (selectEl) {
                                         toggleMidtransFields(selectEl.value);
                                     }
+                                });
+                            </script>
+
+                            <!-- Thermal Print Settings & Live Preview Section -->
+                            <div id="thermal-print-settings-section" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 24px;">
+                                <h4 style="margin-bottom: 16px; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-print"></i> Pengaturan Kualitas Cetak Thermal (Struk)</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+                                    <!-- Controls -->
+                                    <div class="form-grid" style="display: flex; flex-direction: column; gap: 16px; min-width: 280px;">
+                                        <div class="form-group">
+                                            <label for="thermal_contrast">Kontras Gambar: <span id="contrast_val">1.2</span></label>
+                                            <input type="range" id="thermal_contrast" name="thermal_contrast" min="0.5" max="3.0" step="0.1" value="<?php echo floatval($settings['thermal_contrast'] ?? 1.2); ?>" class="form-input" style="width: 100%; height: auto; padding: 4px 0;" oninput="updateThermalPreview()">
+                                            <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Meningkatkan kontras gradasi. Nilai tinggi mempertegas gambar monokrom.</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="thermal_brightness">Kecerahan (Brightness): <span id="brightness_val">+10.0</span></label>
+                                            <input type="range" id="thermal_brightness" name="thermal_brightness" min="-50" max="50" step="1" value="<?php echo floatval($settings['thermal_brightness'] ?? 10.0); ?>" class="form-input" style="width: 100%; height: auto; padding: 4px 0;" oninput="updateThermalPreview()">
+                                            <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Mencerahkan bayangan gelap agar detail cetak tidak buram/hitam pekat.</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="thermal_sharpness">Ketajaman (Sharpness): <span id="sharpness_val">0.4</span></label>
+                                            <input type="range" id="thermal_sharpness" name="thermal_sharpness" min="0.0" max="2.0" step="0.1" value="<?php echo floatval($settings['thermal_sharpness'] ?? 0.4); ?>" class="form-input" style="width: 100%; height: auto; padding: 4px 0;" oninput="updateThermalPreview()">
+                                            <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Memperjelas tepi garis. Nilai tinggi memperjelas teks, namun menambah grain.</small>
+                                        </div>
+                                        
+                                        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                                            <input type="checkbox" id="thermal_denoise" name="thermal_denoise" value="1" <?php echo (!isset($settings['thermal_denoise']) || $settings['thermal_denoise']) ? 'checked' : ''; ?> onchange="updateThermalPreview()" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                                            <label for="thermal_denoise" style="margin-bottom: 0; cursor: pointer; font-weight: 500;">Aktifkan Pengurangan Noise (Median Filter)</label>
+                                        </div>
+                                        <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-left: 28px; margin-top: -6px;">Menyaring noise bintik halus (salt-and-pepper) dari tangkapan kamera.</small>
+                                    </div>
+                                    
+                                    <!-- Live Preview Wrapper -->
+                                    <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; min-width: 250px;">
+                                        <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 16px; color: var(--primary);"><i class="fa-solid fa-eye"></i> Simulasi Hasil Cetak Struk</div>
+                                        
+                                        <!-- Thermal Receipt Simulation Container -->
+                                        <div style="background: #fdfdfb; border: 1px solid #d3d3d3; width: 176px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; padding: 18px 12px 24px 12px; position: relative;">
+                                            <!-- Jagged tear lines at bottom using SVG -->
+                                            <div style="position: absolute; bottom: -10px; left: -1px; width: calc(100% + 2px); height: 10px; background-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 10\" preserveAspectRatio=\"none\"><polygon points=\"0,0 4,10 8,0 12,10 16,0 20,10 24,0 24,10 0,10\" fill=\"%23fdfdfb\"/><path d=\"M0,0 L4,10 L8,0 L12,10 L16,0 L20,10 L24,0\" stroke=\"%23d3d3d3\" stroke-width=\"1\" fill=\"none\"/></svg>'); background-size: 16px 10px; background-repeat: repeat-x;"></div>
+                                            
+                                            <!-- Simulated Dithered Preview Canvas -->
+                                            <canvas id="ditheredCanvas" width="150" height="200" style="width: 150px; height: 200px; border: 1px solid #eaeaea; background: #fff; image-rendering: pixelated;"></canvas>
+                                            
+                                            <!-- Label/Receipt Footer Info -->
+                                            <div style="font-family: monospace; font-size: 8px; color: #444; margin-top: 12px; text-align: center; line-height: 1.3; font-weight: bold; letter-spacing: 0.5px;">
+                                                * DITHER PREVIEW *<br>
+                                                Jeprat-jepret Kiosk App
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Image Source Selector -->
+                                        <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                                            <div style="display: flex; gap: 8px; justify-content: center; width: 100%;">
+                                                <button type="button" class="btn-secondary" onclick="loadSamplePortrait()" style="font-size: 0.8rem; padding: 6px 12px; cursor: pointer; border: 1px solid var(--border-color);"><i class="fa-solid fa-face-smile"></i> Sampel</button>
+                                                <?php
+                                                // Find last photo in uploads to preview
+                                                $uploadsPattern = __DIR__ . '/uploads/*_photo.png';
+                                                $photos = glob($uploadsPattern);
+                                                $lastPhotoUrl = '';
+                                                if (!empty($photos)) {
+                                                    usort($photos, function($a, $b) {
+                                                        return filemtime($b) - filemtime($a);
+                                                    });
+                                                    $lastPhotoUrl = 'uploads/' . basename($photos[0]);
+                                                }
+                                                ?>
+                                                <button type="button" class="btn-secondary" onclick="loadLastSessionPhoto('<?php echo $lastPhotoUrl; ?>')" style="font-size: 0.8rem; padding: 6px 12px; cursor: pointer; border: 1px solid var(--border-color); <?php echo empty($lastPhotoUrl) ? 'display:none;' : ''; ?>" id="btn-load-last-session"><i class="fa-solid fa-camera"></i> Foto Sesi</button>
+                                            </div>
+                                            <div style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding: 8px; border: 1px dashed var(--border-color); border-radius: 6px; background: rgba(0,0,0,0.1);">
+                                                Drag & Drop foto di sini, atau:<br>
+                                                <input type="file" id="preview_upload" accept="image/*" style="margin-top: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer;" onchange="handlePreviewUpload(this.files[0])">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                // Global reference for the source image
+                                let sourceImgData = null; 
+
+                                function updateThermalPreview() {
+                                    const contrast = parseFloat(document.getElementById('thermal_contrast').value);
+                                    const brightness = parseFloat(document.getElementById('thermal_brightness').value);
+                                    const sharpness = parseFloat(document.getElementById('thermal_sharpness').value);
+                                    const denoise = document.getElementById('thermal_denoise').checked;
+
+                                    document.getElementById('contrast_val').innerText = contrast.toFixed(1);
+                                    document.getElementById('brightness_val').innerText = (brightness >= 0 ? '+' : '') + brightness.toFixed(1);
+                                    document.getElementById('sharpness_val').innerText = sharpness.toFixed(1);
+
+                                    if (!sourceImgData) return;
+
+                                    const canvas = document.getElementById('ditheredCanvas');
+                                    const ctx = canvas.getContext('2d');
+                                    
+                                    // 1. Draw source image scaled to preview size
+                                    ctx.drawImage(sourceImgData, 0, 0, canvas.width, canvas.height);
+                                    
+                                    // 2. Read pixels
+                                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                    const data = imgData.data;
+                                    const width = canvas.width;
+                                    const height = canvas.height;
+
+                                    // Create a grayscale buffer
+                                    const grayData = new Int32Array(width * height);
+
+                                    // Step 1: Grayscale + Contrast + Brightness
+                                    for (let i = 0; i < data.length; i += 4) {
+                                        const r = data[i];
+                                        const g = data[i+1];
+                                        const b = data[i+2];
+                                        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+                                        
+                                        // Contrast & Brightness adjustment
+                                        let adjusted = (luma - 128.0) * contrast + 128.0 + brightness;
+                                        grayData[i/4] = Math.min(255, Math.max(0, Math.round(adjusted)));
+                                    }
+
+                                    // Step 2: Denoise via Median Filter 3x3
+                                    const denoisedData = new Int32Array(width * height);
+                                    if (denoise) {
+                                        const neighbors = new Int32Array(9);
+                                        for (let y = 0; y < height; y++) {
+                                            for (let x = 0; x < width; x++) {
+                                                const idx = y * width + x;
+                                                if (y === 0 || y === height - 1 || x === 0 || x === width - 1) {
+                                                    denoisedData[idx] = grayData[idx];
+                                                    continue;
+                                                }
+                                                neighbors[0] = grayData[idx - width - 1];
+                                                neighbors[1] = grayData[idx - width];
+                                                neighbors[2] = grayData[idx - width + 1];
+                                                neighbors[3] = grayData[idx - 1];
+                                                neighbors[4] = grayData[idx];
+                                                neighbors[5] = grayData[idx + 1];
+                                                neighbors[6] = grayData[idx + width - 1];
+                                                neighbors[7] = grayData[idx + width];
+                                                neighbors[8] = grayData[idx + width + 1];
+                                                
+                                                // Sort
+                                                neighbors.sort();
+                                                denoisedData[idx] = neighbors[4];
+                                            }
+                                        }
+                                    } else {
+                                        denoisedData.set(grayData);
+                                    }
+
+                                    // Step 3: Sharpness filter
+                                    const sharpenedData = new Int32Array(width * height);
+                                    if (sharpness > 0) {
+                                        for (let y = 0; y < height; y++) {
+                                            for (let x = 0; x < width; x++) {
+                                                const idx = y * width + x;
+                                                if (y === 0 || y === height - 1 || x === 0 || x === width - 1) {
+                                                    sharpenedData[idx] = denoisedData[idx];
+                                                    continue;
+                                                }
+                                                const center = denoisedData[idx];
+                                                const top = denoisedData[idx - width];
+                                                const bottom = denoisedData[idx + width];
+                                                const left = denoisedData[idx - 1];
+                                                const right = denoisedData[idx + 1];
+
+                                                const sharpVal = center + sharpness * (4 * center - top - bottom - left - right);
+                                                sharpenedData[idx] = Math.min(255, Math.max(0, Math.round(sharpVal)));
+                                            }
+                                        }
+                                    } else {
+                                        sharpenedData.set(denoisedData);
+                                    }
+
+                                    // Step 4: Floyd-Steinberg Dithering
+                                    const ditherBuffer = new Float32Array(sharpenedData);
+                                    for (let y = 0; y < height; y++) {
+                                        for (let x = 0; x < width; x++) {
+                                            const idx = y * width + x;
+                                            const oldPixel = ditherBuffer[idx];
+                                            const newPixel = oldPixel < 128 ? 0 : 255;
+                                            ditherBuffer[idx] = newPixel;
+                                            
+                                            const error = oldPixel - newPixel;
+                                            
+                                            // Diffuse error
+                                            if (x + 1 < width) {
+                                                ditherBuffer[idx + 1] += error * (7 / 16);
+                                            }
+                                            if (y + 1 < height) {
+                                                if (x - 1 >= 0) {
+                                                    ditherBuffer[idx + width - 1] += error * (3 / 16);
+                                                }
+                                                ditherBuffer[idx + width] += error * (5 / 16);
+                                                if (x + 1 < width) {
+                                                    ditherBuffer[idx + width + 1] += error * (1 / 16);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Write back to canvas image data
+                                    for (let idx = 0; idx < ditherBuffer.length; idx++) {
+                                        const val = ditherBuffer[idx] < 128 ? 0 : 255;
+                                        const i = idx * 4;
+                                        data[i] = val;     // R
+                                        data[i+1] = val;   // G
+                                        data[i+2] = val;   // B
+                                        data[i+3] = 255;   // Alpha
+                                    }
+
+                                    ctx.putImageData(imgData, 0, 0);
+                                }
+
+                                function loadSamplePortrait() {
+                                    const tempCanvas = document.createElement('canvas');
+                                    tempCanvas.width = 150;
+                                    tempCanvas.height = 200;
+                                    const tCtx = tempCanvas.getContext('2d');
+                                    
+                                    const grad = tCtx.createRadialGradient(75, 80, 10, 75, 100, 110);
+                                    grad.addColorStop(0, '#ffffff');
+                                    grad.addColorStop(1, '#666666');
+                                    tCtx.fillStyle = grad;
+                                    tCtx.fillRect(0, 0, 150, 200);
+
+                                    tCtx.fillStyle = '#333333';
+                                    tCtx.beginPath();
+                                    tCtx.ellipse(75, 200, 50, 40, 0, 0, Math.PI, true);
+                                    tCtx.fill();
+
+                                    tCtx.fillStyle = '#e8beac';
+                                    tCtx.beginPath();
+                                    tCtx.arc(75, 90, 42, 0, 2 * Math.PI);
+                                    tCtx.fill();
+
+                                    tCtx.fillStyle = '#333333';
+                                    tCtx.beginPath();
+                                    tCtx.arc(60, 85, 4, 0, 2 * Math.PI);
+                                    tCtx.arc(90, 85, 4, 0, 2 * Math.PI);
+                                    tCtx.fill();
+
+                                    tCtx.strokeStyle = '#c49a88';
+                                    tCtx.lineWidth = 2.5;
+                                    tCtx.beginPath();
+                                    tCtx.moveTo(75, 82);
+                                    tCtx.lineTo(75, 96);
+                                    tCtx.lineTo(79, 96);
+                                    tCtx.stroke();
+
+                                    tCtx.strokeStyle = '#d63031';
+                                    tCtx.lineWidth = 3;
+                                    tCtx.beginPath();
+                                    tCtx.arc(75, 105, 10, 0, Math.PI, false);
+                                    tCtx.stroke();
+
+                                    tCtx.fillStyle = '#1e272e';
+                                    tCtx.beginPath();
+                                    tCtx.arc(75, 75, 42, Math.PI, 2*Math.PI);
+                                    tCtx.fill();
+                                    tCtx.beginPath();
+                                    tCtx.moveTo(33, 75);
+                                    tCtx.lineTo(33, 110);
+                                    tCtx.lineTo(40, 110);
+                                    tCtx.lineTo(40, 75);
+                                    tCtx.moveTo(117, 75);
+                                    tCtx.lineTo(117, 110);
+                                    tCtx.lineTo(110, 110);
+                                    tCtx.lineTo(110, 75);
+                                    tCtx.fill();
+
+                                    for (let n = 0; n < 350; n++) {
+                                        const nx = Math.floor(Math.random() * 150);
+                                        const ny = Math.floor(Math.random() * 200);
+                                        tCtx.fillStyle = Math.random() > 0.5 ? '#000000' : '#ffffff';
+                                        tCtx.fillRect(nx, ny, 1, 1);
+                                    }
+
+                                    sourceImgData = tempCanvas;
+                                    updateThermalPreview();
+                                }
+
+                                function loadLastSessionPhoto(url) {
+                                    if (!url) return;
+                                    const img = new Image();
+                                    img.crossOrigin = 'anonymous';
+                                    img.onload = function() {
+                                        sourceImgData = img;
+                                        updateThermalPreview();
+                                    };
+                                    img.src = url;
+                                }
+
+                                function handlePreviewUpload(file) {
+                                    if (!file) return;
+                                    const reader = new FileReader();
+                                    reader.onload = function(e) {
+                                        const img = new Image();
+                                        img.onload = function() {
+                                            sourceImgData = img;
+                                            updateThermalPreview();
+                                        };
+                                        img.src = e.target.result;
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const ditherSection = document.getElementById('thermal-print-settings-section');
+                                    if (ditherSection) {
+                                        ditherSection.addEventListener('dragover', (e) => {
+                                            e.preventDefault();
+                                        });
+                                        ditherSection.addEventListener('drop', (e) => {
+                                            e.preventDefault();
+                                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                                handlePreviewUpload(e.dataTransfer.files[0]);
+                                            }
+                                        });
+                                    }
+                                    loadSamplePortrait();
                                 });
                             </script>
 

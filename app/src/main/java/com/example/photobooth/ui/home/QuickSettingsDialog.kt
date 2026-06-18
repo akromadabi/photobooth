@@ -116,6 +116,10 @@ fun QuickSettingsDialog(
     var printerType by remember { mutableStateOf(configManager.printerType) }
     val isThermalEnabled = remember(printerType) { printerType == "AUTO" || printerType == "THERMAL" }
     var printerAddress by remember { mutableStateOf(configManager.printerAddress) }
+    var thermalContrast by remember { mutableStateOf(configManager.thermalContrast) }
+    var thermalBrightness by remember { mutableStateOf(configManager.thermalBrightness) }
+    var thermalSharpness by remember { mutableStateOf(configManager.thermalSharpness) }
+    var thermalDenoise by remember { mutableStateOf(configManager.thermalDenoise) }
     var wifiIpAddress by remember { mutableStateOf("") }
     var wifiPort by remember { mutableStateOf("9100") }
     
@@ -622,6 +626,105 @@ fun QuickSettingsDialog(
                                 }
                             }
                             
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Contrast Slider
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Kontras Cetak (Contrast):", color = White, fontSize = 12.sp)
+                                    Text(String.format("%.1f", thermalContrast), color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Slider(
+                                    value = thermalContrast,
+                                    onValueChange = {
+                                        thermalContrast = it
+                                        configManager.thermalContrast = it
+                                    },
+                                    valueRange = 0.5f..3.0f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color(0xFFE63946),
+                                        activeTrackColor = Color(0xFFE63946)
+                                    )
+                                )
+                            }
+
+                            // Brightness Slider
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Kecerahan Cetak (Brightness):", color = White, fontSize = 12.sp)
+                                    Text(String.format("%s%.1f", if (thermalBrightness >= 0) "+" else "", thermalBrightness), color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Slider(
+                                    value = thermalBrightness,
+                                    onValueChange = {
+                                        thermalBrightness = it
+                                        configManager.thermalBrightness = it
+                                    },
+                                    valueRange = -50f..50f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color(0xFFE63946),
+                                        activeTrackColor = Color(0xFFE63946)
+                                    )
+                                )
+                            }
+
+                            // Sharpness Slider
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Ketajaman Cetak (Sharpness):", color = White, fontSize = 12.sp)
+                                    Text(String.format("%.1f", thermalSharpness), color = Color(0xFFE63946), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Slider(
+                                    value = thermalSharpness,
+                                    onValueChange = {
+                                        thermalSharpness = it
+                                        configManager.thermalSharpness = it
+                                    },
+                                    valueRange = 0.0f..2.0f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color(0xFFE63946),
+                                        activeTrackColor = Color(0xFFE63946)
+                                    )
+                                )
+                            }
+
+                            // Denoise Toggle Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("Pengurangan Noise (Denoise)", color = White, fontSize = 12.sp)
+                                    Text("Saring bintik sensor kamera", color = Gray, fontSize = 9.sp)
+                                }
+                                Switch(
+                                    checked = thermalDenoise,
+                                    onCheckedChange = {
+                                        thermalDenoise = it
+                                        configManager.thermalDenoise = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFFE63946),
+                                        uncheckedThumbColor = Gray,
+                                        uncheckedTrackColor = BorderColor
+                                    )
+                                )
+                            }
+
                             Spacer(modifier = Modifier.height(6.dp))
 
                             // Test print button

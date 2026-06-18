@@ -30,7 +30,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiosk App Web Simulator - Creative Studio</title>
+    <title>Kiosk App Web Simulator - Jeprat-jepret</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Fredoka:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -580,7 +580,8 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 
         .frame-card {
             width: 140px;
-            height: 380px;
+            height: 85%;
+            max-height: 380px;
             background-color: transparent;
             border: none;
             border-radius: 14px;
@@ -601,6 +602,9 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 
         .frame-card-preview {
             flex: 1;
+            width: 100%;
+            height: 0;
+            min-height: 0;
             border-radius: 8px;
             overflow: visible;
             display: flex;
@@ -611,8 +615,10 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
         }
 
         .frame-card-preview img {
-            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             width: auto;
+            height: auto;
             object-fit: contain;
             filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
             transition: transform 0.25s ease;
@@ -3532,8 +3538,8 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                     <!-- SCREEN 1: HOME SCREEN -->
                     <div class="kiosk-screen screen-home active" id="screenHome">
                         <div class="home-logo-box" onclick="handleLogoTaps()">
-                            <div class="home-logo-part1" id="logoPart1">Creative</div>
-                            <div class="home-logo-part2" id="logoPart2">Studio</div>
+                            <div class="home-logo-part1" id="logoPart1">Jeprat</div>
+                            <div class="home-logo-part2" id="logoPart2">Jepret</div>
                         </div>
 
                         <!-- Center section -->
@@ -3892,8 +3898,8 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             const p2 = document.getElementById('logoPart2');
             const slogan = document.getElementById('homeSlogan');
             
-            let text1 = "Creative";
-            let text2 = "Studio";
+            let text1 = "Jeprat";
+            let text2 = "Jepret";
             let sloganText = "All You need is special";
 
             if (eventName) {
@@ -3903,8 +3909,8 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                 text2 = words.slice(half).join(' ');
                 sloganText = "⭐ Sesi Acara Eksklusif ⭐";
             } else if (appTheme === 'COMIC_POP') {
-                text1 = "FOTO FOTO";
-                text2 = "MU !!!";
+                text1 = "Jeprat";
+                text2 = "Jepret !!!";
                 sloganText = "PHOTOBOOTH!!!";
             }
 
@@ -4387,7 +4393,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             ctx.fillStyle = '#ffffff';
             ctx.font = '900 28px Outfit, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('CREATIVE STUDIO', 319, 60);
+            ctx.fillText('JEPRAT-JEPRET', 319, 60);
 
             ctx.fillStyle = '#f7b801';
             ctx.font = '700 14px Outfit, sans-serif';
@@ -4420,7 +4426,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             // Verification text
             ctx.fillStyle = '#8d8d9f';
             ctx.font = '400 13px Outfit, sans-serif';
-            ctx.fillText('Verified AI generated character by Creative Studio Kiosk', 319, 740);
+            ctx.fillText('Verified AI generated character by Jeprat-jepret Kiosk', 319, 740);
 
             // Load and Draw QR Code linking to verification page
             const protocol = window.location.protocol;

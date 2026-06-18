@@ -7,7 +7,7 @@ if (empty($sessionId)) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Creative Studio Web Portal</title>
+        <title>Jeprat-jepret Web Portal</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -148,8 +148,8 @@ if (empty($sessionId)) {
         <div class="background-glow-2"></div>
         
         <div class="portal-container">
-            <div class="logo" onclick="handleLogoClick()">Creative<span>Studio</span></div>
-            <div class="subtitle">Creative Studio Web Portal</div>
+            <div class="logo" onclick="handleLogoClick()">Jeprat<span>Jepret</span></div>
+            <div class="subtitle">Jeprat-jepret Web Portal</div>
             
             <div class="portal-grid">
                 <a href="order.php" class="portal-card">
@@ -172,7 +172,7 @@ if (empty($sessionId)) {
             </div>
             
             <div class="footer-info">
-                © <?php echo date('Y'); ?> Creative Studio. Seluruh hak cipta dilindungi.
+                © <?php echo date('Y'); ?> Jeprat-jepret. Seluruh hak cipta dilindungi.
             </div>
         </div>
 
@@ -308,7 +308,7 @@ $found = !empty($photoFile);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $eventName ? htmlspecialchars($eventName) : "Creative Studio"; ?> - Receipt Photo</title>
+    <title><?php echo $eventName ? htmlspecialchars($eventName) : "Jeprat-jepret"; ?> - Receipt Photo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -941,7 +941,7 @@ $found = !empty($photoFile);
     <?php endif; ?>
 
     <footer class="footer-text">
-        &copy; <?php echo date('Y'); ?> Creative Studio. All Rights Reserved.
+        &copy; <?php echo date('Y'); ?> Jeprat-jepret. All Rights Reserved.
     </footer>    <script>
         const activeFrameConfig = <?php echo json_encode([
             'width' => $frameWidth,
@@ -1164,7 +1164,7 @@ $found = !empty($photoFile);
             try {
                 const img = document.querySelector('.photo-img');
                 const frameId = "<?php echo htmlspecialchars($frameId); ?>";
-                const eventName = "<?php echo $eventName ? htmlspecialchars($eventName) : 'Creative Studio'; ?>";
+                const eventName = "<?php echo $eventName ? htmlspecialchars($eventName) : 'Jeprat-jepret'; ?>";
 
                 if (!img.complete) {
                     await new Promise(resolve => img.onload = resolve);
@@ -1230,7 +1230,7 @@ $found = !empty($photoFile);
                     // Draw brand logo watermark below event name
                     pCtx.fillStyle = '#e63946';
                     pCtx.font = '800 12px "Outfit", Arial, sans-serif';
-                    pCtx.fillText('CREATIVE STUDIO', pCanvas.width / 2, pCanvas.height - 12);
+                    pCtx.fillText('JEPRAT-JEPRET', pCanvas.width / 2, pCanvas.height - 12);
 
                     // 5. Draw a cute icon/heart
                     pCtx.fillStyle = '#e63946';

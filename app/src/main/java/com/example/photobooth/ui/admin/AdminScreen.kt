@@ -63,6 +63,7 @@ import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.photobooth.api.HistoryItem
 import com.example.photobooth.api.NetworkClient
+import com.example.photobooth.api.PackageDto
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.HistoryPrinter
 import android.content.ContextWrapper
@@ -162,7 +163,7 @@ fun AdminScreen(
 
     // Tab Selection
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Dashboard", "Pengaturan", "Printer", "Riwayat Foto")
+    val tabTitles = listOf("Dashboard", "Pengaturan", "Printer", "Riwayat Foto", "Kupon")
     var refreshTrigger by remember { mutableIntStateOf(0) }
     
     // State variables
@@ -181,6 +182,10 @@ fun AdminScreen(
     var isColorPrinterModeDropdownExpanded by remember { mutableStateOf(false) }
     var printDensity by remember { mutableStateOf(configManager.printDensity) }
     var printerAutoCut by remember { mutableStateOf(configManager.printerAutoCut) }
+    var thermalContrast by remember { mutableStateOf(configManager.thermalContrast) }
+    var thermalBrightness by remember { mutableStateOf(configManager.thermalBrightness) }
+    var thermalSharpness by remember { mutableStateOf(configManager.thermalSharpness) }
+    var thermalDenoise by remember { mutableStateOf(configManager.thermalDenoise) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
     var wifiIpAddress by remember { mutableStateOf("") }
     var wifiPort by remember { mutableStateOf("9100") }
@@ -206,6 +211,12 @@ fun AdminScreen(
     
     var isSyncing by remember { mutableStateOf(false) }
     var isTestingPrint by remember { mutableStateOf(false) }
+    var packagesList by remember { mutableStateOf<List<PackageDto>>(emptyList()) }
+    var selectedPackageId by remember { mutableStateOf("any") }
+    var isPackageDropdownExpanded by remember { mutableStateOf(false) }
+    var isCreatingCoupon by remember { mutableStateOf(false) }
+    var couponQtyInput by remember { mutableStateOf("1") }
+    var isThermalPrintChecked by remember { mutableStateOf(true) }
 
     // Live Server Connectivity Status
     var serverOnline by remember { mutableStateOf<Boolean?>(null) }
@@ -215,6 +226,12 @@ fun AdminScreen(
             val api = NetworkClient.getApi(backendUrl)
             val response = api.getPhotoHistory()
             serverOnline = response.isSuccessful
+            
+            // Fetch packages list for coupon printing
+            val pkgResponse = api.getPackages()
+            if (pkgResponse.isSuccessful && pkgResponse.body() != null) {
+                packagesList = pkgResponse.body()!!
+            }
         } catch (e: Exception) {
             serverOnline = false
         }
@@ -464,6 +481,8 @@ fun AdminScreen(
                         serverOnline = serverOnline,
                         printerType = printerType,
                         syncedFramesCount = syncedFramesCount,
+                        printerAddress = printerAddress,
+                        historyListState = historyListState,
                         onRefresh = { refreshTrigger++ },
                         onNavigateToTab = { tabIndex -> selectedTab = tabIndex }
                     )
@@ -549,11 +568,22 @@ fun AdminScreen(
                                 ) {
                                     Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
                                         Text("ACTIVE PRINTER", color = Gray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        val activeThermalPrinterName = remember(printerAddress, historyListState) {
+                                            val found = historyListState.firstOrNull { it.address == printerAddress }
+                                            found?.name ?: if (printerAddress.isNotEmpty()) {
+                                                if (printerAddress.startsWith("BT:")) "Bluetooth Printer"
+                                                else if (printerAddress.startsWith("USB:")) "USB Printer"
+                                                else if (printerAddress.startsWith("NET:")) "Network Printer"
+                                                else "Thermal Printer"
+                                            } else {
+                                                "Printer Thermal"
+                                            }
+                                        }
                                         Text(
                                             text = when (printerType) {
-                                                "THERMAL" -> "XP-420B"
+                                                "THERMAL" -> activeThermalPrinterName
                                                 "COLOR" -> "COLOR PDF"
-                                                "AUTO" -> "AUTO (THERMAL & COLOR)"
+                                                "AUTO" -> "AUTO ($activeThermalPrinterName & COLOR)"
                                                 else -> "NONE"
                                             },
                                             color = White,
@@ -1411,6 +1441,116 @@ fun AdminScreen(
                                             )
                                         )
                                     }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    // Contrast Slider Row
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("Kontras Cetak (Contrast):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text(String.format("%.1f", thermalContrast), color = Color(0xFFE63946), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Slider(
+                                            value = thermalContrast,
+                                            onValueChange = {
+                                                thermalContrast = it
+                                                configManager.thermalContrast = it
+                                            },
+                                            valueRange = 0.5f..3.0f,
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFFE63946),
+                                                activeTrackColor = Color(0xFFE63946)
+                                            )
+                                        )
+                                        Text("Nilai default: 1.2. Meningkatkan perbedaan hitam-putih cetakan.", color = Gray, fontSize = 10.sp)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Brightness Slider Row
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("Kecerahan Cetak (Brightness):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text(String.format("%s%.1f", if (thermalBrightness >= 0) "+" else "", thermalBrightness), color = Color(0xFFE63946), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Slider(
+                                            value = thermalBrightness,
+                                            onValueChange = {
+                                                thermalBrightness = it
+                                                configManager.thermalBrightness = it
+                                            },
+                                            valueRange = -50f..50f,
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFFE63946),
+                                                activeTrackColor = Color(0xFFE63946)
+                                            )
+                                        )
+                                        Text("Nilai default: +10.0. Mencerahkan area bayangan agar tidak hitam pekat.", color = Gray, fontSize = 10.sp)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Sharpness Slider Row
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("Ketajaman Cetak (Sharpness):", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text(String.format("%.1f", thermalSharpness), color = Color(0xFFE63946), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Slider(
+                                            value = thermalSharpness,
+                                            onValueChange = {
+                                                thermalSharpness = it
+                                                configManager.thermalSharpness = it
+                                            },
+                                            valueRange = 0.0f..2.0f,
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFFE63946),
+                                                activeTrackColor = Color(0xFFE63946)
+                                            )
+                                        )
+                                        Text("Nilai default: 0.4. Memperjelas teks/garis tepi.", color = Gray, fontSize = 10.sp)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // Denoise Toggle Row
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Pengurangan Noise (Denoise)", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text("Menyaring noise bintik dari tangkapan kamera", color = Gray, fontSize = 11.sp)
+                                        }
+                                        Switch(
+                                            checked = thermalDenoise,
+                                            onCheckedChange = {
+                                                thermalDenoise = it
+                                                configManager.thermalDenoise = it
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = Color(0xFFE63946),
+                                                uncheckedThumbColor = Gray,
+                                                uncheckedTrackColor = BorderColor
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1998,6 +2138,329 @@ fun AdminScreen(
                             }
                         }
                     }
+
+                    // TAB 4: Kupon
+                    4 -> {
+                        // Define Composable blocks inside TAB 4
+                        val CetakKuponCard: @Composable () -> Unit = {
+                            AdminCard(title = "Cetak Kupon Baru Kiosk") {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text("Buat kupon baru dari server backend dan cetak struk kode kupon secara fisik.", color = Gray, fontSize = 11.sp)
+                                    
+                                    // Pilihan Paket Foto
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Pilih Paket Foto:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(120.dp))
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            OutlinedButton(
+                                                onClick = { isPackageDropdownExpanded = true },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                border = BorderStroke(1.dp, BorderColor),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = White),
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    val selectedText = if (selectedPackageId == "any") "Semua Paket (Bisa Pilih Bebas)" else {
+                                                        val pkg = packagesList.find { it.id == selectedPackageId }
+                                                        if (pkg != null) "${pkg.name} (Rp ${pkg.price})" else selectedPackageId
+                                                    }
+                                                    Text(text = selectedText, color = White, fontSize = 13.sp)
+                                                    Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
+                                                }
+                                            }
+                                            DropdownMenu(
+                                                expanded = isPackageDropdownExpanded,
+                                                onDismissRequest = { isPackageDropdownExpanded = false },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(BgInnerCard)
+                                                    .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Semua Paket (Bisa Pilih Bebas)", color = White, fontSize = 12.sp) },
+                                                    onClick = {
+                                                        selectedPackageId = "any"
+                                                        isPackageDropdownExpanded = false
+                                                    }
+                                                )
+                                                packagesList.forEach { pkg ->
+                                                    DropdownMenuItem(
+                                                        text = { Text("${pkg.name} (Rp ${pkg.price})", color = White, fontSize = 12.sp) },
+                                                        onClick = {
+                                                            selectedPackageId = pkg.id
+                                                            isPackageDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Input Jumlah Kupon
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Jumlah Kupon:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(120.dp))
+                                        OutlinedTextField(
+                                            value = couponQtyInput,
+                                            onValueChange = { newValue ->
+                                                if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                                                    couponQtyInput = newValue
+                                                }
+                                            },
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedTextColor = White,
+                                                unfocusedTextColor = White,
+                                                focusedBorderColor = Color(0xFFE63946)
+                                            ),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+
+                                    // Switch Cetak Struk Fisik
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Cetak Struk Fisik", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text("Cetak struk kupon fisik menggunakan printer thermal", color = Gray, fontSize = 11.sp)
+                                        }
+                                        Switch(
+                                            checked = isThermalPrintChecked,
+                                            onCheckedChange = { isThermalPrintChecked = it },
+                                            enabled = isThermalEnabled,
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = Color(0xFFE63946),
+                                                uncheckedThumbColor = Gray,
+                                                uncheckedTrackColor = BorderColor
+                                            )
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    val selectedPackageName = if (selectedPackageId == "any") "Semua Paket" else packagesList.find { it.id == selectedPackageId }?.name ?: selectedPackageId
+
+                                    if (isCreatingCoupon) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(24.dp))
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                val qty = couponQtyInput.toIntOrNull() ?: 1
+                                                if (qty <= 0) {
+                                                    Toast.makeText(context, "Jumlah kupon harus lebih dari 0", Toast.LENGTH_SHORT).show()
+                                                    return@Button
+                                                }
+                                                if (isCreatingCoupon) return@Button
+                                                isCreatingCoupon = true
+                                                scope.launch(Dispatchers.IO) {
+                                                    var successCount = 0
+                                                    var failureCount = 0
+                                                    for (i in 1..qty) {
+                                                        try {
+                                                            val api = NetworkClient.getApi(configManager.backendUrl)
+                                                            val res = api.createCoupon(packageId = selectedPackageId)
+                                                            if (res.isSuccessful && res.body() != null && res.body()!!.success) {
+                                                                val coupon = res.body()!!.coupon!!
+                                                                successCount++
+                                                                
+                                                                if (isThermalPrintChecked && isThermalEnabled) {
+                                                                    com.example.photobooth.print.PrintTestHelper.printCouponReceipt(
+                                                                        context = context,
+                                                                        configManager = configManager,
+                                                                        couponCode = coupon.code,
+                                                                        packageName = selectedPackageName
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                failureCount++
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            failureCount++
+                                                            e.printStackTrace()
+                                                        }
+                                                    }
+                                                    withContext(Dispatchers.Main) {
+                                                        isCreatingCoupon = false
+                                                        if (failureCount == 0) {
+                                                            Toast.makeText(context, "Sukses mencetak $successCount kupon! 🎉", Toast.LENGTH_LONG).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Proses selesai. Sukses: $successCount, Gagal: $failureCount", Toast.LENGTH_LONG).show()
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
+                                        ) {
+                                            Text(
+                                                text = if (isThermalEnabled || !isThermalPrintChecked) "PROSES & CETAK KUPON 🎫" else "Aktifkan printer thermal untuk mencetak struk",
+                                                fontWeight = FontWeight.Bold,
+                                                color = White
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        val StatusPrinterKuponCard: @Composable () -> Unit = {
+                            AdminCard(title = "Status Printer & Auto-Cut") {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Status Koneksi:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = if (printerAddress.isNotEmpty()) "Terhubung ($printerAddress)" else "Belum Dikonfigurasi",
+                                            color = if (printerAddress.isNotEmpty()) Color(0xFF52B788) else Color(0xFFE63946),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    // Switch Auto-Cut
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Potong Kertas Otomatis (Auto-Cut)", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text("Potong kertas struk secara otomatis setelah pencetakan selesai", color = Gray, fontSize = 11.sp)
+                                        }
+                                        Switch(
+                                            checked = printerAutoCut,
+                                            onCheckedChange = { isChecked ->
+                                                printerAutoCut = isChecked
+                                                configManager.printerAutoCut = isChecked
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = Color(0xFFE63946),
+                                                uncheckedThumbColor = Gray,
+                                                uncheckedTrackColor = BorderColor
+                                            )
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // Tombol Uji Coba Cetak Struk
+                                    if (isTestingPrint) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            CircularProgressIndicator(color = Color(0xFFE63946), modifier = Modifier.size(24.dp))
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                isTestingPrint = true
+                                                scope.launch {
+                                                    val success = testPrintJob(context, configManager, "THERMAL")
+                                                    isTestingPrint = false
+                                                    Toast.makeText(context, success, Toast.LENGTH_LONG).show()
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text("UJI COBA CETAK STRUK 📄", fontWeight = FontWeight.Bold, color = White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        val PanduanKuponCard: @Composable () -> Unit = {
+                            AdminCard(title = "Panduan Kupon Kiosk") {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("1.", color = Color(0xFFE63946), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Pilih paket foto yang diinginkan untuk kupon yang akan diterbitkan.", color = White, fontSize = 13.sp)
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("2.", color = Color(0xFFE63946), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Masukkan jumlah kupon (mendukung cetak masal secara berurutan).", color = White, fontSize = 13.sp)
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("3.", color = Color(0xFFE63946), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Aktifkan cetak struk fisik agar kode kupon otomatis tercetak pada printer thermal.", color = White, fontSize = 13.sp)
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("4.", color = Color(0xFFE63946), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Pastikan sakelar Auto-Cut aktif agar kertas terpotong otomatis di setiap struk kupon.", color = White, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Layout Responsif untuk Tab Kupon
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            if (isLandscape) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1.5f),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        CetakKuponCard()
+                                    }
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        StatusPrinterKuponCard()
+                                        PanduanKuponCard()
+                                    }
+                                }
+                            } else {
+                                CetakKuponCard()
+                                StatusPrinterKuponCard()
+                                PanduanKuponCard()
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2005,6 +2468,7 @@ fun AdminScreen(
         // Detail History Dialog
         selectedHistoryItem?.let { item ->
             var isSaving by remember { mutableStateOf(false) }
+            var showReprintChooserDialog by remember { mutableStateOf(false) }
 
             // Generate QR Code bitmap for the history download url
             LaunchedEffect(item.id) {
@@ -2111,11 +2575,25 @@ fun AdminScreen(
                             } else {
                                 Button(
                                     onClick = {
-                                        isReprinting = true
-                                        scope.launch {
-                                            val successMsg = runReprintFromHistory(context, item.photoUrl, configManager)
-                                            isReprinting = false
-                                            Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+                                        val type = configManager.printerType
+                                        if (type == "AUTO") {
+                                            showReprintChooserDialog = true
+                                        } else if (type == "THERMAL") {
+                                            isReprinting = true
+                                            scope.launch {
+                                                val successMsg = runReprintFromHistory(context, item.photoUrl, "THERMAL")
+                                                isReprinting = false
+                                                Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+                                            }
+                                        } else if (type == "COLOR") {
+                                            isReprinting = true
+                                            scope.launch {
+                                                val successMsg = runReprintFromHistory(context, item.photoUrl, "COLOR")
+                                                isReprinting = false
+                                                Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+                                            }
+                                        } else {
+                                            Toast.makeText(context, "Tidak ada printer aktif yang diaktifkan di pengaturan admin.", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
@@ -2162,6 +2640,47 @@ fun AdminScreen(
                         }
                     }
                 }
+            }
+
+            if (showReprintChooserDialog) {
+                AlertDialog(
+                    onDismissRequest = { showReprintChooserDialog = false },
+                    title = { Text("Pilih Printer", color = White) },
+                    text = { Text("Pilih printer yang ingin digunakan untuk mencetak ulang foto ini:", color = Gray) },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showReprintChooserDialog = false
+                                isReprinting = true
+                                scope.launch {
+                                    val successMsg = runReprintFromHistory(context, item.photoUrl, "THERMAL")
+                                    isReprinting = false
+                                    Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
+                        ) {
+                            Text("Printer Struk (Thermal)")
+                        }
+                    },
+                    dismissButton = {
+                        Button(
+                            onClick = {
+                                showReprintChooserDialog = false
+                                isReprinting = true
+                                scope.launch {
+                                    val successMsg = runReprintFromHistory(context, item.photoUrl, "COLOR")
+                                    isReprinting = false
+                                    Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                        ) {
+                            Text("Printer Warna")
+                        }
+                    },
+                    containerColor = BgCard
+                )
             }
         }
         }
@@ -2377,7 +2896,7 @@ private suspend fun testPrintJob(context: Context, configManager: ConfigManager,
 }
 
 // Reprint from history: Download image and send to printer driver
-private suspend fun runReprintFromHistory(context: Context, photoUrl: String, configManager: ConfigManager): String {
+private suspend fun runReprintFromHistory(context: Context, photoUrl: String, printerTypeToUse: String): String {
     return withContext(Dispatchers.IO) {
         try {
             // Download the photo strip bitmap from server
@@ -2392,12 +2911,6 @@ private suspend fun runReprintFromHistory(context: Context, photoUrl: String, co
             
             if (bitmap == null) {
                 return@withContext "Gagal mengunduh berkas gambar untuk cetak."
-            }
-            
-            val printerTypeToUse = if (configManager.printerType == "AUTO") {
-                "COLOR"
-            } else {
-                configManager.printerType
             }
 
             val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
@@ -2442,6 +2955,8 @@ fun DashboardTab(
     serverOnline: Boolean?,
     printerType: String,
     syncedFramesCount: Int,
+    printerAddress: String,
+    historyListState: List<HistoryPrinter>,
     onRefresh: () -> Unit,
     onNavigateToTab: (Int) -> Unit
 ) {
@@ -2756,11 +3271,22 @@ fun DashboardTab(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Printer Driver Terpilih:", color = Gray, fontSize = 12.sp)
+                    val activeThermalPrinterName = remember(printerAddress, historyListState) {
+                        val found = historyListState.firstOrNull { it.address == printerAddress }
+                        found?.name ?: if (printerAddress.isNotEmpty()) {
+                            if (printerAddress.startsWith("BT:")) "Bluetooth Printer"
+                            else if (printerAddress.startsWith("USB:")) "USB Printer"
+                            else if (printerAddress.startsWith("NET:")) "Network Printer"
+                            else "Thermal Printer"
+                        } else {
+                            "Printer Thermal"
+                        }
+                    }
                     Text(
                         text = when (printerType) {
-                            "THERMAL" -> "THERMAL (XP-420B)"
+                            "THERMAL" -> "THERMAL ($activeThermalPrinterName)"
                             "COLOR" -> "COLOR (PDF/SYSTEM)"
-                            "AUTO" -> "OTOMATIS (THERMAL & WARNA)"
+                            "AUTO" -> "OTOMATIS ($activeThermalPrinterName & WARNA)"
                             else -> "NONE"
                         },
                         color = White,

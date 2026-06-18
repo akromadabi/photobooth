@@ -85,7 +85,7 @@ $isRemoteMode = !empty($sessionId);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $isRemoteMode ? 'Remote Controller' : 'Pesan Paket Photobooth'; ?> - Creative Studio</title>
+    <title><?php echo $isRemoteMode ? 'Remote Controller' : 'Pesan Paket Photobooth'; ?> - Jeprat-jepret</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
@@ -516,9 +516,9 @@ $isRemoteMode = !empty($sessionId);
 
         .frame-scroll-select {
             display: flex;
-            gap: 20px;
+            gap: 16px;
             overflow-x: auto;
-            padding: 16px 10px 24px 10px;
+            padding: 12px 6px 20px 6px;
             width: 100%;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
@@ -532,7 +532,7 @@ $isRemoteMode = !empty($sessionId);
             border-radius: 10px;
         }
         .frame-scroll-select::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 10px;
         }
         .frame-scroll-select::-webkit-scrollbar-thumb:hover {
@@ -540,46 +540,52 @@ $isRemoteMode = !empty($sessionId);
         }
 
         .frame-item-card {
-            border-radius: 14px;
-            border: none;
-            background-color: transparent;
-            overflow: visible;
-            flex-shrink: 0;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #0c0c0f;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            padding: 0;
+            align-items: center;
             gap: 8px;
-            width: 140px;
-            height: 370px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+            overflow: visible;
         }
 
         .frame-item-card.layout-strip {
-            width: 140px;
-            height: 370px;
-        }
-
-        .frame-item-card.layout-grid {
-            width: 190px;
-            height: 310px;
-        }
-
-        .frame-item-card.layout-postcard {
-            width: 220px;
+            width: 120px;
             height: 280px;
         }
 
+        .frame-item-card.layout-grid {
+            width: 150px;
+            height: 240px;
+        }
+
+        .frame-item-card.layout-postcard {
+            width: 180px;
+            height: 200px;
+        }
+
         .frame-item-card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
         }
 
         .frame-item-card.active {
-            transform: scale(1.04);
+            border-color: var(--primary-gold);
+            background-color: rgba(247, 184, 1, 0.04);
+            box-shadow: 0 8px 24px rgba(247, 184, 1, 0.15);
+            transform: scale(1.02);
         }
 
         .frame-item-preview {
             flex: 1;
+            width: 100%;
+            height: 0;
+            min-height: 0;
             overflow: visible;
             background-color: transparent;
             display: flex;
@@ -589,7 +595,7 @@ $isRemoteMode = !empty($sessionId);
         }
         
         .frame-item-card.active .frame-item-preview {
-            transform: translateY(-4px);
+            transform: translateY(-2px);
         }
 
         .frame-item-card.active .frame-item-preview img {
@@ -597,8 +603,10 @@ $isRemoteMode = !empty($sessionId);
         }
         
         .frame-item-preview img {
-            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             width: auto;
+            height: auto;
             object-fit: contain;
             position: relative;
             z-index: 2;
@@ -607,14 +615,15 @@ $isRemoteMode = !empty($sessionId);
         }
 
         .frame-item-name {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-align: center;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             color: var(--text-muted);
-            padding: 2px 0;
+            width: 100%;
+            padding: 2px 0 0 0;
             transition: all 0.2s;
         }
 

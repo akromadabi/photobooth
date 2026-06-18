@@ -9,7 +9,13 @@ object DitherHelper {
      * Converts a standard colored Bitmap to a 1-bit monokrom (black and white) Bitmap
      * using the Floyd-Steinberg error diffusion dithering algorithm.
      */
-    fun ditherFloydSteinberg(src: Bitmap): Bitmap {
+    fun ditherFloydSteinberg(
+        src: Bitmap,
+        contrast: Float = 1.2f,
+        brightness: Float = 10.0f,
+        sharpStrength: Float = 0.4f,
+        denoise: Boolean = true
+    ): Bitmap {
         val width = src.width
         val height = src.height
         
@@ -18,8 +24,8 @@ object DitherHelper {
         val pixels = IntArray(width * height)
         src.getPixels(pixels, 0, width, 0, 0, width, height)
         
-        val contrast = 1.2
-        val brightness = 10.0
+        val contrastDouble = contrast.toDouble()
+        val brightnessDouble = brightness.toDouble()
         
         for (i in pixels.indices) {
             val color = pixels[i]
@@ -28,40 +34,43 @@ object DitherHelper {
             val b = Color.blue(color)
             val luma = 0.299 * r + 0.587 * g + 0.114 * b
             // Boost contrast and brightness (balanced for smoother gradients)
-            val adjusted = ((luma - 128.0) * contrast + 128.0 + brightness).coerceIn(0.0, 255.0)
+            val adjusted = ((luma - 128.0) * contrastDouble + 128.0 + brightnessDouble).coerceIn(0.0, 255.0)
             grayData[i] = adjusted.toInt()
         }
 
         // 2. Denoise using a 3x3 Median Filter to remove salt-and-pepper noise and sensor grain
         val denoisedData = IntArray(width * height)
-        val neighbor = IntArray(9)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val idx = y * width + x
-                if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
-                    denoisedData[idx] = grayData[idx]
-                    continue
+        if (denoise) {
+            val neighbor = IntArray(9)
+            for (y in 0 until height) {
+                for (x in 0 until width) {
+                    val idx = y * width + x
+                    if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+                        denoisedData[idx] = grayData[idx]
+                        continue
+                    }
+                    
+                    neighbor[0] = grayData[idx - width - 1]
+                    neighbor[1] = grayData[idx - width]
+                    neighbor[2] = grayData[idx - width + 1]
+                    neighbor[3] = grayData[idx - 1]
+                    neighbor[4] = grayData[idx]
+                    neighbor[5] = grayData[idx + 1]
+                    neighbor[6] = grayData[idx + width - 1]
+                    neighbor[7] = grayData[idx + width]
+                    neighbor[8] = grayData[idx + width + 1]
+                    
+                    // Sort to find the median value
+                    java.util.Arrays.sort(neighbor)
+                    denoisedData[idx] = neighbor[4]
                 }
-                
-                neighbor[0] = grayData[idx - width - 1]
-                neighbor[1] = grayData[idx - width]
-                neighbor[2] = grayData[idx - width + 1]
-                neighbor[3] = grayData[idx - 1]
-                neighbor[4] = grayData[idx]
-                neighbor[5] = grayData[idx + 1]
-                neighbor[6] = grayData[idx + width - 1]
-                neighbor[7] = grayData[idx + width]
-                neighbor[8] = grayData[idx + width + 1]
-                
-                // Sort to find the median value
-                java.util.Arrays.sort(neighbor)
-                denoisedData[idx] = neighbor[4]
             }
+        } else {
+            System.arraycopy(grayData, 0, denoisedData, 0, grayData.size)
         }
 
-        // 3. Apply Gentle Sharpening (strength = 0.4) on denoised data
+        // 3. Apply Gentle Sharpening on denoised data
         val sharpenedData = IntArray(width * height)
-        val sharpStrength = 0.4f
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val idx = y * width + x

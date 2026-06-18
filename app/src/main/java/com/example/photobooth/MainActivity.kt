@@ -97,6 +97,10 @@ class MainActivity : FragmentActivity() {
                             serverConfig.printerType?.let { if (it.isNotEmpty() && it != "NONE") configManager.printerType = it }
                             serverConfig.useBiometric?.let { configManager.useBiometric = it }
                             serverConfig.appTheme?.let { if (it.isNotEmpty()) configManager.appTheme = it }
+                            serverConfig.thermalContrast?.let { configManager.thermalContrast = it }
+                            serverConfig.thermalBrightness?.let { configManager.thermalBrightness = it }
+                            serverConfig.thermalSharpness?.let { configManager.thermalSharpness = it }
+                            serverConfig.thermalDenoise?.let { configManager.thermalDenoise = it }
                         }
                     }
                 } catch (e: Exception) {

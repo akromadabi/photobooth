@@ -25,6 +25,26 @@ fun PrintStatusDialog(
     onDismissRequest: () -> Unit,
     statusText: String = "Sedang mencetak foto..."
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val printerName = remember {
+        val configManager = com.example.photobooth.data.ConfigManager(context)
+        val address = configManager.printerAddress
+        if (address.isEmpty()) {
+            "Printer"
+        } else {
+            val history = configManager.getPrinterHistory()
+            val found = history.firstOrNull { it.address == address }
+            if (found != null) {
+                found.name
+            } else {
+                if (address.startsWith("BT:")) "Bluetooth Printer"
+                else if (address.startsWith("USB:")) "USB Printer"
+                else if (address.startsWith("NET:")) "Network Printer"
+                else "Printer"
+            }
+        }
+    }
+
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -134,7 +154,7 @@ fun PrintStatusDialog(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "XP-420B",
+                                text = printerName,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold

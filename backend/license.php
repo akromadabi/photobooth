@@ -74,7 +74,7 @@ $verified = !empty($photoFile) && $metaData !== null;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $verified ? "Lisensi Resmi: " . ($characterDetail ? htmlspecialchars($characterDetail['name']) : "Karakter AI") : "Verifikasi Lisensi Gagal"; ?> - Creative Studio</title>
+    <title><?php echo $verified ? "Lisensi Resmi: " . ($characterDetail ? htmlspecialchars($characterDetail['name']) : "Karakter AI") : "Verifikasi Lisensi Gagal"; ?> - Jeprat-jepret</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
@@ -451,7 +451,7 @@ $verified = !empty($photoFile) && $metaData !== null;
                     </div>
                     
                     <div class="license-desc">
-                        <?php echo $characterDetail ? htmlspecialchars($characterDetail['description']) : "Lisensi resmi untuk potret karakter kustom yang digenerasikan secara real-time via sistem AI Creative Studio Kiosk."; ?>
+                        <?php echo $characterDetail ? htmlspecialchars($characterDetail['description']) : "Lisensi resmi untuk potret karakter kustom yang digenerasikan secara real-time via sistem AI Jeprat-jepret Kiosk."; ?>
                     </div>
 
                     <div class="meta-list">
@@ -493,7 +493,7 @@ $verified = !empty($photoFile) && $metaData !== null;
                 </div>
                 <div class="error-title">Sertifikat Tidak Valid</div>
                 <p class="error-desc">
-                    Maaf, kode identitas sesi atau berkas lisensi yang Anda cari tidak terdaftar dalam database Creative Studio. 
+                    Maaf, kode identitas sesi atau berkas lisensi yang Anda cari tidak terdaftar dalam database Jeprat-jepret. 
                     Pastikan Anda memindai kode QR dari ID Card resmi yang dicetak oleh mesin Kiosk kami.
                 </p>
                 <a href="index.php" class="btn-download" style="border-color: var(--primary-red); color: white;">
@@ -503,7 +503,7 @@ $verified = !empty($photoFile) && $metaData !== null;
         <?php endif; ?>
 
         <footer class="footer">
-            &copy; <?php echo date('Y'); ?> Creative Studio AI Licensing Manager. Seluruh Hak Cipta Dilindungi.
+            &copy; <?php echo date('Y'); ?> Jeprat-jepret AI Licensing Manager. Seluruh Hak Cipta Dilindungi.
         </footer>
 
     </div>

@@ -46,6 +46,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -233,11 +235,12 @@ fun PreviewResultScreen(
                                 selectedSwapIndex = null
                             }
                         },
-                        onPhotoDrag = { index, newOffset ->
+                        onPhotoTransform = { index, newOffset, newScale ->
                             if (index < photoStates.size) {
                                 photoStates[index] = photoStates[index].copy(
                                     normalizedX = newOffset.x,
-                                    normalizedY = newOffset.y
+                                    normalizedY = newOffset.y,
+                                    scale = newScale
                                 )
                             }
                         },
@@ -250,27 +253,42 @@ fun PreviewResultScreen(
                     )
 
                     // Floating Swap Mode Button
-                    Button(
-                        onClick = { 
-                            swapMode = !swapMode 
-                            selectedSwapIndex = null
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (swapMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
-                        ),
-                        shape = RoundedCornerShape(20.dp),
+                    Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(8.dp)
+                            .padding(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Tukar",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (swapMode) "Selesai" else "Tukar Foto", fontSize = 12.sp, color = Color.White)
+                        Button(
+                            onClick = { 
+                                swapMode = !swapMode 
+                                selectedSwapIndex = null
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (swapMode) Color(0xFFEF4444) else Color.Black.copy(alpha = 0.7f)
+                            ),
+                            shape = RoundedCornerShape(50.dp),
+                            border = BorderStroke(
+                                width = 1.5.dp,
+                                color = if (swapMode) Color(0xFFFCA5A5) else AppTheme.colors.primary.copy(alpha = 0.8f)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(38.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (swapMode) Icons.Default.Check else Icons.Default.Refresh,
+                                contentDescription = "Tukar",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (swapMode) "Selesai" else "Tukar Foto",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
 
@@ -345,16 +363,16 @@ fun PreviewResultScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
+                    .padding(paddingValues),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left Side: Preview Photo Container
                 Box(
                     modifier = Modifier
-                        .weight(1.2f)
-                        .fillMaxHeight(),
+                        .weight(1.6f)
+                        .fillMaxHeight()
+                        .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     PreviewPhotoContainer(
@@ -377,11 +395,12 @@ fun PreviewResultScreen(
                                 selectedSwapIndex = null
                             }
                         },
-                        onPhotoDrag = { index, newOffset ->
+                        onPhotoTransform = { index, newOffset, newScale ->
                             if (index < photoStates.size) {
                                 photoStates[index] = photoStates[index].copy(
                                     normalizedX = newOffset.x,
-                                    normalizedY = newOffset.y
+                                    normalizedY = newOffset.y,
+                                    scale = newScale
                                 )
                             }
                         },
@@ -394,35 +413,51 @@ fun PreviewResultScreen(
                     )
 
                     // Floating Swap Mode Button
-                    Button(
-                        onClick = { 
-                            swapMode = !swapMode 
-                            selectedSwapIndex = null
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (swapMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
-                        ),
-                        shape = RoundedCornerShape(20.dp),
+                    Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(8.dp)
+                            .padding(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Tukar",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (swapMode) "Selesai" else "Tukar Foto", fontSize = 12.sp, color = Color.White)
+                        Button(
+                            onClick = { 
+                                swapMode = !swapMode 
+                                selectedSwapIndex = null
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (swapMode) Color(0xFFEF4444) else Color.Black.copy(alpha = 0.7f)
+                            ),
+                            shape = RoundedCornerShape(50.dp),
+                            border = BorderStroke(
+                                width = 1.5.dp,
+                                color = if (swapMode) Color(0xFFFCA5A5) else AppTheme.colors.primary.copy(alpha = 0.8f)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(38.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (swapMode) Icons.Default.Check else Icons.Default.Refresh,
+                                contentDescription = "Tukar",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (swapMode) "Selesai" else "Tukar Foto",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
 
                 // Right Side: Control Panels & Action Buttons
                 Column(
                     modifier = Modifier
-                        .weight(1.8f)
-                        .fillMaxHeight(),
+                        .weight(1.4f)
+                        .fillMaxHeight()
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(
@@ -832,7 +867,7 @@ fun PreviewPhotoContainer(
     swapMode: Boolean,
     selectedSwapIndex: Int?,
     onPhotoClick: (Int) -> Unit,
-    onPhotoDrag: (Int, Offset) -> Unit,
+    onPhotoTransform: (index: Int, offset: Offset, scale: Float) -> Unit,
     doodleLines: SnapshotStateList<DoodleLine>,
     activePenColor: Color,
     activeStrokeWidth: Float,
@@ -928,25 +963,32 @@ fun PreviewPhotoContainer(
                                         )
                                 } else if (activeTab == PreviewTab.FRAME) {
                                     Modifier.pointerInput(index) {
-                                        detectDragGestures { change, dragAmount ->
-                                            change.consume()
+                                        detectTransformGestures { _, pan, zoom, _ ->
+                                            val currentScale = photoState.scale
+                                            val newScale = (currentScale * zoom).coerceIn(1.0f, 3.0f)
                                             
-                                            val rangeX = maxX.toPx() - minX.toPx()
-                                            val rangeY = maxY.toPx() - minY.toPx()
+                                            val newScaledWidth = imageWidth * newScale
+                                            val newScaledHeight = imageHeight * newScale
+                                            
+                                            val newMinX = slotWidth - newScaledWidth
+                                            val newMinY = slotHeight - newScaledHeight
+                                            
+                                            val rangeX = -newMinX.toPx()
+                                            val rangeY = -newMinY.toPx()
                                             
                                             val newNormalizedX = if (rangeX > 0) {
-                                                (photoState.normalizedX + dragAmount.x / rangeX).coerceIn(0f, 1f)
+                                                (photoState.normalizedX + pan.x / rangeX).coerceIn(0f, 1f)
                                             } else {
                                                 photoState.normalizedX
                                             }
                                             
                                             val newNormalizedY = if (rangeY > 0) {
-                                                (photoState.normalizedY + dragAmount.y / rangeY).coerceIn(0f, 1f)
+                                                (photoState.normalizedY + pan.y / rangeY).coerceIn(0f, 1f)
                                             } else {
                                                 photoState.normalizedY
                                             }
                                             
-                                            onPhotoDrag(index, Offset(newNormalizedX, newNormalizedY))
+                                            onPhotoTransform(index, Offset(newNormalizedX, newNormalizedY), newScale)
                                         }
                                     }
                                 } else {
@@ -1114,6 +1156,7 @@ fun StickerOverlay(
     modifier: Modifier = Modifier
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
+    var containerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     
     val tapModifier = if (enabled) {
         Modifier.pointerInput(Unit) {
@@ -1126,7 +1169,9 @@ fun StickerOverlay(
     }
 
     BoxWithConstraints(
-        modifier = modifier.then(tapModifier)
+        modifier = modifier
+            .then(tapModifier)
+            .onGloballyPositioned { containerCoordinates = it }
     ) {
         val containerWidth = maxWidth
         val containerHeight = maxHeight
@@ -1136,6 +1181,7 @@ fun StickerOverlay(
         stickers.forEach { sticker ->
             val isSelected = sticker.id == selectedStickerId
             val currentStickerState = rememberUpdatedState(sticker)
+            var handleCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
             val stickerDragModifier = if (enabled) {
                 Modifier.pointerInput(sticker.id) {
@@ -1195,23 +1241,116 @@ fun StickerOverlay(
                         fontSize = 40.sp,
                         textAlign = TextAlign.Center
                     )
-                }
 
-                if (isSelected && enabled) {
-                    IconButton(
-                        onClick = { onStickerDelete(sticker.id) },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .offset(x = 6.dp, y = (-6).dp)
-                            .size(24.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Hapus Stiker",
-                            tint = Color.White,
-                            modifier = Modifier.size(12.dp)
-                        )
+                    if (isSelected && enabled) {
+                        // Delete Button (top-right) counter-scaled
+                        IconButton(
+                            onClick = { onStickerDelete(sticker.id) },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 6.dp, y = (-6).dp)
+                                .graphicsLayer(
+                                    scaleX = 1f / sticker.scale,
+                                    scaleY = 1f / sticker.scale
+                                )
+                                .size(24.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Hapus Stiker",
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+
+                        // Resize / Rotate Handle (bottom-left) counter-scaled
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .offset(x = (-6).dp, y = 6.dp)
+                                .graphicsLayer(
+                                    scaleX = 1f / sticker.scale,
+                                    scaleY = 1f / sticker.scale
+                                )
+                                .size(24.dp)
+                                .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                .onGloballyPositioned { handleCoordinates = it }
+                                .pointerInput(sticker.id) {
+                                    detectDragGestures(
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            val container = containerCoordinates
+                                            val handle = handleCoordinates
+                                            if (container != null && handle != null && container.isAttached && handle.isAttached) {
+                                                val touchPos = container.localPositionOf(handle, change.position)
+                                                val centerX = sticker.x * containerWidthPx
+                                                val centerY = sticker.y * containerHeightPx
+                                                
+                                                val dx = touchPos.x - centerX
+                                                val dy = touchPos.y - centerY
+                                                val currentDistance = kotlin.math.sqrt(dx * dx + dy * dy)
+                                                
+                                                val initialHalfSizePx = with(density) { 40.dp.toPx() }
+                                                val initialDistance = kotlin.math.sqrt(initialHalfSizePx * initialHalfSizePx * 2)
+                                                
+                                                val newScale = (currentDistance / initialDistance).coerceIn(0.5f, 3.0f)
+                                                
+                                                val currentAngleRad = kotlin.math.atan2(dy, dx)
+                                                val currentAngleDeg = Math.toDegrees(currentAngleRad.toDouble()).toFloat()
+                                                val newRotation = (currentAngleDeg - 135f)
+                                                
+                                                onStickerUpdated(
+                                                    sticker.copy(
+                                                        scale = newScale,
+                                                        rotation = newRotation
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // Custom canvas to draw a premium diagonal double-ended arrow
+                            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize().padding(6.dp)) {
+                                val w = size.width
+                                val h = size.height
+                                // Draw diagonal line
+                                drawLine(
+                                    color = Color.White,
+                                    start = Offset(0f, h),
+                                    end = Offset(w, 0f),
+                                    strokeWidth = 1.5.dp.toPx()
+                                )
+                                // Top-right arrow head
+                                drawLine(
+                                    color = Color.White,
+                                    start = Offset(w, 0f),
+                                    end = Offset(w - 3.dp.toPx(), 0f),
+                                    strokeWidth = 1.5.dp.toPx()
+                                )
+                                drawLine(
+                                    color = Color.White,
+                                    start = Offset(w, 0f),
+                                    end = Offset(w, 3.dp.toPx()),
+                                    strokeWidth = 1.5.dp.toPx()
+                                )
+                                // Bottom-left arrow head
+                                drawLine(
+                                    color = Color.White,
+                                    start = Offset(0f, h),
+                                    end = Offset(3.dp.toPx(), h),
+                                    strokeWidth = 1.5.dp.toPx()
+                                )
+                                drawLine(
+                                    color = Color.White,
+                                    start = Offset(0f, h),
+                                    end = Offset(0f, h - 3.dp.toPx()),
+                                    strokeWidth = 1.5.dp.toPx()
+                                )
+                            }
+                        }
                     }
                 }
             }

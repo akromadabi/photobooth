@@ -30,7 +30,7 @@ if (file_exists($queueFile)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Promosi - Creative Studio</title>
+    <title>Display Promosi - Jeprat-jepret</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
@@ -307,7 +307,7 @@ if (file_exists($queueFile)) {
         <!-- Left Column: Branding Info -->
         <div class="info-side">
             <div class="brand-header">
-                <div class="tagline">Creative Studio</div>
+                <div class="tagline">Jeprat-jepret</div>
                 <div class="logo">Receipt<span>Photo</span></div>
             </div>
             
@@ -357,7 +357,7 @@ if (file_exists($queueFile)) {
     </div>
 
     <footer class="footer">
-        &copy; <?php echo date('Y'); ?> Creative Studio. All Rights Reserved.
+        &copy; <?php echo date('Y'); ?> Jeprat-jepret. All Rights Reserved.
     </footer>
 
     <script>

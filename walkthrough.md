@@ -89,3 +89,76 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
   * Berkas pembaruan diperbarui: `backend/update.json`
   * Menyimpan salinan arsip versi di root: `app-debug_v1.24.0.apk`
 
+
+---
+
+## Update: Perbaikan Stabilitas Cetak Bluetooth & Dialog Cetak Ulang (v1.24.2)
+
+### 1. Perbaikan Stabilitas Cetak via Bluetooth
+* **Metode Pengiriman Data**: Mengubah pengiriman seluruh byte array bitmap sekaligus (`outputStream.write(printData)`) menjadi pengiriman berangsur dalam unit-unit kecil (chunk) sebesar **1024 byte (1 KB)** dengan jeda **15 milidetik** per chunk. Hal ini mencegah *buffer overflow* pada RAM internal printer receipt/kasir yang seringkali berukuran sangat kecil.
+* **Hasil Perbaikan**:
+  * Menghilangkan kemacetan cetak (kertas berhenti di tengah jalan) dan menjamin perintah potong kertas (`auto-cut`) selalu berhasil diterima dan dieksekusi di akhir cetakan.
+  * Mencegah terjadinya *garbage text* (cetakan kode-kode acak tak jelas) akibat hilangnya bit header perintah ESC_POS/TSPL.
+  * Menghilangkan kelambatan tersendat-sendat akibat tersumbatnya transmisi data Bluetooth RFCOMM.
+* **Jeda Penutupan Socket**: Menambahkan jeda waktu tunggu **1000 milidetik (1 detik)** sebelum memanggil `socket.close()` setelah seluruh data selesai dikirim. Ini memastikan printer memiliki cukup waktu untuk menerima dan memproses seluruh data di buffer Bluetooth internalnya secara tuntas sebelum koneksi diputus secara sepihak.
+
+### 2. Dialog Pemilihan Printer Pintar pada Cetak Ulang (Reprint)
+* **Pemilihan Printer**: Ketika tombol `CETAK ULANG FOTO (REPRINT)` diketuk dari detail riwayat foto di tab Riwayat Foto:
+  * Jika jenis printer diatur ke `"AUTO"` (dua printer aktif bersamaan), aplikasi sekarang memunculkan `AlertDialog` pilihan: "Printer Struk (Thermal)" atau "Printer Warna".
+  * Jika diatur ke `"THERMAL"` saja atau `"COLOR"` saja, aplikasi langsung mencetak secara instan menggunakan driver printer tersebut secara mandiri tanpa memunculkan dialog.
+* **Hasil Perbaikan**: Menghilangkan kemunculan panel chooser/share default bawaan Android saat mencetak ulang riwayat foto.
+
+### 3. Build & Rilis APK v1.24.2
+* Menaikkan `versionName` ke `1.24.2` dan `versionCode` ke `34` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Berhasil memicu `assembleDebug` yang secara otomatis menyegarkan file JSON pembaruan (`backend/update.json`), menyalin APK terbaru (`backend/app-debug.apk`), dan membuat arsip cadangan di root: `app-debug_v1.24.2.apk`.
+
+
+---
+
+## Update: Mekanisme Fallback Koneksi RFCOMM Bluetooth (v1.24.3)
+
+### 1. Fallback Koneksi Bluetooth (Anti Gagal Terhubung)
+* **Mekanisme Fallback**: Menambahkan penanganan fallback otomatis menggunakan java reflection untuk membuka RFCOMM socket langsung ke port `1` jika pemanggilan standar `createRfcommSocketToServiceRecord(SPP_UUID)` gagal atau ditolak oleh stack Bluetooth internal perangkat Android.
+* **Hasil Perbaikan**: Menjamin tablet Android dapat melakukan koneksi sukses 100% ke berbagai merek printer thermal Bluetooth pasaran (termasuk yang menggunakan chip generik Tiongkok dengan UUID SPP non-standar).
+
+### 2. Build & Rilis APK v1.24.3
+* Menaikkan `versionName` ke `1.24.3` dan `versionCode` ke `35` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle bersih untuk memperbarui file pembaruan `backend/update.json`, menyalin `backend/app-debug.apk`, dan mengarsipkan `app-debug_v1.24.3.apk` di folder root.
+
+---
+
+## Update: Pengaturan Kualitas Cetak Thermal & Live Preview Dither (v1.25.0)
+
+### 1. Panel Admin Server (Backend)
+* **[settings.json](file:///c:/laragon/www/Photoboth/backend/settings.json)**:
+  * Menambahkan parameter default baru untuk kontrol kualitas cetak: `thermal_contrast` (1.2), `thermal_brightness` (10.0), `thermal_sharpness` (0.4), dan `thermal_denoise` (true).
+* **[admin.php](file:///c:/laragon/www/Photoboth/backend/admin.php)**:
+  * Menambahkan UI penyesuaian parameter cetak termal menggunakan slider (Kontras, Kecerahan, Ketajaman) dan toggle switch (Denoise/Median Filter).
+  * Mengimplementasikan visual simulasi **Live Dither Preview** pada kertas struk termal menggunakan canvas HTML5 & JavaScript (Floyd-Steinberg error diffusion).
+  * Menyediakan tombol sampel potret buatan, pengunggahan foto kustom, dan penarikan foto sesi terakhir sebagai gambar masukan pengujian.
+
+### 2. Sinkronisasi & Penyimpanan Android Kiosk
+* **[KioskConfigDto.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/data/KioskConfigDto.kt)**:
+  * Memetakan variabel DTO baru untuk menerima parameter kontrol kualitas cetak dari JSON server.
+* **[ConfigManager.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/data/ConfigManager.kt)**:
+  * Menambahkan penyimpanan lokal (SharedPreferences) untuk Kontras, Kecerahan, Ketajaman, dan Denoise.
+* **[MainActivity.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/MainActivity.kt)**:
+  * Menambahkan sinkronisasi parameter kualitas cetak dari endpoint server ke `ConfigManager` lokal secara real-time saat startup/resume.
+
+### 3. Pemrosesan Dithering & Driver Printer
+* **[DitherHelper.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/print/DitherHelper.kt)**:
+  * Memperbarui fungsi `ditherFloydSteinberg` untuk menerima parameter kontras, kecerahan, ketajaman, dan status denoise secara dinamis.
+  * Menerapkan filter median 3x3 untuk denoising, peningkatan kontras dan kecerahan secara dinamis, serta sharpening sebelum Floyd-Steinberg dither diaplikasikan.
+* **[ThermalPrinterDriver.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/print/ThermalPrinterDriver.kt)**:
+  * Melewatkan parameter dari `ConfigManager` ke fungsi `ditherFloydSteinberg` ketika menyusun perintah bitmap cetak TSPL dan ESC/POS.
+
+### 4. Antarmuka Pengguna Kiosk (Android UI)
+* **[AdminScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/admin/AdminScreen.kt)**:
+  * Menambahkan slider Kontras (0.5 - 3.0), Kecerahan (-50 - 50), Ketajaman (0.0 - 2.0), dan toggle Denoise pada kartu pengaturan Printer Thermal.
+  * Memperbaiki kesalahan kompilasi unresolved references (`printerAddress` dan `historyListState`) pada pemanggilan `DashboardTab` di dalam tab Dashboard.
+* **[QuickSettingsDialog.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/home/QuickSettingsDialog.kt)**:
+  * Menambahkan slider Kontras, Kecerahan, Ketajaman, dan switch Denoise serupa pada panel Menu Cepat di bawah pengaturan port printer thermal agar operator dapat langsung melakukan fine-tuning secara instan tanpa perlu masuk ke menu admin ber-PIN.
+
+### 5. Build & Rilis APK v1.25.0
+* Mendaftarkan `versionName = "1.25.0"` dan `versionCode = 36` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle secara bersih untuk memperbarui file pembaruan `backend/update.json` dan menyalin APK terbaru `backend/app-debug.apk`.

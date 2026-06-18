@@ -125,7 +125,13 @@ class ThermalPrinterDriver : PrinterManager {
         val scaledBitmap = if (bitmap.width == targetWidth) bitmap else Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
 
         // Dither the bitmap to monochrome
-        val dithered = DitherHelper.ditherFloydSteinberg(scaledBitmap)
+        val dithered = DitherHelper.ditherFloydSteinberg(
+            scaledBitmap,
+            contrast = configManager.thermalContrast,
+            brightness = configManager.thermalBrightness,
+            sharpStrength = configManager.thermalSharpness,
+            denoise = configManager.thermalDenoise
+        )
         if (scaledBitmap != bitmap) {
             scaledBitmap.recycle()
         }
@@ -186,7 +192,13 @@ class ThermalPrinterDriver : PrinterManager {
         val targetHeight = (bitmap.height * targetWidth) / bitmap.width
         val scaledBitmap = if (bitmap.width == targetWidth) bitmap else Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
 
-        val dithered = DitherHelper.ditherFloydSteinberg(scaledBitmap)
+        val dithered = DitherHelper.ditherFloydSteinberg(
+            scaledBitmap,
+            contrast = configManager.thermalContrast,
+            brightness = configManager.thermalBrightness,
+            sharpStrength = configManager.thermalSharpness,
+            denoise = configManager.thermalDenoise
+        )
         if (scaledBitmap != bitmap) {
             scaledBitmap.recycle()
         }
@@ -258,7 +270,17 @@ class ThermalPrinterDriver : PrinterManager {
         var socket: BluetoothSocket? = null
         return try {
             socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
-            socket.connect()
+            try {
+                socket.connect()
+            } catch (e: IOException) {
+                // Fallback connection attempt using reflection on RFCOMM channel 1 (standard SPP fallback)
+                try {
+                    socket.close()
+                } catch (ce: Exception) {}
+                val m = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
+                socket = m.invoke(device, 1) as BluetoothSocket
+                socket.connect()
+            }
             
             val configManager = ConfigManager(context)
             val printData = if (configManager.thermalMode == "ESC_POS") {
@@ -267,8 +289,34 @@ class ThermalPrinterDriver : PrinterManager {
                 generateTsplData(bitmap, configManager)
             }
             val outputStream = socket.outputStream
-            outputStream.write(printData)
-            outputStream.flush()
+            
+            // Transfer in chunks to prevent buffer overflow issues over Bluetooth SPP
+            val maxChunk = 1024
+            var sent = 0
+            while (sent < printData.size) {
+                val length = (printData.size - sent).coerceAtMost(maxChunk)
+                outputStream.write(printData, sent, length)
+                outputStream.flush()
+                sent += length
+                
+                // Introduce a tiny delay between chunks to allow the printer's CPU
+                // and hardware buffer to digest the incoming data.
+                try {
+                    Thread.sleep(15)
+                } catch (e: InterruptedException) {
+                    // Ignore
+                }
+            }
+            
+            // Critical: Wait for the printer to finish receiving and processing
+            // the remaining data from the Bluetooth stacks/buffers before closing the socket connection.
+            // If closed immediately, the last few bytes (including feed and auto-cut commands)
+            // will be truncated.
+            try {
+                Thread.sleep(1000)
+            } catch (e: InterruptedException) {
+                // Ignore
+            }
             
             PrintResult.Success
         } catch (e: IOException) {

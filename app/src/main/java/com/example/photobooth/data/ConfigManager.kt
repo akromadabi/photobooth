@@ -23,7 +23,27 @@ class ConfigManager(context: Context) {
         private const val KEY_AUTO_CUT = "printer_auto_cut"
         private const val KEY_LAST_REMOTE_SESSION_ID = "last_remote_session_id"
         private const val KEY_COLOR_PRINTER_MODE = "color_printer_mode"
+        private const val KEY_THERMAL_CONTRAST = "thermal_contrast"
+        private const val KEY_THERMAL_BRIGHTNESS = "thermal_brightness"
+        private const val KEY_THERMAL_SHARPNESS = "thermal_sharpness"
+        private const val KEY_THERMAL_DENOISE = "thermal_denoise"
     }
+
+    var thermalContrast: Float
+        get() = prefs.getFloat(KEY_THERMAL_CONTRAST, 1.2f)
+        set(value) = prefs.edit().putFloat(KEY_THERMAL_CONTRAST, value).apply()
+
+    var thermalBrightness: Float
+        get() = prefs.getFloat(KEY_THERMAL_BRIGHTNESS, 10.0f)
+        set(value) = prefs.edit().putFloat(KEY_THERMAL_BRIGHTNESS, value).apply()
+
+    var thermalSharpness: Float
+        get() = prefs.getFloat(KEY_THERMAL_SHARPNESS, 0.4f)
+        set(value) = prefs.edit().putFloat(KEY_THERMAL_SHARPNESS, value).apply()
+
+    var thermalDenoise: Boolean
+        get() = prefs.getBoolean(KEY_THERMAL_DENOISE, true)
+        set(value) = prefs.edit().putBoolean(KEY_THERMAL_DENOISE, value).apply()
 
     var printerPaperWidth: Int
         get() = prefs.getInt(KEY_PAPER_WIDTH, 80)
