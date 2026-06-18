@@ -769,8 +769,9 @@ fun AdminScreen(
                         val themeList = listOf(
                             Pair("NEON_RED", "Neon Red (Modern)"),
                             Pair("CUTE_PASTEL", "Cute Pastel (Wood)"),
+                            Pair("CUTE_NARA", "Cute Nara (Pinky Flower)"),
                             Pair("LUXURY_GOLD", "Luxury Gold (Wedding)"),
-                            Pair("RETRO_ARCADE", "Retro Arcade (8-Bit)")
+                            Pair("MINIMAL_MODERN", "Minimal Modern (Clean & Creative)")
                         )
                         val activeThemeName = themeList.firstOrNull { it.first == activeThemeState }?.second ?: activeThemeState
                         

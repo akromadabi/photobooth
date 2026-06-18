@@ -364,6 +364,13 @@ fun HomeScreen(
         }
 
         Crossfade(targetState = activeTheme, label = "ThemeCrossfade") { theme ->
+            val onCameraClickLambda = {
+                cameraTapCount++
+                if (cameraTapCount >= 3) {
+                    cameraTapCount = 0
+                    showQuickSettings = true
+                }
+            }
             when (theme) {
                 AppThemeType.CUTE_PASTEL -> CutePastelHomeLayout(
                     resolvedEventName = resolvedEventName,
@@ -376,7 +383,22 @@ fun HomeScreen(
                         onStartClick(finalEventId)
                     },
                     isMultiEventMode = configManager.kioskMode == "MULTI_EVENT",
-                    onTicketClick = { showEventCodeDialog = true }
+                    onTicketClick = { showEventCodeDialog = true },
+                    onCameraClick = onCameraClickLambda
+                )
+                AppThemeType.CUTE_NARA -> CuteNaraHomeLayout(
+                    resolvedEventName = resolvedEventName,
+                    onLogoClick = onLogoClick,
+                    isLandscape = isLandscape,
+                    historyList = historyList,
+                    buttonScale = buttonScale,
+                    onStartClick = {
+                        val finalEventId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
+                        onStartClick(finalEventId)
+                    },
+                    isMultiEventMode = configManager.kioskMode == "MULTI_EVENT",
+                    onTicketClick = { showEventCodeDialog = true },
+                    onCameraClick = onCameraClickLambda
                 )
                 AppThemeType.LUXURY_GOLD -> LuxuryGoldHomeLayout(
                     resolvedEventName = resolvedEventName,
@@ -388,9 +410,10 @@ fun HomeScreen(
                         onStartClick(finalEventId)
                     },
                     isMultiEventMode = configManager.kioskMode == "MULTI_EVENT",
-                    onTicketClick = { showEventCodeDialog = true }
+                    onTicketClick = { showEventCodeDialog = true },
+                    onCameraClick = onCameraClickLambda
                 )
-                AppThemeType.RETRO_ARCADE -> RetroArcadeHomeLayout(
+                AppThemeType.MINIMAL_MODERN -> MinimalModernHomeLayout(
                     resolvedEventName = resolvedEventName,
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
@@ -400,7 +423,8 @@ fun HomeScreen(
                         onStartClick(finalEventId)
                     },
                     isMultiEventMode = configManager.kioskMode == "MULTI_EVENT",
-                    onTicketClick = { showEventCodeDialog = true }
+                    onTicketClick = { showEventCodeDialog = true },
+                    onCameraClick = onCameraClickLambda
                 )
                 else -> ModernHomeLayout(
                     resolvedEventName = resolvedEventName,
@@ -418,7 +442,8 @@ fun HomeScreen(
                         onStartClick(finalEventId)
                     },
                     isMultiEventMode = configManager.kioskMode == "MULTI_EVENT",
-                    onTicketClick = { showEventCodeDialog = true }
+                    onTicketClick = { showEventCodeDialog = true },
+                    onCameraClick = onCameraClickLambda
                 )
             }
         }
@@ -616,28 +641,7 @@ fun HomeScreen(
             }
         }
 
-        // Hidden/subtle Camera Button in top-right corner for Quick Settings (3 taps)
-        IconButton(
-            onClick = {
-                cameraTapCount++
-                if (cameraTapCount >= 3) {
-                    cameraTapCount = 0
-                    showQuickSettings = true
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 40.dp, end = 16.dp)
-                .size(48.dp)
-                .background(Color.Black.copy(alpha = 0.2f), shape = CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.CameraAlt,
-                contentDescription = "Quick Settings Trigger",
-                tint = Color.White.copy(alpha = 0.4f),
-                modifier = Modifier.size(24.dp)
-            )
-        }
+        // Camera settings button has been moved to be layout-specific, placed above the ticket button.
 
         // Auto Update Dialog
         if (autoUpdateInfo != null) {
@@ -1179,7 +1183,8 @@ fun ModernHomeLayout(
     studioX: Float,
     onStartClick: () -> Unit,
     isMultiEventMode: Boolean,
-    onTicketClick: () -> Unit
+    onTicketClick: () -> Unit,
+    onCameraClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -1345,6 +1350,29 @@ fun ModernHomeLayout(
             }
         }
 
+        // Quick Settings Camera Button (styled exactly like ticket button, right above it)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(
+                    bottom = if (isMultiEventMode) 200.dp else 144.dp,
+                    start = if (isLandscape) 144.dp else 48.dp
+                )
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.15f))
+                .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)), CircleShape)
+                .clickable { onCameraClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Quick Settings Trigger",
+                tint = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
         // Multi-Event Ticket Launcher Icon
         if (isMultiEventMode) {
             Box(
@@ -1373,7 +1401,8 @@ fun CutePastelHomeLayout(
     buttonScale: Float,
     onStartClick: () -> Unit,
     isMultiEventMode: Boolean,
-    onTicketClick: () -> Unit
+    onTicketClick: () -> Unit,
+    onCameraClick: () -> Unit
 ) {
     val themeColors = AppTheme.colors
     Box(
@@ -1570,11 +1599,31 @@ fun CutePastelHomeLayout(
                 }
             }
 
+            // Quick Settings Camera Button
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(themeColors.accentColor)
+                    .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
+                    .clickable { onCameraClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = "Quick Settings Trigger",
+                    tint = themeColors.onBackground,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             if (isMultiEventMode) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
+                        .padding(bottom = 180.dp, start = if (isLandscape) 80.dp else 16.dp)
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(themeColors.accentColor)
@@ -1624,6 +1673,515 @@ fun CutePastelHomeLayout(
 }
 
 @Composable
+fun SparkleStar(
+    modifier: Modifier = Modifier,
+    color: Color = Color.White,
+    pulseDuration: Int = 1500
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "SparklePulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(pulseDuration, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Scale"
+    )
+    
+    Text(
+        text = "✦",
+        color = color,
+        fontSize = 24.sp,
+        modifier = modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+    )
+}
+
+@Composable
+fun CartoonFlower(
+    modifier: Modifier = Modifier,
+    petalColor: Color,
+    centerColor: Color = Color(0xFFFFD166),
+    rotationSpeed: Int = 8000
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "FlowerRotation")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(rotationSpeed, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "Angle"
+    )
+    
+    Box(
+        modifier = modifier
+            .graphicsLayer { rotationZ = angle }
+            .size(56.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // 5 Petals
+        for (i in 0 until 5) {
+            val petalAngle = i * 72f
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        rotationZ = petalAngle
+                        translationY = -12.dp.toPx()
+                    }
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(petalColor)
+                    .border(BorderStroke(2.dp, Color(0xFF4A1525)), CircleShape)
+            )
+        }
+        // Center
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(centerColor)
+                .border(BorderStroke(2.dp, Color(0xFF4A1525)), CircleShape)
+        )
+    }
+}
+
+@Composable
+fun CartoonLeaf(
+    modifier: Modifier = Modifier,
+    leafColor: Color = Color(0xFF99E2B4)
+) {
+    Box(
+        modifier = modifier
+            .size(32.dp, 48.dp)
+            .clip(RoundedCornerShape(topStartPercent = 80, bottomEndPercent = 80))
+            .background(leafColor)
+            .border(
+                BorderStroke(2.dp, Color(0xFF4A1525)),
+                RoundedCornerShape(topStartPercent = 80, bottomEndPercent = 80)
+            )
+    )
+}
+
+@Composable
+fun CuteNaraHomeLayout(
+    resolvedEventName: String?,
+    onLogoClick: () -> Unit,
+    isLandscape: Boolean,
+    historyList: List<String>,
+    buttonScale: Float,
+    onStartClick: () -> Unit,
+    isMultiEventMode: Boolean,
+    onTicketClick: () -> Unit,
+    onCameraClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // 1. Wavy Background Waves
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val w = size.width
+            val h = size.height
+            
+            // Top cream wave
+            val pathTop = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, 0f)
+                lineTo(w, 0f)
+                lineTo(w, h * 0.4f)
+                cubicTo(
+                    w * 0.75f, h * 0.5f,
+                    w * 0.3f, h * 0.3f,
+                    0f, h * 0.45f
+                )
+                close()
+            }
+            drawPath(pathTop, Color(0xFFFFF9FA))
+            
+            // Bottom pink wave
+            val pathBottom = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, h)
+                lineTo(w, h)
+                lineTo(w, h * 0.7f)
+                cubicTo(
+                    w * 0.65f, h * 0.6f,
+                    w * 0.35f, h * 0.8f,
+                    0f, h * 0.65f
+                )
+                close()
+            }
+            drawPath(pathBottom, Color(0xFFFDE8E9))
+        }
+
+        // 2. Background Sparkles/Stars
+        SparkleStar(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = 180.dp, y = 100.dp),
+            color = Color(0xFFFFB3C6)
+        )
+        SparkleStar(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(x = 80.dp, y = (-80).dp),
+            color = Color(0xFFFF7597),
+            pulseDuration = 1800
+        )
+        SparkleStar(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = (-320).dp, y = 140.dp),
+            color = Color(0xFFFFB3C6),
+            pulseDuration = 2200
+        )
+        SparkleStar(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = (-250).dp, y = (-220).dp),
+            color = Color(0xFFFF7597),
+            pulseDuration = 1200
+        )
+
+        // 3. Flower and Leaf Garden at the Bottom
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomStart)
+                .height(180.dp)
+        ) {
+            // Layered leaves and flowers along the bottom
+            // Leaf 1
+            CartoonLeaf(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 24.dp, y = 10.dp)
+                    .graphicsLayer { rotationZ = -20f },
+                leafColor = Color(0xFFB7E4C7)
+            )
+            // Leaf 2
+            CartoonLeaf(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 90.dp, y = 30.dp)
+                    .graphicsLayer { rotationZ = 15f },
+                leafColor = Color(0xFF74C69D)
+            )
+            // Flower 1 (Vibrant pink)
+            CartoonFlower(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 50.dp, y = (-10).dp),
+                petalColor = Color(0xFFFF4D6D),
+                rotationSpeed = 10000
+            )
+            
+            // Flower 2 (Soft peach)
+            CartoonFlower(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 130.dp, y = 20.dp),
+                petalColor = Color(0xFFFFB3C6),
+                rotationSpeed = 12000
+            )
+
+            // Leaf 3 (Middle left)
+            CartoonLeaf(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 220.dp, y = 40.dp)
+                    .graphicsLayer { rotationZ = -10f },
+                leafColor = Color(0xFF95D5B2)
+            )
+
+            // Center-right flowers/leaves
+            // Leaf 4
+            CartoonLeaf(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-120).dp, y = 20.dp)
+                    .graphicsLayer { rotationZ = 30f },
+                leafColor = Color(0xFFB7E4C7)
+            )
+            // Flower 3 (Sweet orange/yellow)
+            CartoonFlower(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-80).dp, y = (-20).dp),
+                petalColor = Color(0xFFFF9F1C),
+                rotationSpeed = 9000
+            )
+            // Leaf 5
+            CartoonLeaf(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-30).dp, y = 10.dp)
+                    .graphicsLayer { rotationZ = -15f },
+                leafColor = Color(0xFF74C69D)
+            )
+            // Flower 4 (Coral red)
+            CartoonFlower(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-20).dp, y = 10.dp),
+                petalColor = Color(0xFFFF7597),
+                rotationSpeed = 15000
+            )
+        }
+
+        // 4. Top Left Photo Preview Container
+        Box(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(top = 16.dp, start = 16.dp)
+                .size(110.dp)
+                .align(Alignment.TopStart)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onLogoClick
+                )
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.White)
+                .border(BorderStroke(4.dp, Color.White), RoundedCornerShape(16.dp))
+                .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (historyList.isNotEmpty()) {
+                AsyncImage(
+                    model = historyList.first(),
+                    contentDescription = "Latest Kiosk Photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFFFF0F5)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "Camera placeholder",
+                        tint = Color(0xFFFF7597),
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+        }
+
+        // 5. Main Title & Center Content
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(if (isLandscape) 0.55f else 0.85f)
+                .align(if (isLandscape) Alignment.CenterStart else Alignment.Center)
+                .padding(start = if (isLandscape) 150.dp else 16.dp, end = if (isLandscape) 0.dp else 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Slanted Title container
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        rotationZ = -5f
+                        shadowElevation = 10f
+                    }
+                    .background(Color(0xFFFF7597), RoundedCornerShape(24.dp))
+                    .border(BorderStroke(4.dp, Color.White), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 36.dp, vertical = 16.dp)
+            ) {
+                Text(
+                    text = resolvedEventName?.uppercase() ?: "NARA KLIK",
+                    color = Color.White,
+                    fontSize = if (isLandscape) 40.sp else 32.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.SansSerif,
+                    textAlign = TextAlign.Center,
+                    style = LocalTextStyle.current.copy(
+                        shadow = Shadow(
+                            color = Color(0xFF4A1525),
+                            offset = Offset(4f, 4f),
+                            blurRadius = 0f
+                        )
+                    )
+                )
+            }
+
+            // Subtitle pill badge
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        rotationZ = 3f
+                    }
+                    .background(Color(0xFF95D5B2), RoundedCornerShape(50.dp))
+                    .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(50.dp))
+                    .border(BorderStroke(1.5.dp, Color(0xFF2D6A4F)), RoundedCornerShape(50.dp))
+                    .padding(horizontal = 20.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "Mini Studio Foto",
+                    color = Color(0xFF2D6A4F),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Pulse Start Button
+            Button(
+                onClick = onStartClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF7597),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(50.dp),
+                border = BorderStroke(4.dp, Color.White),
+                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp),
+                modifier = Modifier
+                    .height(60.dp)
+                    .width(240.dp)
+                    .graphicsLayer {
+                        scaleX = buttonScale
+                        scaleY = buttonScale
+                        shadowElevation = 8f
+                    }
+            ) {
+                Text(
+                    text = "TAP TO START ➔",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.SansSerif
+                )
+            }
+        }
+
+        // 6. Bottom Social Handles and Phone Info
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Instagram badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .background(Color.White, RoundedCornerShape(20.dp))
+                    .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(text = "📸", fontSize = 14.sp)
+                Text(
+                    text = "@nara.klik",
+                    color = Color(0xFF4A1525),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+
+            // WhatsApp phone number badge
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFFFF7597), RoundedCornerShape(20.dp))
+                    .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
+                    .border(BorderStroke(1.5.dp, Color(0xFF4A1525)), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "08963000888",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        // Quick Settings Camera Button (styled exactly like ticket button, right above it)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(bottom = 180.dp, start = 16.dp)
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFFFB3C6))
+                .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(12.dp))
+                .clickable { onCameraClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Quick Settings Trigger",
+                tint = Color(0xFF4A1525),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // Multi-Event Ticket Button if enabled
+        if (isMultiEventMode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 120.dp, start = 16.dp)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFFFB3C6))
+                    .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(12.dp))
+                    .clickable { onTicketClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "🎟️", fontSize = 20.sp)
+            }
+        }
+
+        // 7. Right Tilted Photo Strip (for history)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(
+                    x = if (isLandscape) 40.dp else 20.dp,
+                    y = if (isLandscape) (-130).dp else (-130).dp
+                )
+                .graphicsLayer {
+                    rotationZ = -15f
+                    shadowElevation = 12f
+                    shape = RoundedCornerShape(12.dp)
+                    clip = true
+                }
+                .requiredWidth(if (isLandscape) 280.dp else 200.dp)
+                .requiredHeight(if (isLandscape) 4000.dp else 3000.dp)
+                .background(Color.White)
+                .border(BorderStroke(3.dp, Color(0xFFFF7597)), RoundedCornerShape(12.dp))
+                .padding(8.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
+            
+            // Pink hanging tape
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-5).dp)
+                    .width(70.dp)
+                    .height(24.dp)
+                    .background(Color(0xFFFFB3C6).copy(alpha = 0.9f))
+                    .border(BorderStroke(2.dp, Color(0xFFFF7597)))
+            )
+        }
+    }
+}
+
+@Composable
 fun LuxuryGoldHomeLayout(
     resolvedEventName: String?,
     onLogoClick: () -> Unit,
@@ -1631,7 +2189,8 @@ fun LuxuryGoldHomeLayout(
     historyList: List<String>,
     onStartClick: () -> Unit,
     isMultiEventMode: Boolean,
-    onTicketClick: () -> Unit
+    onTicketClick: () -> Unit,
+    onCameraClick: () -> Unit
 ) {
     val themeColors = AppTheme.colors
     Box(
@@ -1810,6 +2369,26 @@ fun LuxuryGoldHomeLayout(
                 }
             }
 
+            // Quick Settings Camera Button
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 180.dp, start = if (isLandscape) 80.dp else 16.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.Transparent)
+                    .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
+                    .clickable { onCameraClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = "Quick Settings Trigger",
+                    tint = themeColors.accentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
             if (isMultiEventMode) {
                 Box(
                     modifier = Modifier
@@ -1854,260 +2433,421 @@ fun LuxuryGoldHomeLayout(
 }
 
 @Composable
-fun RetroArcadeHomeLayout(
+fun MinimalModernHomeLayout(
     resolvedEventName: String?,
     onLogoClick: () -> Unit,
     isLandscape: Boolean,
     historyList: List<String>,
     onStartClick: () -> Unit,
     isMultiEventMode: Boolean,
-    onTicketClick: () -> Unit
+    onTicketClick: () -> Unit,
+    onCameraClick: () -> Unit
 ) {
     val themeColors = AppTheme.colors
+    val infiniteTransition = rememberInfiniteTransition(label = "MinimalModernBackground")
+    
+    val blob1X by infiniteTransition.animateFloat(
+        initialValue = 0.1f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(15000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "blob1X"
+    )
+    val blob1Y by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(18000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "blob1Y"
+    )
+    val blob2X by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(22000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "blob2X"
+    )
+    val blob2Y by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 0.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(16000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "blob2Y"
+    )
+    
+    val startButtonScale by infiniteTransition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "startButtonScale"
+    )
+    
+    val stripFloatOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "stripFloat"
+    )
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Inner card with border & padding
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .background(themeColors.background, RoundedCornerShape(8.dp))
-                .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(8.dp))
-                .padding(16.dp)
+        // Morphing Gradient Background
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Perspective grid canvas
-            androidx.compose.foundation.Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.4f)
-                    .align(Alignment.BottomCenter)
-            ) {
-                val width = size.width
-                val height = size.height
-                val gridColor = Color(0xFFDF00FF).copy(alpha = 0.15f)
-                
-                val linesCount = 10
-                for (i in 0..linesCount) {
-                    val ratio = i.toFloat() / linesCount
-                    val y = height * (ratio * ratio)
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(0f, y),
-                        end = Offset(width, y),
-                        strokeWidth = 2f
-                    )
-                }
-                
-                val columnsCount = 14
-                for (i in 0..columnsCount) {
-                    val xRatio = i.toFloat() / columnsCount
-                    val startX = width * xRatio
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(width / 2f, 0f),
-                        end = Offset(startX, height),
-                        strokeWidth = 2f
-                    )
-                }
-            }
-
-            Text(
-                text = "👾",
-                fontSize = 28.sp,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x = 60.dp, y = 120.dp)
+            drawRect(color = Color(0xFF05050A))
+            
+            // Cyan Glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF06B6D4).copy(alpha = 0.15f), Color.Transparent),
+                    center = Offset(size.width * blob1X, size.height * blob1Y),
+                    radius = size.minDimension * 0.7f
+                ),
+                center = Offset(size.width * blob1X, size.height * blob1Y),
+                radius = size.minDimension * 0.7f
             )
-            Text(
-                text = "🍒",
-                fontSize = 24.sp,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = 40.dp, y = (-80).dp)
+            
+            // Indigo Glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF6366F1).copy(alpha = 0.12f), Color.Transparent),
+                    center = Offset(size.width * blob2X, size.height * blob2Y),
+                    radius = size.minDimension * 0.8f
+                ),
+                center = Offset(size.width * blob2X, size.height * blob2Y),
+                radius = size.minDimension * 0.8f
             )
-            Text(
-                text = "🕹️",
-                fontSize = 26.sp,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-320).dp, y = (-180).dp)
-            )
+        }
 
-            // Top Left Logo
-            Column(
+        // Layout content
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 16.dp, start = if (isLandscape) 80.dp else 16.dp)
-                    .align(Alignment.TopStart)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onLogoClick
-                    )
+                    .fillMaxSize()
+                    .padding(horizontal = 80.dp, vertical = 40.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "JEPRAT // JEPRET",
-                    color = themeColors.accentColor,
-                    fontFamily = themeColors.fontFamily,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    style = androidx.compose.ui.text.TextStyle(
-                        shadow = Shadow(
-                            color = Color(0xFFDF00FF),
-                            offset = Offset(2f, 2f),
-                            blurRadius = 4f
-                        )
-                    )
-                )
-                Text(
-                    text = resolvedEventName ?: "ARCADE EDITION",
-                    color = Color.White,
-                    fontFamily = themeColors.fontFamily,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            // Center Content
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(if (isLandscape) 0.5f else 0.65f)
-                    .align(Alignment.CenterStart)
-                    .padding(start = if (isLandscape) 80.dp else 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val flashingAlpha by rememberInfiniteTransition().animateFloat(
-                    initialValue = 0.2f,
-                    targetValue = 1.0f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 800, easing = LinearEasing),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "FlashingReady"
-                )
-                
-                Text(
-                    text = "> READY PLAYER ONE",
-                    color = themeColors.border,
-                    fontFamily = themeColors.fontFamily,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.alpha(flashingAlpha)
-                )
-                
-                Text(
-                    text = "INSERT COIN\nTO START SESSION",
-                    color = themeColors.onBackground,
-                    fontSize = if (isLandscape) 38.sp else 30.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = if (isLandscape) 46.sp else 38.sp,
-                    fontFamily = themeColors.fontFamily,
-                    style = androidx.compose.ui.text.TextStyle(
-                        shadow = Shadow(
-                            color = Color(0xFFDF00FF).copy(alpha = 0.8f),
-                            offset = Offset(2f, 2f),
-                            blurRadius = 6f
-                        )
-                    )
-                )
-            }
-
-            // Bottom CTA
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp, start = if (isLandscape) 80.dp else 16.dp, end = if (isLandscape) 80.dp else 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                Button(
-                    onClick = onStartClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = themeColors.buttonBackground,
-                        contentColor = themeColors.buttonContent
-                    ),
-                    shape = RoundedCornerShape(0.dp),
-                    border = BorderStroke(3.dp, themeColors.accentColor),
-                    contentPadding = PaddingValues(horizontal = 36.dp, vertical = 18.dp),
+                // Left Column: Branding and CTA
+                Column(
                     modifier = Modifier
-                        .height(60.dp)
-                        .width(220.dp)
+                        .fillMaxHeight()
+                        .weight(1.2f),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "PRESS START",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = themeColors.fontFamily,
-                        letterSpacing = 1.sp
-                    )
+                    // Top Logo
+                    Column(
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onLogoClick
+                            )
+                    ) {
+                        Text(
+                            text = "CREATIVE // STUDIO",
+                            color = Color.White,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 2.sp
+                        )
+                        Text(
+                            text = resolvedEventName ?: "CLEAN EXPERIENCE",
+                            color = themeColors.accentColor,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 4.sp
+                        )
+                    }
+
+                    // Main copy
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    ) {
+                        Text(
+                            text = "CAPTURE\nTHE MOMENT",
+                            color = Color.White,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 44.sp,
+                            fontWeight = FontWeight.Black,
+                            lineHeight = 50.sp,
+                            letterSpacing = (-1).sp
+                        )
+                        Text(
+                            text = "Step inside, strike a pose, and let the magic begin. Your memories are printing instantly.",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 14.sp,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        )
+                    }
+
+                    // Bottom CTA
+                    Box(
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .graphicsLayer {
+                                scaleX = startButtonScale
+                                scaleY = startButtonScale
+                            }
+                    ) {
+                        Button(
+                            onClick = onStartClick,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent
+                            ),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(30.dp),
+                            modifier = Modifier
+                                .height(60.dp)
+                                .width(220.dp)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(Color(0xFF6366F1), Color(0xFF06B6D4))
+                                    ),
+                                    shape = RoundedCornerShape(30.dp)
+                                )
+                        ) {
+                            Text(
+                                text = "START SESSION",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = themeColors.fontFamily,
+                                color = Color.White,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text(
-                        text = "COINS: 99 / FREE PLAY",
-                        color = themeColors.accentColor.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
-                        fontFamily = themeColors.fontFamily
-                    )
-                    Text(
-                        text = "STAGE 1",
-                        color = themeColors.border,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = themeColors.fontFamily
-                    )
-                }
-            }
-
-            if (isMultiEventMode) {
+                // Right side: Glassmorphic Floating photostrip
                 Box(
                     modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(bottom = 120.dp, start = if (isLandscape) 80.dp else 16.dp)
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(themeColors.accentColor.copy(alpha = 0.2f))
-                        .border(BorderStroke(2.dp, themeColors.accentColor), RoundedCornerShape(4.dp))
-                        .clickable { onTicketClick() },
+                        .weight(0.8f)
+                        .fillMaxHeight(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "🎟️", fontSize = 16.sp)
+                    Box(
+                        modifier = Modifier
+                            .offset(y = stripFloatOffset.dp)
+                            .graphicsLayer {
+                                rotationZ = 4f
+                                shadowElevation = 24f
+                                shape = RoundedCornerShape(24.dp)
+                                clip = true
+                            }
+                            .width(220.dp)
+                            .height(520.dp)
+                            .background(Color(0x0AFFFFFF))
+                            .border(
+                                BorderStroke(1.dp, Color(0x1FFFFFFF)),
+                                RoundedCornerShape(24.dp)
+                            )
+                            .padding(12.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
+                    }
+                }
+            }
+        } else {
+            // Portrait layout
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top Logo
+                Column(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(top = 16.dp)
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onLogoClick
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "CREATIVE // STUDIO",
+                        color = Color.White,
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 2.sp
+                    )
+                    Text(
+                        text = resolvedEventName ?: "CLEAN EXPERIENCE",
+                        color = themeColors.accentColor,
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 4.sp
+                    )
+                }
+
+                // Floating Photostrip (Middle top)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .offset(y = (stripFloatOffset * 0.7f).dp)
+                            .graphicsLayer {
+                                rotationZ = 3f
+                                shadowElevation = 20f
+                                shape = RoundedCornerShape(20.dp)
+                                clip = true
+                            }
+                            .width(180.dp)
+                            .height(280.dp)
+                            .background(Color(0x0AFFFFFF))
+                            .border(
+                                BorderStroke(1.dp, Color(0x1FFFFFFF)),
+                                RoundedCornerShape(20.dp)
+                            )
+                            .padding(8.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
+                    }
+                }
+
+                // Copy + CTA (Bottom)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "CAPTURE THE MOMENT",
+                        color = Color.White,
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Text(
+                        text = "Step inside, strike a pose, and let the magic begin. Your memories are printing instantly.",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontFamily = themeColors.fontFamily,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = startButtonScale
+                                scaleY = startButtonScale
+                            }
+                    ) {
+                        Button(
+                            onClick = onStartClick,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent
+                            ),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(30.dp),
+                            modifier = Modifier
+                                .height(56.dp)
+                                .width(200.dp)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(Color(0xFF6366F1), Color(0xFF06B6D4))
+                                    ),
+                                    shape = RoundedCornerShape(30.dp)
+                                )
+                        ) {
+                            Text(
+                                text = "START SESSION",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = themeColors.fontFamily,
+                                color = Color.White,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        // Tilted photo strip (Outside the bordered card, aligns to screen edges)
+        // Quick Settings Camera Button (styled exactly like ticket button, right above it)
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(
-                    x = if (isLandscape) 30.dp else 10.dp,
-                    y = if (isLandscape) (-150).dp else (-150).dp
+                .align(Alignment.BottomStart)
+                .padding(
+                    bottom = if (isMultiEventMode) 80.dp else 24.dp,
+                    start = if (isLandscape) 80.dp else 24.dp
                 )
-                .graphicsLayer {
-                    rotationZ = -22f
-                    shadowElevation = 20f
-                    shape = RoundedCornerShape(4.dp)
-                    clip = true
-                }
-                .requiredWidth(if (isLandscape) 280.dp else 200.dp)
-                .requiredHeight(if (isLandscape) 4000.dp else 3000.dp)
-                .background(Color.Black)
-                .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(4.dp))
-                .padding(8.dp),
-            contentAlignment = Alignment.TopCenter
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color(0x1AFFFFFF))
+                .border(BorderStroke(1.dp, Color(0x33FFFFFF)), CircleShape)
+                .clickable { onCameraClick() },
+            contentAlignment = Alignment.Center
         ) {
-            InfiniteScrollingPhotoList(photoUrls = historyList, isLandscape = isLandscape)
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Quick Settings Trigger",
+                tint = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        // Event code button if multi-event mode
+        if (isMultiEventMode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 24.dp, start = if (isLandscape) 80.dp else 24.dp)
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0x1AFFFFFF))
+                    .border(BorderStroke(1.dp, Color(0x33FFFFFF)), RoundedCornerShape(22.dp))
+                    .clickable { onTicketClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "🎟️", fontSize = 16.sp)
+            }
         }
     }
 }

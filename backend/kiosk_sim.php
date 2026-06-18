@@ -1590,6 +1590,105 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.15) !important;
         }
 
+        /* 2b. Cute Nara (Pinky Flower) */
+        .theme-cute_nara .screen-home {
+            background-color: #fff0f5 !important;
+            background-image: 
+                radial-gradient(#ffb3c6 1.5px, transparent 1.5px),
+                radial-gradient(#ffb3c6 1.5px, #fff0f5 1.5px) !important;
+            background-size: 30px 30px !important;
+            background-position: 0 0, 15px 15px !important;
+            padding: 30px !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+        .theme-cute_nara .home-logo-box {
+            background: #ff7597 !important;
+            border: 4px solid #fff !important;
+            border-radius: 20px !important;
+            box-shadow: 0 6px 0 #4a1525 !important;
+            transform: rotate(-3deg) !important;
+            padding: 10px 30px !important;
+            display: inline-block !important;
+            cursor: pointer !important;
+        }
+        .theme-cute_nara .home-logo-part1 {
+            font-family: 'Fredoka', sans-serif !important;
+            color: #fff !important;
+            font-weight: 900 !important;
+            text-shadow: 2px 2px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .home-logo-part2 {
+            font-family: 'Fredoka', sans-serif !important;
+            color: #ffb3c6 !important;
+            font-weight: 700 !important;
+            text-shadow: 2px 2px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .btn-start {
+            background-color: #ff7597 !important;
+            color: #fff !important;
+            border: 4px solid #fff !important;
+            border-radius: 50px !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 900 !important;
+            box-shadow: 0 6px 0 #4a1525 !important;
+            text-shadow: none !important;
+            letter-spacing: 0.5px !important;
+            transition: all 0.2s !important;
+            opacity: 1 !important;
+            animation: pulseBtnCute 1.5s infinite alternate !important;
+        }
+        @keyframes pulseBtnCute {
+            0% { transform: scale(0.96); }
+            100% { transform: scale(1.04); }
+        }
+        .theme-cute_nara .btn-start:hover {
+            transform: scale(1.06) !important;
+            box-shadow: 0 8px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .home-slogan {
+            font-family: 'Fredoka', sans-serif !important;
+            color: #2d6a4f !important;
+            background-color: #95d5b2 !important;
+            border: 2px solid #fff !important;
+            box-shadow: 0 3px 0 #2d6a4f !important;
+            border-radius: 20px !important;
+            padding: 6px 18px !important;
+            display: inline-block !important;
+            font-weight: 700 !important;
+            margin-top: 15px !important;
+            text-transform: none !important;
+        }
+        /* Floating flowers/stars */
+        .theme-cute_nara .screen-home::before {
+            content: "🌸" !important;
+            position: absolute !important;
+            top: 40px !important;
+            left: 180px !important;
+            font-size: 2.2rem !important;
+            animation: rotateFlower 8s infinite linear !important;
+            z-index: 8 !important;
+        }
+        .theme-cute_nara .screen-home::after {
+            content: "⭐" !important;
+            position: absolute !important;
+            bottom: 120px !important;
+            right: 250px !important;
+            font-size: 1.8rem !important;
+            animation: floatText 3s infinite ease-in-out !important;
+            z-index: 8 !important;
+        }
+        @keyframes rotateFlower {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .theme-cute_nara .home-strip-container {
+            border: 6px solid #ff7597 !important;
+            border-radius: 16px !important;
+            background-color: #fff !important;
+            box-shadow: 6px 6px 0 rgba(74, 21, 37, 0.1) !important;
+        }
+
         /* 3. Luxury Gold (Elegant Wedding) */
         .theme-luxury_gold .screen-home {
             background-color: #0b132b !important;
@@ -1665,75 +1764,183 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             background-color: #0b132b !important;
         }
 
-        /* 4. Retro Arcade (8-Bit Vaporwave) */
-        .theme-retro_arcade .screen-home {
-            background-color: #0c001a !important;
-            background-image: 
-                linear-gradient(rgba(223, 0, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(223, 0, 255, 0.1) 1px, transparent 1px) !important;
-            background-size: 25px 25px !important;
-            border: 4px solid #df00ff !important;
+        /* 4. Minimal Modern (Clean & Creative) */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap');
+
+        .theme-minimal_modern .screen-home {
+            background-color: #05050a !important;
+            overflow: hidden !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
             border-radius: 18px !important;
+            display: flex !important;
+            flex-direction: row-reverse !important;
+            align-items: center !important;
+            justify-content: space-around !important;
+            padding: 40px !important;
         }
-        .theme-retro_arcade .screen-home::before {
-            content: "🍒" !important;
+        /* Floating background blobs */
+        .theme-minimal_modern .screen-home::before {
+            content: "" !important;
+            position: absolute !important;
+            width: 300px !important;
+            height: 300px !important;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%) !important;
+            top: -50px !important;
+            left: -50px !important;
+            filter: blur(50px) !important;
+            animation: blobFloat1 18s infinite alternate ease-in-out !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
+        }
+        .theme-minimal_modern .screen-home::after {
+            content: "" !important;
+            position: absolute !important;
+            width: 350px !important;
+            height: 350px !important;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%) !important;
+            bottom: -80px !important;
+            right: -80px !important;
+            filter: blur(60px) !important;
+            animation: blobFloat2 22s infinite alternate ease-in-out !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
+        }
+        @keyframes blobFloat1 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(120px, 80px) scale(1.15); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes blobFloat2 {
+            0% { transform: translate(0, 0) scale(1.1); }
+            50% { transform: translate(-100px, -120px) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1.1); }
+        }
+
+        .theme-minimal_modern .home-logo-box {
             position: absolute !important;
             top: 40px !important;
-            right: 180px !important;
-            font-size: 1.8rem !important;
-            animation: floatText 2s infinite ease-in-out !important;
-            z-index: 8 !important;
+            left: 50px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 8px !important;
+            align-items: center !important;
+            z-index: 10 !important;
         }
-        .theme-retro_arcade .screen-home::after {
-            content: "👾" !important;
+        .theme-minimal_modern .home-logo-part1 {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 1.35rem !important;
+            font-weight: 900 !important;
+            color: #ffffff !important;
+            letter-spacing: 2px !important;
+            text-transform: uppercase !important;
+            opacity: 1 !important;
+            animation: none !important;
+        }
+        .theme-minimal_modern .home-logo-part2 {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 1.35rem !important;
+            font-weight: 300 !important;
+            color: #06b6d4 !important;
+            letter-spacing: 2px !important;
+            text-transform: uppercase !important;
+            margin-top: 0 !important;
+            opacity: 1 !important;
+            animation: none !important;
+        }
+
+        .theme-minimal_modern .home-center {
             position: absolute !important;
-            bottom: 35px !important;
-            left: 40px !important;
-            font-size: 1.8rem !important;
-            animation: floatText 3s infinite ease-in-out !important;
-            z-index: 8 !important;
+            left: 50px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            align-items: flex-start !important;
+            margin-top: 0 !important;
+            gap: 24px !important;
+            z-index: 10 !important;
         }
-        .theme-retro_arcade .home-logo-part1 {
-            font-family: 'Press Start 2P', monospace !important;
+        .theme-minimal_modern .btn-start {
+            background: linear-gradient(135deg, #6366f1, #06b6d4) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+            border-radius: 30px !important;
+            font-family: 'Outfit', sans-serif !important;
             font-size: 1.25rem !important;
-            color: #00f0ff !important;
-            text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff !important;
+            font-weight: 700 !important;
+            padding: 16px 48px !important;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35) !important;
+            letter-spacing: 2px !important;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+            opacity: 1 !important;
+            position: relative !important;
+            overflow: hidden !important;
+            animation: shineBtnStart 4s infinite !important;
         }
-        .theme-retro_arcade .home-logo-part2 {
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 1.25rem !important;
-            color: #df00ff !important;
-            text-shadow: 0 0 10px #df00ff, 0 0 20px #df00ff !important;
-            margin-top: 6px !important;
+        @keyframes shineBtnStart {
+            0% { box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35); }
+            50% { box-shadow: 0 10px 35px rgba(6, 182, 212, 0.55); }
+            100% { box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35); }
         }
-        .theme-retro_arcade .btn-start {
-            background-color: black !important;
-            color: #00f0ff !important;
-            border: 4px solid #df00ff !important;
-            border-radius: 0 !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 1rem !important;
-            box-shadow: 0 0 15px #df00ff !important;
-            letter-spacing: 0px !important;
-            animation: pulseArcadeBtn 1s infinite alternate !important;
+        .theme-minimal_modern .btn-start::after {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: -100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent) !important;
+            animation: shineEffect 3s infinite ease-in-out !important;
+        }
+        @keyframes shineEffect {
+            0% { left: -100%; }
+            15% { left: 100%; }
+            100% { left: 100%; }
+        }
+        .theme-minimal_modern .btn-start:hover {
+            transform: translateY(-4px) scale(1.05) !important;
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6) !important;
+        }
+        .theme-minimal_modern .home-slogan {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.9rem !important;
+            font-weight: 400 !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+            letter-spacing: 3px !important;
+            text-transform: uppercase !important;
+            text-shadow: none !important;
+            animation: none !important;
             opacity: 1 !important;
         }
-        @keyframes pulseArcadeBtn {
-            0% { border-color: #df00ff; box-shadow: 0 0 10px #df00ff; color: #00f0ff; }
-            100% { border-color: #00f0ff; box-shadow: 0 0 20px #00f0ff; color: #df00ff; }
+
+        .theme-minimal_modern .home-strip-container {
+            position: absolute !important;
+            right: 60px !important;
+            top: 10% !important;
+            width: 220px !important;
+            height: 520px !important;
+            background: rgba(255, 255, 255, 0.04) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4) !important;
+            transform: rotate(4deg) !important;
+            z-index: 5 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 12px !important;
+            gap: 12px !important;
+            opacity: 1 !important;
+            animation: floatStripSim 6s infinite ease-in-out !important;
         }
-        .theme-retro_arcade .home-slogan {
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.55rem !important;
-            color: #00f0ff !important;
-            text-shadow: 0 0 5px #00f0ff !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0px !important;
+        @keyframes floatStripSim {
+            0% { transform: translateY(0px) rotate(4deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(4deg); }
         }
-        .theme-retro_arcade .home-strip-container {
-            border: 4px solid #df00ff !important;
-            box-shadow: 0 0 20px rgba(223, 0, 255, 0.4) !important;
-            background-color: black !important;
+        .theme-minimal_modern .strip-pic {
+            border-radius: 16px !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
         }
 
         /* ------------------------------------------------------------- */
@@ -1941,6 +2148,180 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
         }
 
         /* ------------------------------------------------------------- */
+        /* CUTE NARA OVERRIDES FOR ALL SCREENS */
+        /* ------------------------------------------------------------- */
+        .theme-cute_nara {
+            background-color: #fff0f5 !important;
+            font-family: 'Fredoka', sans-serif !important;
+        }
+        .theme-cute_nara .kiosk-screen {
+            background-color: #fff0f5 !important;
+            background-image: radial-gradient(#ffb3c6 1.5px, transparent 1.5px) !important;
+            background-size: 25px 25px !important;
+        }
+        .theme-cute_nara .screen-header-back {
+            background-color: #ffe5ec !important;
+            border-bottom: 4px solid #ff7597 !important;
+        }
+        .theme-cute_nara .screen-title {
+            color: #4a1525 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_nara .btn-back {
+            color: #ff7597 !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-weight: 700 !important;
+        }
+        .theme-cute_nara .layout-card, 
+        .theme-cute_nara .frame-card {
+            background-color: #fff9fa !important;
+            border: 4px solid #ff7597 !important;
+            border-radius: 20px !important;
+            box-shadow: 4px 4px 0 #4a1525 !important;
+            color: #4a1525 !important;
+        }
+        .theme-cute_nara .layout-card:hover,
+        .theme-cute_nara .frame-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 6px 6px 0 #4a1525 !important;
+            border-color: #ffb3c6 !important;
+        }
+        .theme-cute_nara .layout-icon {
+            background-color: #ffe5ec !important;
+            border: 3px solid #ff7597 !important;
+            color: #ff7597 !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_nara .layout-desc {
+            color: #8b5d6c !important;
+        }
+        .theme-cute_nara .frame-card-preview {
+            background-color: #ffe5ec !important;
+            border: 2px solid #ff7597 !important;
+            border-radius: 8px !important;
+        }
+        .theme-cute_nara .frame-card-name {
+            color: #4a1525 !important;
+        }
+        .theme-cute_nara .camera-slots-bar {
+            background-color: #ffe5ec !important;
+            border-left: 4px solid #ff7597 !important;
+        }
+        .theme-cute_nara .camera-rec-badge {
+            background-color: #ff7597 !important;
+            color: white !important;
+            border: 2px solid white !important;
+        }
+        .theme-cute_nara .capture-slot-box {
+            border: 3px solid #ff7597 !important;
+            background-color: #fff9fa !important;
+        }
+        .theme-cute_nara .capture-slot-box.active {
+            border-color: #ff7597 !important;
+            box-shadow: 0 0 12px #ff7597 !important;
+        }
+        .theme-cute_nara .capture-slot-box.captured {
+            border-color: #95d5b2 !important;
+        }
+        .theme-cute_nara .camera-trigger-btn,
+        .theme-cute_nara .camera-trigger-btn-floating {
+            background-color: #ff7597 !important;
+            color: white !important;
+            border: 4px solid white !important;
+            box-shadow: 0 6px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .camera-trigger-btn:hover {
+            box-shadow: 0 8px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .section-title {
+            color: #4a1525 !important;
+            border-bottom: 2px solid #ff7597 !important;
+        }
+        .theme-cute_nara .preview-controllers {
+            background-color: #ffe5ec !important;
+            border-top: 4px solid #ff7597 !important;
+        }
+        .theme-cute_nara .btn-confirm {
+            background-color: #ff7597 !important;
+            color: white !important;
+            border: 3px solid white !important;
+            box-shadow: 0 4px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .btn-retake {
+            background-color: #ffe5ec !important;
+            color: #ff7597 !important;
+            border: 3px solid #ff7597 !important;
+            box-shadow: 0 4px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .btn-confirm:hover,
+        .theme-cute_nara .btn-retake:hover {
+            transform: translateY(-2px) !important;
+        }
+        .theme-cute_nara .btn-clear-canvas {
+            background-color: #ffe5ec !important;
+            color: #ff7597 !important;
+            border: 2px solid #ff7597 !important;
+        }
+        .theme-cute_nara .stitched-canvas-container {
+            background-color: #fff9fa !important;
+            border: 6px double #ff7597 !important;
+        }
+        .theme-cute_nara .share-info-panel {
+            background-color: #fff9fa !important;
+            border: 4px solid #ff7597 !important;
+            box-shadow: 6px 6px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .share-info-panel h2 {
+            color: #4a1525 !important;
+        }
+        .theme-cute_nara .share-qr-container {
+            background-color: white !important;
+            border: 3px solid #ff7597 !important;
+        }
+        .theme-cute_nara .btn-open-portal {
+            background-color: #95d5b2 !important;
+            color: #2d6a4f !important;
+            border: 3px solid #2d6a4f !important;
+        }
+        .theme-cute_nara .btn-finish {
+            background-color: #ff7597 !important;
+            color: white !important;
+            border: 3px solid white !important;
+            box-shadow: 0 4px 0 #4a1525 !important;
+        }
+        .theme-cute_nara .sim-dialog {
+            background-color: #fff9fa !important;
+            border: 4px solid #ff7597 !important;
+            border-radius: 20px !important;
+            box-shadow: 0 10px 0 rgba(74,21,37,0.15) !important;
+        }
+        .theme-cute_nara .sim-dialog-title {
+            color: #4a1525 !important;
+        }
+        .theme-cute_nara .sim-dialog-desc {
+            color: #8b5d6c !important;
+        }
+        .theme-cute_nara .sim-dialog-input {
+            background-color: #ffe5ec !important;
+            border: 3px solid #ff7597 !important;
+            color: #4a1525 !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_nara .btn-dialog-confirm {
+            background-color: #ff7597 !important;
+            color: white !important;
+            border: 3px solid white !important;
+            border-radius: 12px !important;
+        }
+        .theme-cute_nara .btn-dialog-cancel {
+            background-color: #ffe5ec !important;
+            color: #ff7597 !important;
+            border: 3px solid #ff7597 !important;
+            border-radius: 12px !important;
+        }
+
+        /* ------------------------------------------------------------- */
         /* LUXURY GOLD OVERRIDES FOR ALL SCREENS */
         /* ------------------------------------------------------------- */
         .theme-luxury_gold {
@@ -2131,224 +2512,926 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
         }
 
         /* ------------------------------------------------------------- */
-        /* RETRO ARCADE OVERRIDES FOR ALL SCREENS */
+        /* MINIMAL MODERN OVERRIDES FOR ALL SCREENS */
         /* ------------------------------------------------------------- */
-        .theme-retro_arcade {
-            background-color: #0c001a !important;
-            font-family: 'Press Start 2P', monospace !important;
+        .theme-minimal_modern {
+            background-color: #05050a !important;
+            font-family: 'Outfit', sans-serif !important;
         }
-        .theme-retro_arcade .kiosk-screen {
-            background-color: #0c001a !important;
-            background-image: 
-                linear-gradient(rgba(223, 0, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(223, 0, 255, 0.1) 1px, transparent 1px) !important;
-            background-size: 25px 25px !important;
+        .theme-minimal_modern .kiosk-screen {
+            background-color: #05050a !important;
+            background-image: none !important;
         }
-        .theme-retro_arcade .screen-header-back {
-            background-color: black !important;
-            border-bottom: 4px solid #df00ff !important;
+        .theme-minimal_modern .screen-header-back {
+            background-color: rgba(15, 23, 42, 0.75) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
-        .theme-retro_arcade .screen-title {
-            color: #00f0ff !important;
-            font-family: 'Press Start 2P', monospace !important;
+        .theme-minimal_modern .screen-title {
+            color: #ffffff !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
+        }
+        .theme-minimal_modern .btn-back {
+            color: #06b6d4 !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+        }
+        .theme-minimal_modern .layout-card, 
+        .theme-minimal_modern .frame-card {
+            background-color: rgba(15, 23, 42, 0.55) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            color: #ffffff !important;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        }
+        .theme-minimal_modern .layout-card:hover,
+        .theme-minimal_modern .frame-card:hover {
+            border-color: #6366f1 !important;
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.25) !important;
+            transform: translateY(-4px) !important;
+        }
+        .theme-minimal_modern .layout-icon {
+            background-color: rgba(99, 102, 241, 0.1) !important;
+            border: none !important;
+            color: #6366f1 !important;
+            border-radius: 12px !important;
+        }
+        .theme-minimal_modern .layout-desc {
+            color: rgba(255, 255, 255, 0.5) !important;
             font-size: 0.75rem !important;
-            text-shadow: 0 0 5px #00f0ff !important;
-        }
-        .theme-retro_arcade .btn-back {
-            color: #df00ff !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.6rem !important;
-            text-shadow: 0 0 5px #df00ff !important;
-        }
-        .theme-retro_arcade .layout-card, 
-        .theme-retro_arcade .frame-card {
-            background-color: black !important;
-            border: 3px solid #df00ff !important;
-            border-radius: 0px !important;
-            box-shadow: 0 0 10px rgba(223, 0, 255, 0.3) !important;
-            color: #00f0ff !important;
-        }
-        .theme-retro_arcade .layout-card:hover,
-        .theme-retro_arcade .frame-card:hover {
-            border-color: #00f0ff !important;
-            box-shadow: 0 0 15px #00f0ff !important;
-            transform: scale(1.02) !important;
-        }
-        .theme-retro_arcade .layout-icon {
-            background-color: transparent !important;
-            border: 2px solid #00f0ff !important;
-            color: #df00ff !important;
-            border-radius: 0px !important;
-        }
-        .theme-retro_arcade .layout-desc {
-            color: white !important;
-            font-size: 0.55rem !important;
             line-height: 1.6 !important;
         }
-        .theme-retro_arcade .frame-card-preview {
-            background-color: black !important;
-            border: 2px solid #df00ff !important;
-            border-radius: 0px !important;
+        .theme-minimal_modern .frame-card-preview {
+            background-color: rgba(5, 5, 10, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 12px !important;
         }
-        .theme-retro_arcade .frame-card-name {
-            color: #00f0ff !important;
-            font-size: 0.6rem !important;
+        .theme-minimal_modern .frame-card-name {
+            color: #ffffff !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
         }
-        .theme-retro_arcade .camera-slots-bar {
-            background-color: black !important;
-            border-left: 4px solid #df00ff !important;
+        .theme-minimal_modern .camera-slots-bar {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
-        .theme-retro_arcade .camera-rec-badge {
-            background-color: black !important;
-            color: #ff0055 !important;
-            border: 2px solid #ff0055 !important;
-            border-radius: 0px !important;
-            text-shadow: 0 0 5px #ff0055 !important;
+        .theme-minimal_modern .camera-rec-badge {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+            border: 1px solid #ef4444 !important;
+            border-radius: 20px !important;
+            font-weight: 600 !important;
         }
-        .theme-retro_arcade .capture-slot-box {
-            background-color: black !important;
-            border: 2px dashed #df00ff !important;
-            border-radius: 0px !important;
+        .theme-minimal_modern .capture-slot-box {
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            border: 1px dashed rgba(255, 255, 255, 0.15) !important;
+            border-radius: 12px !important;
         }
-        .theme-retro_arcade .capture-slot-box.active {
-            border-color: #00f0ff !important;
+        .theme-minimal_modern .capture-slot-box.active {
+            border-color: #06b6d4 !important;
             border-style: solid !important;
-            box-shadow: 0 0 10px #00f0ff !important;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3) !important;
         }
-        .theme-retro_arcade .capture-slot-box.captured {
-            border-color: #df00ff !important;
+        .theme-minimal_modern .capture-slot-box.captured {
+            border-color: #6366f1 !important;
             border-style: solid !important;
         }
-        .theme-retro_arcade .camera-trigger-btn,
-        .theme-retro_arcade .camera-trigger-btn-floating {
-            background-color: black !important;
-            color: #00f0ff !important;
-            border: 3px solid #df00ff !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.65rem !important;
-            box-shadow: 0 0 10px #df00ff !important;
+        .theme-minimal_modern .camera-trigger-btn,
+        .theme-minimal_modern .camera-trigger-btn-floating {
+            background: linear-gradient(135deg, #6366f1, #06b6d4) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
+            transition: all 0.3s ease !important;
         }
-        .theme-retro_arcade .camera-trigger-btn:hover {
-            color: #df00ff !important;
-            border-color: #00f0ff !important;
-            box-shadow: 0 0 15px #00f0ff !important;
+        .theme-minimal_modern .camera-trigger-btn:hover {
+            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.5) !important;
+            transform: translateY(-2px) !important;
         }
-        .theme-retro_arcade .section-title {
-            color: #df00ff !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.6rem !important;
-            text-shadow: 0 0 5px #df00ff !important;
+        .theme-minimal_modern .section-title {
+            color: #ffffff !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 1px !important;
+            text-transform: uppercase !important;
         }
-        .theme-retro_arcade .preview-controllers {
-            background-color: black !important;
-            border-left: 4px solid #df00ff !important;
+        .theme-minimal_modern .preview-controllers {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
-        .theme-retro_arcade .btn-confirm {
-            background-color: black !important;
-            color: #39ff14 !important;
-            border: 3px solid #39ff14 !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.6rem !important;
-            box-shadow: 0 0 10px #39ff14 !important;
+        .theme-minimal_modern .btn-confirm {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25) !important;
         }
-        .theme-retro_arcade .btn-retake {
-            background-color: black !important;
-            color: #ff0055 !important;
-            border: 3px solid #ff0055 !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.6rem !important;
-            box-shadow: 0 0 10px #ff0055 !important;
+        .theme-minimal_modern .btn-retake {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25) !important;
         }
-        .theme-retro_arcade .btn-confirm:hover,
-        .theme-retro_arcade .btn-retake:hover {
-            transform: scale(1.02) !important;
+        .theme-minimal_modern .btn-confirm:hover,
+        .theme-minimal_modern .btn-retake:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.3) !important;
         }
-        .theme-retro_arcade .btn-clear-canvas {
-            background-color: black !important;
-            color: #df00ff !important;
-            border: 2px solid #df00ff !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.5rem !important;
-        }
-        .theme-retro_arcade .stitched-canvas-container {
-            border: 4px solid #df00ff !important;
-            box-shadow: 0 0 20px rgba(223, 0, 255, 0.4) !important;
-        }
-        .theme-retro_arcade .share-info-panel {
-            background-color: black !important;
-            border-left: 4px solid #df00ff !important;
-            color: #00f0ff !important;
-        }
-        .theme-retro_arcade .share-info-panel h2 {
-            color: #00f0ff !important;
-            font-family: 'Press Start 2P', monospace !important;
+        .theme-minimal_modern .btn-clear-canvas {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            color: rgba(255, 255, 255, 0.7) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            font-family: 'Outfit', sans-serif !important;
             font-size: 0.75rem !important;
-            text-shadow: 0 0 5px #00f0ff !important;
         }
-        .theme-retro_arcade .share-qr-container {
+        .theme-minimal_modern .stitched-canvas-container {
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35) !important;
+        }
+        .theme-minimal_modern .share-info-panel {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+        }
+        .theme-minimal_modern .share-info-panel h2 {
+            color: #ffffff !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+        }
+        .theme-minimal_modern .share-qr-container {
             background-color: white !important;
-            border: 4px solid #df00ff !important;
-            border-radius: 0px !important;
-            box-shadow: 0 0 15px rgba(223, 0, 255, 0.3) !important;
+            border: 6px solid white !important;
+            border-radius: 16px !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2) !important;
         }
-        .theme-retro_arcade .btn-open-portal {
-            background-color: black !important;
-            color: #df00ff !important;
-            border: 3px solid #df00ff !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.65rem !important;
-            box-shadow: 0 0 10px #df00ff !important;
-        }
-        .theme-retro_arcade .btn-finish {
-            background-color: black !important;
-            color: #00f0ff !important;
-            border: 3px solid #00f0ff !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.65rem !important;
-            box-shadow: 0 0 10px #00f0ff !important;
-        }
-        .theme-retro_arcade .sim-dialog {
-            background-color: black !important;
-            border: 4px solid #df00ff !important;
-            border-radius: 0px !important;
-            color: #00f0ff !important;
-        }
-        .theme-retro_arcade .sim-dialog-title {
-            color: #df00ff !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.75rem !important;
-            text-shadow: 0 0 5px #df00ff !important;
-        }
-        .theme-retro_arcade .sim-dialog-desc {
+        .theme-minimal_modern .btn-open-portal {
+            background: rgba(255, 255, 255, 0.05) !important;
             color: white !important;
-            font-size: 0.55rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 30px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+        }
+        .theme-minimal_modern .btn-finish {
+            background: linear-gradient(135deg, #6366f1, #06b6d4) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
+        }
+        .theme-minimal_modern .sim-dialog {
+            background-color: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 20px !important;
+            color: #ffffff !important;
+        }
+        .theme-minimal_modern .sim-dialog-title {
+            color: #ffffff !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+        }
+        .theme-minimal_modern .sim-dialog-desc {
+            color: rgba(255, 255, 255, 0.6) !important;
+            font-size: 0.85rem !important;
             line-height: 1.6 !important;
         }
-        .theme-retro_arcade .sim-dialog-input {
-            background-color: #0c001a !important;
-            border: 2px solid #00f0ff !important;
+        .theme-minimal_modern .sim-dialog-input {
+            background-color: rgba(5, 5, 10, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
             color: white !important;
-            border-radius: 0px !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 0.6rem !important;
+            border-radius: 10px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.9rem !important;
+            padding: 10px 14px !important;
         }
-        .theme-retro_arcade .btn-dialog-confirm {
-            background-color: black !important;
-            color: #00f0ff !important;
-            border: 2px solid #00f0ff !important;
-            border-radius: 0px !important;
+        .theme-minimal_modern .btn-dialog-confirm {
+            background: linear-gradient(135deg, #6366f1, #06b6d4) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
         }
-        .theme-retro_arcade .btn-dialog-cancel {
-            background-color: black !important;
-            color: #ff0055 !important;
-            border: 2px solid #ff0055 !important;
-            border-radius: 0px !important;
+        .theme-minimal_modern .btn-dialog-cancel {
+            background-color: transparent !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* COMIC POP-ART THEME (COMIC_POP) OVERRIDES */
+        /* ------------------------------------------------------------- */
+        @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Bangers&display=swap');
+
+        /* Theme Base Styling */
+        .theme-comic_pop {
+            background-color: #f7eedb !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+        }
+
+        .theme-comic_pop .kiosk-screen {
+            background-color: #f7eedb !important;
+            background-image: radial-gradient(rgba(0,0,0,0.12) 15%, transparent 16%) !important;
+            background-size: 16px 16px !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+        }
+
+        /* Home Screen Backdrop */
+        .theme-comic_pop .screen-home {
+            border: 8px solid #000 !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+            background-image:
+                radial-gradient(rgba(0,0,0,0.15) 15%, transparent 16%),
+                linear-gradient(to right, transparent calc(33.33% - 4px), #000 calc(33.33% - 4px), #000 calc(33.33% + 4px), transparent calc(33.33% + 4px), transparent calc(66.66% - 4px), #000 calc(66.66% - 4px), #000 calc(66.66% + 4px), transparent calc(66.66% + 4px)),
+                repeating-conic-gradient(from 0deg at 50% 50%, #e03f15 0deg 12deg, #f0542c 12deg 24deg),
+                repeating-conic-gradient(from 0deg at 50% 50%, #026ebd 0deg 12deg, #0183e2 12deg 24deg),
+                repeating-conic-gradient(from 0deg at 50% 50%, #f5cb03 0deg 12deg, #ffd814 12deg 24deg) !important;
+            background-size:
+                12px 12px,
+                100% 100%,
+                33.33% 100%,
+                33.34% 100%,
+                33.33% 100% !important;
+            background-position:
+                left top,
+                left top,
+                left top,
+                center top,
+                right top !important;
+            background-repeat:
+                repeat,
+                no-repeat,
+                no-repeat,
+                no-repeat,
+                no-repeat !important;
+        }
+
+        /* Puffy Comic Clouds */
+        .theme-comic_pop .screen-home::before {
+            content: "" !important;
+            position: absolute !important;
+            top: -15px !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 110px !important;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'><path d='M-10,0 L1210,0 L1210,50 C1180,30 1140,25 1110,40 C1080,20 1030,20 1000,40 C970,25 920,25 890,45 C860,20 810,20 780,45 C750,25 700,25 670,45 C640,20 590,20 560,45 C530,25 480,25 450,45 C420,20 370,20 340,45 C310,25 260,25 230,45 C200,20 150,20 120,40 C90,25 50,30 20,50 C5,55 -5,55 -10,50 Z' fill='white' stroke='black' stroke-width='6'/></svg>") !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+            z-index: 2 !important;
+            pointer-events: none !important;
+        }
+
+        .theme-comic_pop .screen-home::after {
+            content: "" !important;
+            position: absolute !important;
+            bottom: -15px !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 110px !important;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'><path d='M-10,120 L1210,120 L1210,70 C1180,90 1140,95 1110,80 C1080,100 1030,100 1000,80 C970,95 920,95 890,75 C860,100 810,100 780,75 C750,95 700,95 670,75 C640,100 590,100 560,75 C530,95 480,95 450,75 C420,100 370,100 340,75 C310,95 260,95 230,75 C200,100 150,100 120,80 C90,95 50,90 20,70 C5,65 -5,65 -10,70 Z' fill='white' stroke='black' stroke-width='6'/></svg>") !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+            z-index: 2 !important;
+            pointer-events: none !important;
+        }
+
+        /* Comic Header Branding */
+        .theme-comic_pop .home-logo-box {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            margin-top: 40px !important;
+            z-index: 10 !important;
+            transform: rotate(-1.5deg) !important;
+            animation: comicWobbleHeader 4s ease-in-out infinite alternate !important;
+            cursor: pointer;
+        }
+
+        @keyframes comicWobbleHeader {
+            0% { transform: rotate(-2.5deg) scale(0.98); }
+            100% { transform: rotate(1.5deg) scale(1.02); }
+        }
+
+        .theme-comic_pop .home-logo-part1,
+        .theme-comic_pop .home-logo-part2 {
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: clamp(2.2rem, 5.5vw, 4.2rem) !important;
+            letter-spacing: 2px !important;
+            line-height: 1.1 !important;
+            text-align: center !important;
+            display: block !important;
+            width: 100% !important;
+        }
+
+        .theme-comic_pop .home-logo-part1 {
+            color: #fff300 !important;
+            -webkit-text-stroke: 3px #000 !important;
+            text-shadow: 5px 5px 0 #000 !important;
+        }
+
+        .theme-comic_pop .home-logo-part2 {
+            color: #ff2a85 !important;
+            -webkit-text-stroke: 3px #000 !important;
+            text-shadow: 5px 5px 0 #000 !important;
+        }
+
+        .theme-comic_pop .txt-pink {
+            color: #ff2a85 !important;
+            -webkit-text-stroke: 3px #000 !important;
+            text-shadow: 5px 5px 0 #000 !important;
+        }
+
+        .theme-comic_pop .txt-blue {
+            color: #00bfff !important;
+            -webkit-text-stroke: 3px #000 !important;
+            text-shadow: 5px 5px 0 #000 !important;
+            margin-left: 10px !important;
+        }
+
+        .theme-comic_pop .txt-yellow {
+            color: #fff300 !important;
+            -webkit-text-stroke: 3px #000 !important;
+            text-shadow: 5px 5px 0 #000 !important;
+            margin-left: 10px !important;
+        }
+
+        .theme-comic_pop .txt-white {
+            color: #ffffff !important;
+            -webkit-text-stroke: 3px #000 !important;
+            text-shadow: 5px 5px 0 #000 !important;
+            margin-left: 10px !important;
+        }
+
+        /* Comic Decorations */
+        .comic-star-decor {
+            position: absolute !important;
+            width: 65px !important;
+            height: 65px !important;
+            z-index: 3 !important;
+            pointer-events: none !important;
+            animation: comicSpin 10s linear infinite !important;
+        }
+        .decor-star1 {
+            top: 25% !important;
+            left: 28% !important;
+        }
+        .decor-star2 {
+            top: 30% !important;
+            right: 28% !important;
+        }
+        @keyframes comicSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .comic-bubble-pow {
+            position: absolute !important;
+            top: 25% !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 110px !important;
+            height: 90px !important;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'><polygon points='50,5 65,25 85,15 80,35 98,35 83,52 95,70 73,63 70,83 55,70 45,83 38,68 20,78 23,58 3,60 18,45 5,25 28,30 28,10 43,23' fill='%23ff00ff' stroke='black' stroke-width='4'/></svg>") !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+            z-index: 3 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            animation: comicPowPulse 1.8s ease-in-out infinite alternate !important;
+            pointer-events: none !important;
+        }
+        .comic-bubble-pow::after {
+            content: "POW!" !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            color: #fff !important;
+            font-size: 1.4rem !important;
+            -webkit-text-stroke: 1.2px #000 !important;
+            text-shadow: 2px 2px 0 #000 !important;
+            transform: rotate(-10deg) !important;
+        }
+        @keyframes comicPowPulse {
+            0% { transform: translateX(-50%) scale(0.9) rotate(-10deg); }
+            100% { transform: translateX(-50%) scale(1.1) rotate(10deg); }
+        }
+
+        /* Slogan (PHOTOBOOTH!!!) */
+        .theme-comic_pop .home-slogan {
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            color: #ffffff !important;
+            font-size: 2.2rem !important;
+            -webkit-text-stroke: 1.5px #000 !important;
+            text-shadow: 4px 4px 0 #000 !important;
+            letter-spacing: 2px !important;
+            margin-top: 15px !important;
+            transform: rotate(-2deg) !important;
+            background-color: #000 !important;
+            padding: 4px 20px !important;
+            border-radius: 4px !important;
+            border: 3px solid #fff !important;
+            display: inline-block !important;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5) !important;
+            z-index: 4 !important;
+        }
+
+        /* Center start button styling */
+        .theme-comic_pop .home-center {
+            z-index: 4 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .theme-comic_pop .btn-start {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            width: auto !important;
+            height: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            animation: comicStartPulse 2s ease-in-out infinite !important;
+            transition: transform 0.2s !important;
+            cursor: pointer;
+        }
+
+        .theme-comic_pop .btn-start:hover {
+            transform: scale(1.1) !important;
+        }
+
+        .theme-comic_pop .btn-start:active {
+            transform: scale(0.95) !important;
+        }
+
+        @keyframes comicStartPulse {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.06) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .theme-comic_pop .comic-start-inner {
+            position: relative !important;
+            background-color: #000 !important;
+            padding: 4px !important;
+            clip-path: polygon(50% 0%, 63% 13%, 81% 6%, 83% 25%, 99% 23%, 92% 41%, 100% 57%, 87% 68%, 90% 87%, 72% 86%, 66% 100%, 50% 89%, 34% 100%, 28% 86%, 10% 87%, 13% 68%, 0% 57%, 8% 41%, 1% 23%, 17% 25%, 19% 6%, 37% 13%) !important;
+            width: 140px !important;
+            height: 140px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 10px 0 #000 !important;
+        }
+
+        .theme-comic_pop .comic-start-inner::after {
+            content: "" !important;
+            position: absolute !important;
+            top: 4px !important; left: 4px !important; right: 4px !important; bottom: 4px !important;
+            background-color: #ff2a5f !important;
+            clip-path: polygon(50% 0%, 63% 13%, 81% 6%, 83% 25%, 99% 23%, 92% 41%, 100% 57%, 87% 68%, 90% 87%, 72% 86%, 66% 100%, 50% 89%, 34% 100%, 28% 86%, 10% 87%, 13% 68%, 0% 57%, 8% 41%, 1% 23%, 17% 25%, 19% 6%, 37% 13%) !important;
+            z-index: 1 !important;
+        }
+
+        .theme-comic_pop .comic-start-inner i {
+            position: relative !important;
+            z-index: 2 !important;
+            color: #fff !important;
+            font-size: 3.2rem !important;
+            text-shadow: 2.5px 2.5px 0 #000 !important;
+        }
+
+        .theme-comic_pop .comic-start-text {
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            color: #fff !important;
+            font-size: 2.5rem !important;
+            -webkit-text-stroke: 1.5px #000 !important;
+            text-shadow: 4px 4px 0 #000 !important;
+            margin-top: 10px !important;
+        }
+
+        /* Comic Popups */
+        @keyframes comicFloat {
+            0% { transform: translateY(0) rotate(-3deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+            100% { transform: translateY(0) rotate(-3deg); }
+        }
+
+        .comic-bubble-left {
+            position: absolute !important;
+            top: 55% !important;
+            left: 5% !important;
+            width: 140px !important;
+            height: 110px !important;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'><polygon points='50,5 60,20 78,10 75,30 95,30 82,48 95,65 75,60 78,78 60,68 50,80 40,68 22,78 25,60 5,65 18,48 5,30 25,30 22,10 40,20' fill='%2300ffcc' stroke='black' stroke-width='4'/></svg>") !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+            z-index: 3 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            animation: comicFloat 3s ease-in-out infinite !important;
+            cursor: pointer;
+        }
+
+        .comic-bubble-left::after {
+            content: "YEAH!" !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            color: #fff !important;
+            font-size: 1.8rem !important;
+            -webkit-text-stroke: 1.5px #000 !important;
+            text-shadow: 2px 2px 0 #000 !important;
+            transform: rotate(-5deg) !important;
+        }
+
+        .comic-bubble-right {
+            position: absolute !important;
+            top: 52% !important;
+            right: 5% !important;
+            width: 150px !important;
+            height: 120px !important;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'><polygon points='50,5 62,22 80,12 77,32 97,32 84,50 97,68 77,63 80,81 62,71 50,83 38,71 20,81 23,63 3,68 16,50 3,32 23,32 20,12 38,22' fill='%23ff3300' stroke='black' stroke-width='4'/></svg>") !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+            z-index: 3 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            animation: comicFloat 2.6s ease-in-out infinite alternate !important;
+            cursor: pointer;
+        }
+
+        .comic-bubble-right::after {
+            content: "BANG!" !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            color: #fff !important;
+            font-size: 1.9rem !important;
+            -webkit-text-stroke: 1.5px #000 !important;
+            text-shadow: 2px 2px 0 #000 !important;
+            transform: rotate(5deg) !important;
+        }
+
+        /* Floating Ticket Launcher override */
+        .theme-comic_pop .ticket-launcher {
+            background-color: #fff300 !important;
+            border: 4px solid #000 !important;
+            color: #000 !important;
+            box-shadow: 4px 4px 0 #000 !important;
+            font-size: 1.6rem !important;
+        }
+        .theme-comic_pop .ticket-launcher:hover {
+            transform: scale(1.1) !important;
+        }
+
+        /* Photo strip overlay styling */
+        .theme-comic_pop .home-strip-container {
+            background-color: #fff !important;
+            border: 5px solid #000 !important;
+            box-shadow: 6px 6px 0 #000 !important;
+            border-radius: 4px !important;
+        }
+
+        .theme-comic_pop .strip-pic {
+            border: 4px solid #000 !important;
+            border-radius: 2px !important;
+            background-color: #f7eedb !important;
+            box-shadow: 4px 4px 0 #000 !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* GENERAL SCREEN OVERRIDES FOR COMIC POP-ART */
+        /* ------------------------------------------------------------- */
+
+        .theme-comic_pop .screen-header-back {
+            background-color: #fff300 !important;
+            border-bottom: 5px solid #000 !important;
+            padding: 15px !important;
+        }
+
+        .theme-comic_pop .screen-title {
+            color: #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.8rem !important;
+            -webkit-text-stroke: 1.2px #000 !important;
+            text-shadow: 2px 2px 0 #fff !important;
+            letter-spacing: 1.5px !important;
+        }
+
+        .theme-comic_pop .btn-back {
+            color: #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.3rem !important;
+            background-color: #fff !important;
+            border: 3px solid #000 !important;
+            border-radius: 6px !important;
+            padding: 5px 12px !important;
+            box-shadow: 3px 3px 0 #000 !important;
+        }
+        .theme-comic_pop .btn-back:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 5px 5px 0 #000 !important;
+        }
+
+        /* Cards Layout */
+        .theme-comic_pop .layout-card, 
+        .theme-comic_pop .frame-card {
+            background-color: #fff !important;
+            border: 4px solid #000 !important;
+            border-radius: 12px !important;
+            box-shadow: 6px 6px 0 #000 !important;
+            color: #000 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .theme-comic_pop .layout-card:hover,
+        .theme-comic_pop .frame-card:hover {
+            transform: translate(-3px, -3px) !important;
+            box-shadow: 9px 9px 0 #000 !important;
+        }
+
+        .theme-comic_pop .layout-icon {
+            background-color: #00ffcc !important;
+            border: 3px solid #000 !important;
+            color: #000 !important;
+            border-radius: 8px !important;
+        }
+
+        .theme-comic_pop .layout-desc {
+            color: #555 !important;
+            font-family: Arial, sans-serif !important;
+            font-weight: bold !important;
+            font-size: 0.85rem !important;
+        }
+
+        .theme-comic_pop .frame-card-preview {
+            background-color: #f7eedb !important;
+            border: 3px solid #000 !important;
+            border-radius: 6px !important;
+        }
+
+        .theme-comic_pop .frame-card-name {
+            color: #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.1rem !important;
+        }
+
+        /* Camera Screen */
+        .theme-comic_pop .camera-slots-bar {
+            background-color: #fff300 !important;
+            background-image: radial-gradient(rgba(0,0,0,0.15) 15%, transparent 16%) !important;
+            background-size: 10px 10px !important;
+            border: 4px solid #000 !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+        }
+
+        .theme-comic_pop .camera-rec-badge {
+            background-color: #ff3300 !important;
+            color: white !important;
+            border: 3px solid #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            box-shadow: 3px 3px 0 #000 !important;
+        }
+
+        .theme-comic_pop .capture-slot-box {
+            border: 3px solid #000 !important;
+            background-color: #fff !important;
+            border-radius: 4px !important;
+            box-shadow: 3px 3px 0 #000 !important;
+        }
+
+        .theme-comic_pop .capture-slot-box.active {
+            border-color: #ff007f !important;
+            box-shadow: 0 0 15px #ff007f, 3px 3px 0 #000 !important;
+        }
+
+        .theme-comic_pop .capture-slot-box.captured {
+            border-color: #00ffcc !important;
+            box-shadow: 3px 3px 0 #000 !important;
+        }
+
+        .theme-comic_pop .camera-trigger-btn,
+        .theme-comic_pop .camera-trigger-btn-floating {
+            background-color: #ff2a5f !important;
+            color: white !important;
+            border: 4px solid #000 !important;
+            border-radius: 50% !important;
+            box-shadow: 0 6px 0 #000 !important;
+            transition: all 0.1s ease !important;
+        }
+
+        .theme-comic_pop .camera-trigger-btn:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 8px 0 #000 !important;
+        }
+
+        .theme-comic_pop .camera-trigger-btn:active {
+            transform: translateY(4px) !important;
+            box-shadow: 0 2px 0 #000 !important;
+        }
+
+        .theme-comic_pop .section-title {
+            color: #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            border-bottom: 3px solid #000 !important;
+            font-size: 1.3rem !important;
+        }
+
+        /* Preview Screen & Canvas Doodle */
+        .theme-comic_pop .preview-controllers {
+            background-color: #fff300 !important;
+            border-top: 5px solid #000 !important;
+            padding: 15px !important;
+        }
+
+        .theme-comic_pop .btn-confirm {
+            background-color: #00ffcc !important;
+            color: #000 !important;
+            border: 4px solid #000 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 5px 0 #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.3rem !important;
+            letter-spacing: 1px !important;
+        }
+
+        .theme-comic_pop .btn-retake {
+            background-color: #ff3300 !important;
+            color: white !important;
+            border: 4px solid #000 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 5px 0 #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.3rem !important;
+            letter-spacing: 1px !important;
+        }
+
+        .theme-comic_pop .btn-confirm:hover,
+        .theme-comic_pop .btn-retake:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 7px 0 #000 !important;
+        }
+
+        .theme-comic_pop .btn-confirm:active,
+        .theme-comic_pop .btn-retake:active {
+            transform: translateY(3px) !important;
+            box-shadow: 0 2px 0 #000 !important;
+        }
+
+        .theme-comic_pop .btn-clear-canvas {
+            background-color: #fff !important;
+            color: #000 !important;
+            border: 3px solid #000 !important;
+            border-radius: 6px !important;
+            box-shadow: 3px 3px 0 #000 !important;
+        }
+
+        .theme-comic_pop .stitched-canvas-container {
+            border: 5px solid #000 !important;
+            box-shadow: 8px 8px 0 #000 !important;
+            border-radius: 8px !important;
+            background-color: #fff !important;
+        }
+
+        /* Share Screen */
+        .theme-comic_pop .share-info-panel {
+            background-color: #fff !important;
+            border: 5px solid #000 !important;
+            border-radius: 12px !important;
+            box-shadow: 8px 8px 0 #000 !important;
+            color: #000 !important;
+        }
+
+        .theme-comic_pop .share-info-panel h2 {
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            color: #000 !important;
+            font-size: 1.8rem !important;
+            -webkit-text-stroke: 1px #000 !important;
+        }
+
+        .theme-comic_pop .share-qr-container {
+            border: 4px solid #000 !important;
+            border-radius: 8px !important;
+            background-color: #fff !important;
+            padding: 10px !important;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.15) !important;
+        }
+
+        .theme-comic_pop .btn-open-portal {
+            background-color: #00bfff !important;
+            color: white !important;
+            border: 4px solid #000 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 5px 0 #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.2rem !important;
+        }
+
+        .theme-comic_pop .btn-finish {
+            background-color: #ff2a5f !important;
+            color: white !important;
+            border: 4px solid #000 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 5px 0 #000 !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.2rem !important;
+        }
+
+        .theme-comic_pop .btn-open-portal:hover,
+        .theme-comic_pop .btn-finish:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 7px 0 #000 !important;
+        }
+
+        .theme-comic_pop .btn-open-portal:active,
+        .theme-comic_pop .btn-finish:active {
+            transform: translateY(3px) !important;
+            box-shadow: 0 2px 0 #000 !important;
+        }
+
+        /* Dialogs / Modals */
+        .theme-comic_pop .sim-dialog {
+            background-color: #fff !important;
+            border: 5px solid #000 !important;
+            border-radius: 12px !important;
+            box-shadow: 10px 10px 0 #000 !important;
+            color: #000 !important;
+        }
+
+        .theme-comic_pop .sim-dialog-title {
+            color: #ff2a5f !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            font-size: 1.4rem !important;
+            -webkit-text-stroke: 1px #000 !important;
+            text-shadow: 2px 2px 0 #000 !important;
+        }
+
+        .theme-comic_pop .sim-dialog-desc {
+            color: #444 !important;
+            font-family: Arial, sans-serif !important;
+            font-weight: bold !important;
+        }
+
+        .theme-comic_pop .sim-dialog-input {
+            border: 3px solid #000 !important;
+            background-color: #f7eedb !important;
+            color: #000 !important;
+            border-radius: 6px !important;
+            font-family: Arial, sans-serif !important;
+            font-weight: bold !important;
+        }
+
+        .theme-comic_pop .btn-dialog-confirm {
+            background-color: #00ffcc !important;
+            color: #000 !important;
+            border: 3px solid #000 !important;
+            border-radius: 6px !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            box-shadow: 3px 3px 0 #000 !important;
+        }
+
+        .theme-comic_pop .btn-dialog-cancel {
+            background-color: #ff3300 !important;
+            color: white !important;
+            border: 3px solid #000 !important;
+            border-radius: 6px !important;
+            font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
+            box-shadow: 3px 3px 0 #000 !important;
         }
     </style>
 </head>
@@ -2678,6 +3761,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
         // Server Configuration Injected from PHP
         const serverConfig = <?php echo json_encode($configData); ?>;
         const packagesList = <?php echo json_encode($packagesList); ?>;
+        const appTheme = '<?php echo $appTheme; ?>';
         
         // Local variables
         let kioskMode = 'MULTI_EVENT'; // 'MULTI_EVENT' or 'DEDICATED'
@@ -2723,6 +3807,43 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             
             // Initial logo rendering
             updateHomeScreenBranding();
+
+            // Comic Pop UI setup
+            if (appTheme === 'COMIC_POP') {
+                const home = document.getElementById('screenHome');
+                
+                const bubbleLeft = document.createElement('div');
+                bubbleLeft.className = 'comic-bubble-left';
+                bubbleLeft.onclick = () => { alert("KABOOM! Ayo foto bareng teman-temanmu!"); };
+                home.appendChild(bubbleLeft);
+                
+                const bubbleRight = document.createElement('div');
+                bubbleRight.className = 'comic-bubble-right';
+                bubbleRight.onclick = () => { alert("POW! Abadikan momen serumu di sini!"); };
+                home.appendChild(bubbleRight);
+                
+                // Add animated stars in left and right columns
+                const starLeft = document.createElement('div');
+                starLeft.className = 'comic-star-decor decor-star1';
+                starLeft.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='#fff300' stroke='#000' stroke-width='6'/></svg>`;
+                home.appendChild(starLeft);
+                
+                const starRight = document.createElement('div');
+                starRight.className = 'comic-star-decor decor-star2';
+                starRight.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='#00ffff' stroke='#000' stroke-width='6'/></svg>`;
+                home.appendChild(starRight);
+                
+                // Add a pulsing POW bubble in the center area
+                const powBubble = document.createElement('div');
+                powBubble.className = 'comic-bubble-pow';
+                home.appendChild(powBubble);
+                
+                // Custom start button HTML
+                const btnStart = document.querySelector('.btn-start');
+                if (btnStart) {
+                    btnStart.innerHTML = '<div class="comic-start-inner"><i class="fa-solid fa-camera"></i></div><span class="comic-start-text">Photo</span>';
+                }
+            }
         });
 
         // Set Kiosk Mode
@@ -2771,17 +3892,38 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             const p2 = document.getElementById('logoPart2');
             const slogan = document.getElementById('homeSlogan');
             
+            let text1 = "Creative";
+            let text2 = "Studio";
+            let sloganText = "All You need is special";
+
             if (eventName) {
-                // Split custom event name dynamically over two lines
                 const words = eventName.split(' ');
                 const half = Math.ceil(words.length / 2);
-                p1.innerText = words.slice(0, half).join(' ');
-                p2.innerText = words.slice(half).join(' ');
-                slogan.innerText = "⭐ Sesi Acara Eksklusif ⭐";
+                text1 = words.slice(0, half).join(' ');
+                text2 = words.slice(half).join(' ');
+                sloganText = "⭐ Sesi Acara Eksklusif ⭐";
+            } else if (appTheme === 'COMIC_POP') {
+                text1 = "FOTO FOTO";
+                text2 = "MU !!!";
+                sloganText = "PHOTOBOOTH!!!";
+            }
+
+            if (appTheme === 'COMIC_POP') {
+                const wrapComic = (txt, startIdx = 0) => {
+                    if (!txt) return "";
+                    const colors = ['txt-pink', 'txt-blue', 'txt-yellow', 'txt-white'];
+                    return txt.split(' ').map((word, idx) => {
+                        const cls = colors[(idx + startIdx) % colors.length];
+                        return `<span class="${cls}">${word}</span>`;
+                    }).join(' ');
+                };
+                p1.innerHTML = wrapComic(text1, 0);
+                p2.innerHTML = wrapComic(text2, 2);
+                slogan.innerText = eventName ? sloganText : "PHOTOBOOTH!!!";
             } else {
-                p1.innerText = "Creative";
-                p2.innerText = "Studio";
-                slogan.innerText = "All You need is special";
+                p1.innerText = text1;
+                p2.innerText = text2;
+                slogan.innerText = sloganText;
             }
         }
 

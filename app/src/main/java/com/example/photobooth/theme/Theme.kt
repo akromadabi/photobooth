@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 
 enum class AppThemeType {
-    NEON_RED, CUTE_PASTEL, LUXURY_GOLD, RETRO_ARCADE
+    NEON_RED, CUTE_PASTEL, LUXURY_GOLD, MINIMAL_MODERN, CUTE_NARA
 }
 
 data class AppThemeColors(
@@ -77,20 +77,36 @@ val LuxuryGoldColors = AppThemeColors(
     fontFamily = FontFamily.Serif
 )
 
-val RetroArcadeColors = AppThemeColors(
-    type = AppThemeType.RETRO_ARCADE,
-    name = "Retro Arcade (8-Bit Vaporwave)",
+val MinimalModernColors = AppThemeColors(
+    type = AppThemeType.MINIMAL_MODERN,
+    name = "Minimal Modern (Clean & Creative)",
     isDark = true,
-    background = Color(0xFF0B001A), // Dark violet
-    onBackground = Color(0xFF00F0FF), // Neon cyan text
-    primary = Color(0xFFDF00FF), // Neon magenta
-    accentColor = Color(0xFF00F0FF),
-    cardBackground = Color(0xFF160030),
-    onCardBackground = Color(0xFF00F0FF),
-    border = Color(0xFFDF00FF),
-    buttonBackground = Color(0xFFDF00FF),
-    buttonContent = Color.Black,
-    fontFamily = FontFamily.Monospace
+    background = Color(0xFF05050A), // Deep Slate Obsidian
+    onBackground = Color(0xFFE2E8F0), // Soft off-white
+    primary = Color(0xFF6366F1), // Sleek Indigo
+    accentColor = Color(0xFF06B6D4), // Vibrant Cyber Teal
+    cardBackground = Color(0xFF0F172A), // Dark Slate Card
+    onCardBackground = Color(0xFFF1F5F9),
+    border = Color(0xFF1E293B),
+    buttonBackground = Color(0xFF6366F1),
+    buttonContent = Color.White,
+    fontFamily = FontFamily.SansSerif
+)
+
+val CuteNaraColors = AppThemeColors(
+    type = AppThemeType.CUTE_NARA,
+    name = "Cute Nara (Pinky Flower)",
+    isDark = false,
+    background = Color(0xFFFFF0F5), // Lavender Blush (soft pastel pink background)
+    onBackground = Color(0xFF4A1525), // Deep dark berry/maroon text
+    primary = Color(0xFFFF7597), // Sweet bright pink
+    accentColor = Color(0xFFFFB3C6), // Lighter pink accent
+    cardBackground = Color(0xFFFFF9FA), // Soft cream/white cards
+    onCardBackground = Color(0xFF4A1525),
+    border = Color(0xFFFF7597),
+    buttonBackground = Color(0xFFFF7597),
+    buttonContent = Color.White,
+    fontFamily = FontFamily.SansSerif
 )
 
 val LocalAppThemeColors = staticCompositionLocalOf { NeonRedColors }
@@ -113,7 +129,8 @@ fun PhotoboothTheme(
   val themeColors = when (themeType) {
     "CUTE_PASTEL" -> CutePastelColors
     "LUXURY_GOLD" -> LuxuryGoldColors
-    "RETRO_ARCADE" -> RetroArcadeColors
+    "MINIMAL_MODERN" -> MinimalModernColors
+    "CUTE_NARA" -> CuteNaraColors
     else -> NeonRedColors
   }
 

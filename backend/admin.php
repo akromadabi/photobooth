@@ -2301,13 +2301,14 @@ foreach ($weeklyStats as $date => $cnt) {
 
         /* Responsive Layout Rules */
         @media (max-width: 1024px) {
+            /* 1. Navigation & Main Containers */
             .sidebar {
                 display: none !important;
             }
 
             .main-wrapper {
                 margin-left: 0 !important;
-                padding-bottom: 85px !important;
+                padding-bottom: 80px !important;
                 width: 100%;
             }
 
@@ -2316,73 +2317,279 @@ foreach ($weeklyStats as $date => $cnt) {
             }
             
             .top-header {
-                padding: 14px 24px;
+                padding: 10px 14px !important;
             }
             
             .content-body {
-                padding: 24px;
-            }
-
-            .metrics-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-            }
-
-            .dashboard-row {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .content-body {
-                padding: 16px 12px;
-            }
-            
-            .top-header {
-                padding: 12px 16px;
+                padding: 10px 8px !important;
             }
 
             .card-section {
-                padding: 20px 16px;
-                border-radius: 16px;
-                margin-bottom: 20px;
+                padding: 14px 12px !important;
+                border-radius: 12px !important;
+                margin-bottom: 12px !important;
             }
 
             .card-header {
-                margin-bottom: 16px;
-                padding-bottom: 10px;
+                margin-bottom: 12px !important;
+                padding-bottom: 8px !important;
             }
 
+            /* 2. Typography & Core Scaling */
             body {
-                font-size: 14px;
+                font-size: 12.5px !important;
             }
 
             .page-title {
-                font-size: 1.15rem;
+                font-size: 1.05rem !important;
             }
 
             .current-time {
-                display: none; /* Hide time on very small screens to save space */
+                display: none !important; /* Hide time on mobile to save space */
             }
 
+            .profile-info {
+                display: none !important; /* Hide profile name text on mobile */
+            }
+
+            .header-right {
+                gap: 10px !important;
+            }
+
+            /* 3. Forms & Grid Stacking */
             .form-grid {
-                grid-template-columns: 1fr !important;
+                display: flex !important;
+                flex-direction: column !important;
                 gap: 12px !important;
             }
 
             .form-group {
-                margin-bottom: 12px;
+                margin-bottom: 8px !important;
+            }
+            
+            .form-group label {
+                font-size: 0.65rem !important;
+            }
+
+            .form-group span, .form-group div {
+                font-size: 0.75rem !important;
+            }
+
+            .form-input, .form-select {
+                padding: 7px 12px !important;
+                font-size: 0.85rem !important;
+                border-radius: 8px !important;
+            }
+
+            .checkbox-container {
+                padding: 7px 12px !important;
+                border-radius: 8px !important;
+                gap: 8px !important;
+            }
+
+            .checkbox-label {
+                font-size: 0.75rem !important;
             }
 
             .btn-primary, .btn-secondary, .btn-danger {
                 width: 100%;
-                padding: 10px 18px;
+                padding: 7px 12px !important;
+                font-size: 0.8rem !important;
+                border-radius: 6px !important;
+                gap: 4px !important;
+            }
+
+            /* Card headers buttons and anchors overrides */
+            .card-header a, .card-header button {
+                width: auto !important;
+                padding: 5px 10px !important;
+                font-size: 0.7rem !important;
+                border-radius: 6px !important;
+                display: inline-flex !important;
             }
 
             .alert-status {
-                padding: 10px 14px;
-                font-size: 0.8rem;
+                padding: 8px 12px !important;
+                font-size: 0.8rem !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* 4. Dashboard Metrics Grid */
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+                margin-bottom: 14px !important;
+            }
+            
+            .metric-card {
+                padding: 8px 10px !important;
+                border-radius: 10px !important;
+                gap: 8px !important;
+            }
+            
+            .metric-icon {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 0.9rem !important;
+                border-radius: 6px !important;
+            }
+            
+            .metric-value {
+                font-size: 1rem !important;
+            }
+            
+            .metric-label {
+                font-size: 0.55rem !important;
+                letter-spacing: 0.1px !important;
+            }
+
+            /* 5. Tables & Badges */
+            .custom-table th, .custom-table td {
+                padding: 6px 8px !important; /* Shrunk padding even more */
+            }
+            
+            .custom-table td {
+                font-size: 0.72rem !important;
+                word-break: break-all !important; /* Force word wrap on long IDs */
+            }
+            
+            .custom-table th {
+                font-size: 0.65rem !important;
+            }
+
+            /* Compact Buttons inside Tables */
+            .custom-table .btn-primary,
+            .custom-table .btn-secondary,
+            .custom-table .btn-danger,
+            .custom-table a,
+            .custom-table button {
+                width: auto !important;
+                display: inline-flex !important;
+                padding: 4px 8px !important;
+                font-size: 0.65rem !important;
+                margin: 2px !important;
+                border-radius: 4px !important;
+                gap: 4px !important;
+                box-shadow: none !important;
+            }
+
+            /* For action column text links if any */
+            .custom-table td a {
+                text-decoration: none !important;
+            }
+
+            /* Hide button text on mobile/tablet to keep tables ultra-compact */
+            .custom-table .btn-text {
+                display: none !important;
+            }
+
+            /* Avoid overflow in status row values */
+            .status-row .val {
+                word-break: break-all !important;
+                max-width: 60%;
+                text-align: right;
+            }
+
+            .badge {
+                padding: 2px 5px !important;
+                font-size: 0.6rem !important;
+                border-radius: 4px !important;
+                gap: 2px !important;
+            }
+
+            .card-title {
+                font-size: 0.95rem !important;
+                gap: 6px !important;
+            }
+
+            /* 6. Photo Logs Gallery Grid */
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+                gap: 8px !important;
+            }
+            
+            .history-card {
+                padding: 6px 6px 8px 6px !important;
+                border-radius: 8px !important;
+                gap: 6px !important;
+            }
+            
+            .history-id {
+                font-size: 0.65rem !important;
+            }
+            
+            .history-frame {
+                font-size: 0.5rem !important;
+                padding: 1px 3px !important;
+            }
+            
+            .history-time {
+                font-size: 0.55rem !important;
+            }
+
+            /* 7. Kiosk Frames Manager Grid */
+            .frames-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+                gap: 10px !important;
+            }
+            
+            .frame-card-admin {
+                padding: 6px !important;
+                border-radius: 8px !important;
+            }
+            
+            .frame-card-preview-admin {
+                height: 120px !important;
+                margin-bottom: 6px !important;
+            }
+            
+            .frame-card-title {
+                font-size: 0.75rem !important;
+            }
+            
+            .frame-card-tag {
+                font-size: 0.6rem !important;
+            }
+            
+            .frame-card-actions {
+                margin-top: 4px !important;
+                gap: 4px !important;
+            }
+            
+            .frame-card-actions button, .frame-card-actions a {
+                padding: 4px !important;
+                font-size: 0.65rem !important;
+                border-radius: 6px !important;
+            }
+        }
+
+        /* Tier 2: Extremely Small Screen Overrides (max-width: 480px) */
+        @media (max-width: 480px) {
+            body {
+                font-size: 11.5px !important;
+            }
+
+            .content-body {
+                padding: 6px 4px !important;
+            }
+
+            .card-section {
+                padding: 10px 8px !important;
+                border-radius: 8px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .form-input, .form-select {
+                padding: 6px 8px !important;
+                font-size: 0.8rem !important;
+            }
+
+            .custom-table th, .custom-table td {
+                padding: 6px 8px !important;
+            }
+            
+            .custom-table td {
+                font-size: 0.72rem !important;
             }
         }
     </style>
@@ -2521,45 +2728,44 @@ foreach ($weeklyStats as $date => $cnt) {
                     <?php endif; ?>
                 <?php endif; ?>
 
-                <!-- Upper Metrics Row (Horizontal Cards) -->
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon indigo"><i class="fa-solid fa-camera"></i></div>
-                        <div class="metric-info">
-                            <div class="metric-label">Total Sesi Foto</div>
-                            <div class="metric-value"><?php echo $photosCount; ?> Sesi</div>
-                        </div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <div class="metric-icon emerald"><i class="fa-solid fa-bolt"></i></div>
-                        <div class="metric-info">
-                            <div class="metric-label">Sesi Hari Ini</div>
-                            <div class="metric-value"><?php echo $todayPhotosCount; ?> Sesi</div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-icon rose"><i class="fa-solid fa-floppy-disk"></i></div>
-                        <div class="metric-info">
-                            <div class="metric-label">Memori Terpakai</div>
-                            <div class="metric-value"><?php echo $formattedSize; ?></div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-icon amber"><i class="fa-solid fa-print"></i></div>
-                        <div class="metric-info">
-                            <div class="metric-label">Printer Aktif</div>
-                            <div class="metric-value"><?php echo htmlspecialchars($settings['printer_type']); ?></div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- DYNAMIC TAB PANES -->
 
                 <!-- TAB: Dashboard -->
                 <div class="tab-pane active" id="tab-dashboard">
+                    <!-- Upper Metrics Row (Horizontal Cards) -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon indigo"><i class="fa-solid fa-camera"></i></div>
+                            <div class="metric-info">
+                                <div class="metric-label">Total Sesi Foto</div>
+                                <div class="metric-value"><?php echo $photosCount; ?> Sesi</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-icon emerald"><i class="fa-solid fa-bolt"></i></div>
+                            <div class="metric-info">
+                                <div class="metric-label">Sesi Hari Ini</div>
+                                <div class="metric-value"><?php echo $todayPhotosCount; ?> Sesi</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon rose"><i class="fa-solid fa-floppy-disk"></i></div>
+                            <div class="metric-info">
+                                <div class="metric-label">Memori Terpakai</div>
+                                <div class="metric-value"><?php echo $formattedSize; ?></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon amber"><i class="fa-solid fa-print"></i></div>
+                            <div class="metric-info">
+                                <div class="metric-label">Printer Aktif</div>
+                                <div class="metric-value"><?php echo htmlspecialchars($settings['printer_type']); ?></div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="dashboard-row">
                         <!-- Chart Card -->
                         <div class="card-section" style="margin-bottom: 0;">
@@ -2587,7 +2793,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </div>
                                 <div class="status-row">
                                     <span class="label">Sesi Aktif</span>
-                                    <span class="val" style="font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars($queueState['active_session_id']) : 'None'; ?></span>
+                                    <span class="val" style="font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars(substr($queueState['active_session_id'], 0, 8)) . '...' : 'None'; ?></span>
                                 </div>
                             </div>
                         </div>
@@ -2658,36 +2864,38 @@ foreach ($weeklyStats as $date => $cnt) {
                                 <div class="form-group">
                                     <label for="printer_type">Mode Pencetakan</label>
                                     <select id="printer_type" name="printer_type" class="form-select">
-                                        <option value="NONE" <?php echo $settings['printer_type'] === 'NONE' ? 'selected' : ''; ?>>NONE (Mode Digital Saja)</option>
-                                        <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>THERMAL (Printer XP-420B)</option>
-                                        <option value="COLOR" <?php echo $settings['printer_type'] === 'COLOR' ? 'selected' : ''; ?>>COLOR (Printer Warna Sistem)</option>
-                                        <option value="AUTO" <?php echo $settings['printer_type'] === 'AUTO' ? 'selected' : ''; ?>>AUTO (Dynamic: Thermal & Color)</option>
+                                        <option value="NONE" <?php echo $settings['printer_type'] === 'NONE' ? 'selected' : ''; ?>>Digital (Tanpa Struk)</option>
+                                        <option value="THERMAL" <?php echo $settings['printer_type'] === 'THERMAL' ? 'selected' : ''; ?>>Thermal (XP-420B)</option>
+                                        <option value="COLOR" <?php echo $settings['printer_type'] === 'COLOR' ? 'selected' : ''; ?>>Warna (Sistem)</option>
+                                        <option value="AUTO" <?php echo $settings['printer_type'] === 'AUTO' ? 'selected' : ''; ?>>Auto (Warna & Thermal)</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="use_biometric">Autentikasi Biometrik Tablet</label>
                                     <select id="use_biometric" name="use_biometric" class="form-select">
-                                        <option value="1" <?php echo $settings['use_biometric'] ? 'selected' : ''; ?>>Aktif (Sensor Sidik Jari)</option>
-                                        <option value="0" <?php echo !$settings['use_biometric'] ? 'selected' : ''; ?>>Nonaktif (PIN Saja)</option>
+                                        <option value="1" <?php echo $settings['use_biometric'] ? 'selected' : ''; ?>>Aktif (Sidik Jari)</option>
+                                        <option value="0" <?php echo !$settings['use_biometric'] ? 'selected' : ''; ?>>Nonaktif (PIN)</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="app_theme">Tema Tampilan Kiosk</label>
                                     <select id="app_theme" name="app_theme" class="form-select">
-                                        <option value="NEON_RED" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'NEON_RED') ? 'selected' : ''; ?>>Neon Red (Modern)</option>
-                                        <option value="CUTE_PASTEL" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'CUTE_PASTEL') ? 'selected' : ''; ?>>Cute Pastel (Wood)</option>
-                                        <option value="LUXURY_GOLD" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'LUXURY_GOLD') ? 'selected' : ''; ?>>Luxury Gold (Wedding)</option>
-                                        <option value="RETRO_ARCADE" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'RETRO_ARCADE') ? 'selected' : ''; ?>>Retro Arcade (8-Bit)</option>
+                                        <option value="NEON_RED" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'NEON_RED') ? 'selected' : ''; ?>>Neon Red</option>
+                                        <option value="CUTE_PASTEL" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'CUTE_PASTEL') ? 'selected' : ''; ?>>Cute Pastel</option>
+                                        <option value="CUTE_NARA" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'CUTE_NARA') ? 'selected' : ''; ?>>Cute Nara (Pinky Flower)</option>
+                                        <option value="LUXURY_GOLD" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'LUXURY_GOLD') ? 'selected' : ''; ?>>Luxury Gold</option>
+                                        <option value="MINIMAL_MODERN" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'MINIMAL_MODERN') ? 'selected' : ''; ?>>Minimal Modern</option>
+                                        <option value="COMIC_POP" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'COMIC_POP') ? 'selected' : ''; ?>>Comic Pop-Art</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="payment_mode">Mode Pembayaran</label>
                                     <select id="payment_mode" name="payment_mode" class="form-select" onchange="toggleMidtransFields(this.value)">
-                                        <option value="dummy" <?php echo $settings['payment_mode'] === 'dummy' ? 'selected' : ''; ?>>Simulasi / Dummy (Tanpa Kunci API)</option>
-                                        <option value="midtrans" <?php echo $settings['payment_mode'] === 'midtrans' ? 'selected' : ''; ?>>Midtrans (Real / Sandbox)</option>
+                                        <option value="dummy" <?php echo $settings['payment_mode'] === 'dummy' ? 'selected' : ''; ?>>Simulasi (Dummy)</option>
+                                        <option value="midtrans" <?php echo $settings['payment_mode'] === 'midtrans' ? 'selected' : ''; ?>>Midtrans (Gerbang Pembayaran)</option>
                                     </select>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
@@ -2704,8 +2912,8 @@ foreach ($weeklyStats as $date => $cnt) {
                                     <div class="form-group">
                                         <label for="midtrans_environment">Environment Midtrans</label>
                                         <select id="midtrans_environment" name="midtrans_environment" class="form-select" onchange="toggleMidtransEnvFields(this.value)">
-                                            <option value="sandbox" <?php echo $settings['midtrans_environment'] === 'sandbox' ? 'selected' : ''; ?>>Sandbox (Mode Uji Coba)</option>
-                                            <option value="production" <?php echo $settings['midtrans_environment'] === 'production' ? 'selected' : ''; ?>>Production (Pembayaran Asli)</option>
+                                            <option value="sandbox" <?php echo $settings['midtrans_environment'] === 'sandbox' ? 'selected' : ''; ?>>Sandbox (Uji Coba)</option>
+                                            <option value="production" <?php echo $settings['midtrans_environment'] === 'production' ? 'selected' : ''; ?>>Production (Live)</option>
                                         </select>
                                     </div>
                                     
@@ -2832,7 +3040,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </div>
                                 <div class="status-row">
                                     <span class="label">Sesi Aktif saat ini:</span>
-                                    <span class="val" style="font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars($queueState['active_session_id']) : 'Tidak ada'; ?></span>
+                                    <span class="val" style="font-family: monospace; font-size: 0.8rem;"><?php echo $queueState['active_session_id'] ? htmlspecialchars(substr($queueState['active_session_id'], 0, 8)) . '...' : 'Tidak ada'; ?></span>
                                 </div>
                                 <div class="status-row">
                                     <span class="label">Menunggu (Waiting):</span>
@@ -2855,10 +3063,10 @@ foreach ($weeklyStats as $date => $cnt) {
                             <table class="custom-table">
                                 <thead>
                                     <tr>
-                                        <th>No. Antrean</th>
-                                        <th>ID Sesi</th>
+                                        <th>#</th>
+                                        <th>Sesi</th>
                                         <th>Paket</th>
-                                        <th>Waktu Masuk</th>
+                                        <th>Masuk</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -2880,9 +3088,9 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <?php foreach ($queueState['queue_list'] as $item): ?>
                                             <tr>
                                                 <td style="font-weight: 700; color: var(--primary);">#<?php echo htmlspecialchars($item['queue_number']); ?></td>
-                                                <td style="font-family: monospace; font-size: 0.85rem;"><?php echo htmlspecialchars($item['session_id']); ?></td>
+                                                <td style="font-family: monospace; font-size: 0.85rem;"><?php echo htmlspecialchars(substr($item['session_id'], 0, 8)); ?>...</td>
                                                 <td><span class="badge badge-gray"><?php echo htmlspecialchars($packageNames[$item['package_id']] ?? $item['package_id']); ?></span></td>
-                                                <td style="color: var(--text-muted);"><?php echo date('H:i:s (d M)', $item['timestamp']); ?></td>
+                                                <td style="color: var(--text-muted);"><?php echo date('H:i, d M', $item['timestamp']); ?></td>
                                                 <td>
                                                     <?php if ($item['status'] === 'UNPAID'): ?>
                                                         <span class="badge badge-danger">Unpaid</span>
@@ -2953,9 +3161,9 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <div class="form-group" style="margin-top: 14px;">
                                             <label>Alur Pencetakan & Profil Ukuran</label>
                                             <select name="print_flow_<?php echo $pkg['id']; ?>" id="print_flow_<?php echo $pkg['id']; ?>" class="form-input" style="background-color: white;">
-                                                <option value="RECEIPT" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'RECEIPT') ? 'selected' : ''; ?>>RECEIPT (Cetak Receipt Termal)</option>
-                                                <option value="COLOR_PRINT" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'COLOR_PRINT') ? 'selected' : ''; ?>>COLOR_PRINT (Cetak Foto Warna)</option>
-                                                <option value="ID_CARD" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'ID_CARD') ? 'selected' : ''; ?>>ID_CARD (Cetak ID Card Lisensi)</option>
+                                                <option value="RECEIPT" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'RECEIPT') ? 'selected' : ''; ?>>Receipt Termal (Kertas Struk)</option>
+                                                <option value="COLOR_PRINT" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'COLOR_PRINT') ? 'selected' : ''; ?>>Cetak Warna (Foto Strip)</option>
+                                                <option value="ID_CARD" <?php echo (isset($pkg['print_flow']) && $pkg['print_flow'] === 'ID_CARD') ? 'selected' : ''; ?>>Cetak ID Card (Lisensi)</option>
                                             </select>
                                         </div>
 
@@ -3031,7 +3239,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                 <div class="form-group">
                                     <label for="coupon_package_id">Berlaku Untuk Paket</label>
                                     <select id="coupon_package_id" name="package_id" class="form-select">
-                                        <option value="any">Semua Paket (Cetak Semua Paket)</option>
+                                        <option value="any">Semua Paket</option>
                                         <?php 
                                         if (file_exists($packagesFile)) {
                                             $pkgs = json_decode(file_get_contents($packagesFile), true);
@@ -3050,8 +3258,8 @@ foreach ($weeklyStats as $date => $cnt) {
                                 <div class="form-group">
                                     <label for="coupon_is_bulk">Mode Pembuatan</label>
                                     <select id="coupon_is_bulk" name="is_bulk" class="form-select" onchange="toggleBulkQty(this.value)">
-                                        <option value="0">Kupon Tunggal (Buat & Cetak Instan)</option>
-                                        <option value="1">Kupon Massal (Bulk Generate)</option>
+                                        <option value="0">Kupon Tunggal</option>
+                                        <option value="1">Kupon Massal</option>
                                     </select>
                                 </div>
                                 <div class="form-group" id="group_bulk_qty" style="display: none;">
@@ -3076,13 +3284,13 @@ foreach ($weeklyStats as $date => $cnt) {
                             <table class="custom-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 60px;">No.</th>
-                                        <th>Kode Kupon</th>
-                                        <th>Paket Berlaku</th>
+                                        <th style="width: 30px;">#</th>
+                                        <th>Kode</th>
+                                        <th>Paket</th>
                                         <th>Status</th>
-                                        <th>Tanggal Dibuat</th>
-                                        <th>Digunakan Pada</th>
-                                        <th style="text-align: center; width: 180px;">Aksi</th>
+                                        <th>Dibuat</th>
+                                        <th>Dipakai</th>
+                                        <th style="text-align: center; width: 140px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -3128,15 +3336,16 @@ foreach ($weeklyStats as $date => $cnt) {
                                                         <span class="badge badge-gray">Terpakai</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td style="color: var(--text-muted); font-size: 0.9rem;">
-                                                    <?php echo date('d M Y, H:i', $coupon['created_at']); ?>
+                                                <td style="color: var(--text-muted); font-size: 0.85rem;">
+                                                    <?php echo date('d M, H:i', $coupon['created_at']); ?>
                                                 </td>
-                                                <td style="color: var(--text-muted); font-size: 0.9rem;">
+                                                <td style="color: var(--text-muted); font-size: 0.85rem;">
                                                     <?php 
                                                     if ($coupon['status'] === 'USED' && !empty($coupon['used_at'])) {
-                                                        echo date('d M H:i', $coupon['used_at']);
+                                                        echo date('d M, H:i', $coupon['used_at']);
                                                         if (!empty($coupon['used_by_session'])) {
-                                                            echo ' <span style="font-family: monospace; font-size: 0.75rem;">(' . htmlspecialchars($coupon['used_by_session']) . ')</span>';
+                                                            $shortSess = substr($coupon['used_by_session'], 0, 6);
+                                                            echo '<span style="font-family: monospace; font-size: 0.7rem; display: block; color: var(--text-muted); margin-top: 2px;">(' . htmlspecialchars($shortSess) . '...)</span>';
                                                         }
                                                     } else {
                                                         echo '-';
@@ -3145,10 +3354,10 @@ foreach ($weeklyStats as $date => $cnt) {
                                                 </td>
                                                 <td style="text-align: center;">
                                                     <a href="print_coupon.php?code=<?php echo urlencode($coupon['code']); ?>" target="_blank" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; background-color: var(--info-dark); border: none;">
-                                                        <i class="fa-solid fa-print"></i> Cetak
+                                                        <i class="fa-solid fa-print"></i> <span class="btn-text">Cetak</span>
                                                     </a>
                                                     <a href="admin.php?action=delete_coupon&code=<?php echo urlencode($coupon['code']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus kupon <?php echo htmlspecialchars($coupon['code']); ?>?');" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; background-color: var(--danger-dark); border: none; margin-left: 5px;">
-                                                        <i class="fa-solid fa-trash"></i> Hapus
+                                                        <i class="fa-solid fa-trash"></i> <span class="btn-text">Hapus</span>
                                                     </a>
                                                 </td>
                                             </tr>
@@ -3566,34 +3775,42 @@ foreach ($weeklyStats as $date => $cnt) {
             });
         }
 
-        // Bottom Sheet Toggle Logic
-        const bottomSheet = document.getElementById('bottomSheet');
-        const bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
-        const bottomSheetToggle = document.getElementById('bottomSheetToggle');
-        const bottomSheetHandle = document.getElementById('bottomSheetHandle');
+        // Bottom Sheet Toggle Logic variables
+        let bottomSheet, bottomSheetOverlay, bottomSheetToggle, bottomSheetHandle;
 
         function openBottomSheet() {
-            bottomSheet.classList.add('show');
-            bottomSheetOverlay.classList.add('show');
+            if (bottomSheet && bottomSheetOverlay) {
+                bottomSheet.classList.add('show');
+                bottomSheetOverlay.classList.add('show');
+            }
         }
 
         function closeBottomSheet() {
-            bottomSheet.classList.remove('show');
-            bottomSheetOverlay.classList.remove('show');
+            if (bottomSheet && bottomSheetOverlay) {
+                bottomSheet.classList.remove('show');
+                bottomSheetOverlay.classList.remove('show');
+            }
         }
 
-        if (bottomSheetToggle) {
-            bottomSheetToggle.addEventListener('click', openBottomSheet);
-        }
-        if (bottomSheetOverlay) {
-            bottomSheetOverlay.addEventListener('click', closeBottomSheet);
-        }
-        if (bottomSheetHandle) {
-            bottomSheetHandle.addEventListener('click', closeBottomSheet);
-        }
+        function initMobileNavigation() {
+            bottomSheet = document.getElementById('bottomSheet');
+            bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
+            bottomSheetToggle = document.getElementById('bottomSheetToggle');
+            bottomSheetHandle = document.getElementById('bottomSheetHandle');
 
-        // Run navigation setup
-        setupNavigationEvents();
+            if (bottomSheetToggle) {
+                bottomSheetToggle.addEventListener('click', openBottomSheet);
+            }
+            if (bottomSheetOverlay) {
+                bottomSheetOverlay.addEventListener('click', closeBottomSheet);
+            }
+            if (bottomSheetHandle) {
+                bottomSheetHandle.addEventListener('click', closeBottomSheet);
+            }
+
+            // Run navigation setup
+            setupNavigationEvents();
+        }
 
         // Chart.js render
         const ctx = document.getElementById('weeklyChart').getContext('2d');
@@ -5174,6 +5391,8 @@ foreach ($weeklyStats as $date => $cnt) {
             }
         });
         window.addEventListener('DOMContentLoaded', () => {
+            initMobileNavigation();
+
             let activeTab = window.location.hash.replace('#', '');
             
             if (!activeTab) {
