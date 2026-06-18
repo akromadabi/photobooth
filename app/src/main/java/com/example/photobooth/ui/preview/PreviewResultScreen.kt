@@ -18,10 +18,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -59,12 +65,19 @@ import java.io.File
 import java.io.FileOutputStream
 
 enum class PhotoFilter {
-    NORMAL, MONO, WARM, COOL
+    NORMAL, MONO, WARM, COOL, VINTAGE, VIVID, DREAMY, FILM
 }
 
 enum class PreviewTab {
     FRAME, FILTER, STICKER, CORETAN
 }
+
+data class PhotoState(
+    val path: String,
+    val normalizedX: Float = 0.5f,
+    val normalizedY: Float = 0.5f,
+    val scale: Float = 1.0f
+)
 
 data class Sticker(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -114,25 +127,36 @@ fun PreviewResultScreen(
         allFrames.filter { it.type.equals(activeFrame.type, ignoreCase = true) }
     }
 
-    var selectedFilter by remember { mutableStateOf(PhotoFilter.NORMAL) }
-    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var isStitching by remember { mutableStateOf(true) }
-    
-    DisposableEffect(Unit) {
-        onDispose {
-            previewBitmap?.recycle()
+    val photoStates = remember { mutableStateListOf<PhotoState>() }
+    LaunchedEffect(photoPaths) {
+        if (photoStates.isEmpty()) {
+            photoStates.addAll(photoPaths.map { PhotoState(path = it) })
         }
     }
-    
+
+    var selectedFilter by remember { mutableStateOf(PhotoFilter.NORMAL) }
+    var swapMode by remember { mutableStateOf(false) }
+    var selectedSwapIndex by remember { mutableStateOf<Int?>(null) }
+
     // Doodle drawing states
     val doodleLines = remember { mutableStateListOf<DoodleLine>() }
     val penColors = listOf(
         Color.White,
         Color.Black,
-        Color(0xFFFFB703), // Radiant Neon Yellow
         Color(0xFFE63946), // Radiant Red
+        Color(0xFFF77F00), // Orange
+        Color(0xFFFFB703), // Radiant Neon Yellow
+        Color(0xFF80B918), // Lime Green
         Color(0xFF52B788), // Glowing Green
-        Color(0xFF2196F3)  // Electric Blue
+        Color(0xFF2A9D8F), // Teal
+        Color(0xFF2196F3), // Electric Blue
+        Color(0xFF03045E), // Dark Blue
+        Color(0xFF7209B7), // Purple
+        Color(0xFFB5179E), // Violet
+        Color(0xFFF72585), // Hot Pink
+        Color(0xFFFF85A1), // Pastel Pink
+        Color(0xFF8B5D5D), // Brown
+        Color(0xFF9E9E9E)  // Grey
     )
     var activePenColor by remember { mutableStateOf(penColors[0]) }
     var activeStrokeWidth by remember { mutableFloatStateOf(5f) }
@@ -145,27 +169,9 @@ fun PreviewResultScreen(
     // Customization panel tab
     var activeTab by remember { mutableStateOf(PreviewTab.FRAME) }
 
-    var isFirstStitch by remember { mutableStateOf(true) }
-
     // Clear sticker selection when switching tabs
     LaunchedEffect(activeTab) {
         selectedStickerId = null
-    }
-
-    // Re-stitch when filter or frame changes
-    LaunchedEffect(selectedFilter, activeFrame) {
-        if (previewBitmap == null) {
-            isStitching = true
-        }
-        withContext(Dispatchers.Default) {
-            val bmp = stitchPhotosPreview(context, photoPaths, activeFrame, selectedFilter)
-            withContext(Dispatchers.Main) {
-                previewBitmap?.recycle()
-                previewBitmap = bmp
-                isStitching = false
-                isFirstStitch = false
-            }
-        }
     }
 
     val frameAspectRatio = remember(activeFrame) {
@@ -188,68 +194,251 @@ fun PreviewResultScreen(
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
-        if (isStitching && isFirstStitch) {
-            Box(
+        // Content Layout based on Orientation
+        if (isPortrait) {
+            // Portrait Layout
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                // Preview Photo Container
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    Text("Menyusun strip foto Anda...", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), fontSize = 14.sp)
+                    PreviewPhotoContainer(
+                        photoStates = photoStates,
+                        frame = activeFrame,
+                        selectedFilter = selectedFilter,
+                        activeTab = activeTab,
+                        swapMode = swapMode,
+                        selectedSwapIndex = selectedSwapIndex,
+                        onPhotoClick = { clickedIndex ->
+                            val currentSelected = selectedSwapIndex
+                            if (currentSelected == null) {
+                                selectedSwapIndex = clickedIndex
+                            } else {
+                                if (currentSelected != clickedIndex) {
+                                    val temp = photoStates[currentSelected]
+                                    photoStates[currentSelected] = photoStates[clickedIndex]
+                                    photoStates[clickedIndex] = temp
+                                }
+                                selectedSwapIndex = null
+                            }
+                        },
+                        onPhotoDrag = { index, newOffset ->
+                            if (index < photoStates.size) {
+                                photoStates[index] = photoStates[index].copy(
+                                    normalizedX = newOffset.x,
+                                    normalizedY = newOffset.y
+                                )
+                            }
+                        },
+                        doodleLines = doodleLines,
+                        activePenColor = activePenColor,
+                        activeStrokeWidth = activeStrokeWidth,
+                        stickers = stickers,
+                        selectedStickerId = selectedStickerId,
+                        onStickerSelected = { selectedStickerId = it }
+                    )
+
+                    // Floating Swap Mode Button
+                    Button(
+                        onClick = { 
+                            swapMode = !swapMode 
+                            selectedSwapIndex = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (swapMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Tukar",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (swapMode) "Selesai" else "Tukar Foto", fontSize = 12.sp, color = Color.White)
+                    }
                 }
-            }
-        } else {
-            // Content Layout based on Orientation
-            if (isPortrait) {
-                // Portrait Layout
+
+                // Panel Tabs + Content
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxWidth()
+                        .height(280.dp)
+                        .padding(12.dp)
                 ) {
-                    // Preview Photo Container
+                    HorizontalTabRow(
+                        activeTab = activeTab,
+                        onTabSelected = { activeTab = it }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        contentAlignment = Alignment.Center
                     ) {
-                        PreviewPhotoContainer(
-                            previewBitmap = previewBitmap,
-                            frameAspectRatio = frameAspectRatio,
-                            doodleLines = doodleLines,
-                            activePenColor = activePenColor,
-                            activeStrokeWidth = activeStrokeWidth,
-                            activeTab = activeTab,
-                            stickers = stickers,
-                            selectedStickerId = selectedStickerId,
-                            onStickerSelected = { selectedStickerId = it }
-                        )
+                        when (activeTab) {
+                            PreviewTab.FRAME -> FrameSelectorPanel(
+                                compatibleFrames = compatibleFrames,
+                                activeFrame = activeFrame,
+                                onFrameSelected = { activeFrame = it }
+                            )
+                            PreviewTab.FILTER -> FilterSelectorPanel(
+                                selectedFilter = selectedFilter,
+                                onFilterSelected = { selectedFilter = it }
+                            )
+                            PreviewTab.STICKER -> StickerSelectorPanel(
+                                onAddSticker = { emoji ->
+                                    stickers.add(Sticker(emoji = emoji, x = 0.5f, y = 0.5f))
+                                    activeTab = PreviewTab.STICKER // stay on sticker tab
+                                }
+                            )
+                            PreviewTab.CORETAN -> DoodleSelectorPanel(
+                                doodleLines = doodleLines,
+                                activePenColor = activePenColor,
+                                onColorSelected = { activePenColor = it },
+                                activeStrokeWidth = activeStrokeWidth,
+                                onStrokeWidthSelected = { activeStrokeWidth = it },
+                                penColors = penColors
+                            )
+                        }
                     }
+                }
 
-                    // Panel Tabs + Content
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Buttons Row
+                ActionsRow(
+                    isProcessingConfirm = isProcessingConfirm,
+                    onRetakeClick = onRetakeClick,
+                    onConfirmClick = {
+                        isProcessingConfirm = true
+                        scope.launch {
+                            val finalPath = withContext(Dispatchers.Default) {
+                                stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
+                            }
+                            isProcessingConfirm = false
+                            val shouldPrint = configManager.printerType != "NONE"
+                            onConfirmClick(finalPath, shouldPrint, activeFrame.id)
+                        }
+                    }
+                )
+            }
+        } else {
+            // Landscape Layout
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left Side: Preview Photo Container
+                Box(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    PreviewPhotoContainer(
+                        photoStates = photoStates,
+                        frame = activeFrame,
+                        selectedFilter = selectedFilter,
+                        activeTab = activeTab,
+                        swapMode = swapMode,
+                        selectedSwapIndex = selectedSwapIndex,
+                        onPhotoClick = { clickedIndex ->
+                            val currentSelected = selectedSwapIndex
+                            if (currentSelected == null) {
+                                selectedSwapIndex = clickedIndex
+                            } else {
+                                if (currentSelected != clickedIndex) {
+                                    val temp = photoStates[currentSelected]
+                                    photoStates[currentSelected] = photoStates[clickedIndex]
+                                    photoStates[clickedIndex] = temp
+                                }
+                                selectedSwapIndex = null
+                            }
+                        },
+                        onPhotoDrag = { index, newOffset ->
+                            if (index < photoStates.size) {
+                                photoStates[index] = photoStates[index].copy(
+                                    normalizedX = newOffset.x,
+                                    normalizedY = newOffset.y
+                                )
+                            }
+                        },
+                        doodleLines = doodleLines,
+                        activePenColor = activePenColor,
+                        activeStrokeWidth = activeStrokeWidth,
+                        stickers = stickers,
+                        selectedStickerId = selectedStickerId,
+                        onStickerSelected = { selectedStickerId = it }
+                    )
+
+                    // Floating Swap Mode Button
+                    Button(
+                        onClick = { 
+                            swapMode = !swapMode 
+                            selectedSwapIndex = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (swapMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Tukar",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (swapMode) "Selesai" else "Tukar Foto", fontSize = 12.sp, color = Color.White)
+                    }
+                }
+
+                // Right Side: Control Panels & Action Buttons
+                Column(
+                    modifier = Modifier
+                        .weight(1.8f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
                     Column(
                         modifier = Modifier
+                            .weight(1f)
                             .fillMaxWidth()
-                            .height(280.dp)
-                            .padding(12.dp)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // Horizontal Tabs at the top
                         HorizontalTabRow(
                             activeTab = activeTab,
                             onTabSelected = { activeTab = it }
                         )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
+
+                        // Active Panel Content below tabs
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -268,7 +457,6 @@ fun PreviewResultScreen(
                                 PreviewTab.STICKER -> StickerSelectorPanel(
                                     onAddSticker = { emoji ->
                                         stickers.add(Sticker(emoji = emoji, x = 0.5f, y = 0.5f))
-                                        activeTab = PreviewTab.STICKER // stay on sticker tab
                                     }
                                 )
                                 PreviewTab.CORETAN -> DoodleSelectorPanel(
@@ -283,9 +471,9 @@ fun PreviewResultScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Buttons Row
+                    // Bottom Actions
                     ActionsRow(
                         isProcessingConfirm = isProcessingConfirm,
                         onRetakeClick = onRetakeClick,
@@ -293,7 +481,7 @@ fun PreviewResultScreen(
                             isProcessingConfirm = true
                             scope.launch {
                                 val finalPath = withContext(Dispatchers.Default) {
-                                    stitchPhotos(context, photoPaths, activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
+                                    stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
                                 }
                                 isProcessingConfirm = false
                                 val shouldPrint = configManager.printerType != "NONE"
@@ -301,109 +489,6 @@ fun PreviewResultScreen(
                             }
                         }
                     )
-                }
-            } else {
-                // Landscape Layout
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left Side: Preview Photo Container
-                    Box(
-                        modifier = Modifier
-                            .weight(1.2f)
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        PreviewPhotoContainer(
-                            previewBitmap = previewBitmap,
-                            frameAspectRatio = frameAspectRatio,
-                            doodleLines = doodleLines,
-                            activePenColor = activePenColor,
-                            activeStrokeWidth = activeStrokeWidth,
-                            activeTab = activeTab,
-                            stickers = stickers,
-                            selectedStickerId = selectedStickerId,
-                            onStickerSelected = { selectedStickerId = it }
-                        )
-                    }
-
-                    // Right Side: Control Panels & Action Buttons
-                    Column(
-                        modifier = Modifier
-                            .weight(1.8f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            // Horizontal Tabs at the top
-                            HorizontalTabRow(
-                                activeTab = activeTab,
-                                onTabSelected = { activeTab = it }
-                            )
-
-                            // Active Panel Content below tabs
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                            ) {
-                                when (activeTab) {
-                                    PreviewTab.FRAME -> FrameSelectorPanel(
-                                        compatibleFrames = compatibleFrames,
-                                        activeFrame = activeFrame,
-                                        onFrameSelected = { activeFrame = it }
-                                    )
-                                    PreviewTab.FILTER -> FilterSelectorPanel(
-                                        selectedFilter = selectedFilter,
-                                        onFilterSelected = { selectedFilter = it }
-                                    )
-                                    PreviewTab.STICKER -> StickerSelectorPanel(
-                                        onAddSticker = { emoji ->
-                                            stickers.add(Sticker(emoji = emoji, x = 0.5f, y = 0.5f))
-                                        }
-                                    )
-                                    PreviewTab.CORETAN -> DoodleSelectorPanel(
-                                        doodleLines = doodleLines,
-                                        activePenColor = activePenColor,
-                                        onColorSelected = { activePenColor = it },
-                                        activeStrokeWidth = activeStrokeWidth,
-                                        onStrokeWidthSelected = { activeStrokeWidth = it },
-                                        penColors = penColors
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Bottom Actions
-                        ActionsRow(
-                            isProcessingConfirm = isProcessingConfirm,
-                            onRetakeClick = onRetakeClick,
-                            onConfirmClick = {
-                                isProcessingConfirm = true
-                                scope.launch {
-                                    val finalPath = withContext(Dispatchers.Default) {
-                                        stitchPhotos(context, photoPaths, activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
-                                    }
-                                    isProcessingConfirm = false
-                                    val shouldPrint = configManager.printerType != "NONE"
-                                    onConfirmClick(finalPath, shouldPrint, activeFrame.id)
-                                }
-                            }
-                        )
-                    }
                 }
             }
         }
@@ -422,6 +507,10 @@ fun FilterItem(
         PhotoFilter.MONO -> "B&W Retro"
         PhotoFilter.WARM -> "Warm Gold"
         PhotoFilter.COOL -> "Cool Cyan"
+        PhotoFilter.VINTAGE -> "Vintage Sepia"
+        PhotoFilter.VIVID -> "Vivid Contrast"
+        PhotoFilter.DREAMY -> "Dreamy Glow"
+        PhotoFilter.FILM -> "Analog Film"
     }
 
     Box(
@@ -446,124 +535,10 @@ fun FilterItem(
     }
 }
 
-// Optimized preview-stitching running instantly in background thread (no file I/O, optimized downsampling)
-private fun stitchPhotosPreview(
-    context: Context,
-    photoPaths: List<String>,
-    frame: Frame,
-    filter: PhotoFilter
-): Bitmap {
-    val template = Bitmap.createBitmap(frame.width, frame.height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(template)
-    
-    val bgColor = try {
-        android.graphics.Color.parseColor(frame.backgroundColor)
-    } catch (e: Exception) {
-        android.graphics.Color.BLACK
-    }
-    canvas.drawColor(bgColor)
-    
-    val paint = Paint().apply { isAntiAlias = true; isFilterBitmap = true }
-    
-    when (filter) {
-        PhotoFilter.NORMAL -> {}
-        PhotoFilter.MONO -> {
-            val cm = ColorMatrix().apply { setSaturation(0f) }
-            paint.colorFilter = ColorMatrixColorFilter(cm)
-        }
-        PhotoFilter.WARM -> {
-            val cm = ColorMatrix(floatArrayOf(
-                1.15f, 0f, 0f, 0f, 0f,
-                0f, 1.05f, 0f, 0f, 0f,
-                0f, 0f, 0.85f, 0f, 0f,
-                0f, 0f, 0f, 1f, 0f
-            ))
-            paint.colorFilter = ColorMatrixColorFilter(cm)
-        }
-        PhotoFilter.COOL -> {
-            val cm = ColorMatrix(floatArrayOf(
-                0.9f, 0f, 0f, 0f, 0f,
-                0f, 1.0f, 0f, 0f, 0f,
-                0f, 0f, 1.2f, 0f, 0f,
-                0f, 0f, 0f, 1f, 0f
-            ))
-            paint.colorFilter = ColorMatrixColorFilter(cm)
-        }
-    }
-
-    for (i in frame.slots.indices) {
-        if (i >= photoPaths.size) break
-        val slot = frame.slots[i]
-        val photoFile = File(photoPaths[i])
-        if (!photoFile.exists()) continue
-        
-        // Use inSampleSize to decode only what is necessary
-        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(photoFile.absolutePath, options)
-        val srcW = options.outWidth
-        val srcH = options.outHeight
-        
-        var inSampleSize = 1
-        val reqW = slot.width
-        val reqH = slot.height
-        if (srcH > reqH || srcW > reqW) {
-            val halfHeight = srcH / 2
-            val halfWidth = srcW / 2
-            while (halfHeight / inSampleSize >= reqH && halfWidth / inSampleSize >= reqW) {
-                inSampleSize *= 2
-            }
-        }
-        
-        val decodeOptions = BitmapFactory.Options().apply {
-            inSampleSize = inSampleSize
-        }
-        val srcBmp = BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
-        if (srcBmp != null) {
-            val cropped = getCenterCroppedBitmap(srcBmp, slot.width, slot.height)
-            val rectDest = Rect(slot.x, slot.y, slot.x + slot.width, slot.y + slot.height)
-            canvas.drawBitmap(cropped, null, rectDest, paint)
-            srcBmp.recycle()
-            cropped.recycle()
-        }
-    }
-
-    // Overlay frame PNG
-    val frameFile = File(context.cacheDir, "frames/${frame.id}.png")
-    if (frameFile.exists()) {
-        val overlayBmp = BitmapFactory.decodeFile(frameFile.absolutePath)
-        if (overlayBmp != null) {
-            val destRect = Rect(0, 0, frame.width, frame.height)
-            canvas.drawBitmap(overlayBmp, null, destRect, null)
-            overlayBmp.recycle()
-        }
-    } else {
-        paint.colorFilter = null
-        paint.color = android.graphics.Color.WHITE
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 6f
-        for (slot in frame.slots) {
-            canvas.drawRect(
-                slot.x.toFloat(),
-                slot.y.toFloat(),
-                (slot.x + slot.width).toFloat(),
-                (slot.y + slot.height).toFloat(),
-                paint
-            )
-        }
-        
-        paint.style = Paint.Style.FILL
-        paint.textSize = 36f
-        paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        canvas.drawText("CREATIVE STUDIO", 150f, 1720f, paint)
-    }
-
-    return template
-}
-
 // Custom stitching logic running on Background Thread
 private fun stitchPhotos(
     context: Context,
-    photoPaths: List<String>,
+    photoStates: List<PhotoState>,
     frame: Frame,
     filter: PhotoFilter,
     doodleLines: List<DoodleLine>,
@@ -589,12 +564,16 @@ private fun stitchPhotos(
     when (filter) {
         PhotoFilter.NORMAL -> {}
         PhotoFilter.MONO -> {
-            val cm = ColorMatrix().apply { setSaturation(0f) }
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
+                0.213f, 0.715f, 0.072f, 0f, 0f,
+                0.213f, 0.715f, 0.072f, 0f, 0f,
+                0.213f, 0.715f, 0.072f, 0f, 0f,
+                0f,     0f,     0f,     1f, 0f
+            ))
             paint.colorFilter = ColorMatrixColorFilter(cm)
         }
         PhotoFilter.WARM -> {
-            // Boost red, reduce blue
-            val cm = ColorMatrix(floatArrayOf(
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
                 1.15f, 0f, 0f, 0f, 0f,
                 0f, 1.05f, 0f, 0f, 0f,
                 0f, 0f, 0.85f, 0f, 0f,
@@ -603,11 +582,46 @@ private fun stitchPhotos(
             paint.colorFilter = ColorMatrixColorFilter(cm)
         }
         PhotoFilter.COOL -> {
-            // Boost blue, reduce red
-            val cm = ColorMatrix(floatArrayOf(
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
                 0.9f, 0f, 0f, 0f, 0f,
                 0f, 1.0f, 0f, 0f, 0f,
                 0f, 0f, 1.2f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+        PhotoFilter.VINTAGE -> {
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
+                0.393f, 0.769f, 0.189f, 0f, 0f,
+                0.349f, 0.686f, 0.168f, 0f, 0f,
+                0.272f, 0.534f, 0.131f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+        PhotoFilter.VIVID -> {
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
+                1.3148f, -0.286f,  -0.0288f, 0f, 0f,
+                -0.0852f, 1.114f,  -0.0288f, 0f, 0f,
+                -0.0852f, -0.286f, 1.3712f,  0f, 0f,
+                0f,       0f,      0f,       1f, 0f
+            ))
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+        PhotoFilter.DREAMY -> {
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
+                1.1f, 0f, 0f, 0f, 10f,
+                0f, 0.95f, 0f, 0f, 5f,
+                0f, 0f, 1.05f, 0f, 15f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            paint.colorFilter = ColorMatrixColorFilter(cm)
+        }
+        PhotoFilter.FILM -> {
+            val cm = android.graphics.ColorMatrix(floatArrayOf(
+                1.05f, 0f, 0.05f, 0f, -10f,
+                0.05f, 1.0f, 0f, 0f, 0f,
+                0f, 0.05f, 0.95f, 0f, 10f,
                 0f, 0f, 0f, 1f, 0f
             ))
             paint.colorFilter = ColorMatrixColorFilter(cm)
@@ -616,18 +630,19 @@ private fun stitchPhotos(
 
     // Stitch each photo into its corresponding slot coordinates scaled up
     for (i in frame.slots.indices) {
-        if (i >= photoPaths.size) break
+        if (i >= photoStates.size) break
         
         val slot = frame.slots[i]
-        val photoFile = File(photoPaths[i])
+        val photoState = photoStates[i]
+        val photoFile = File(photoState.path)
         if (!photoFile.exists()) continue
         
-        // Decode photo and crop to match scaled slot dimensions (Center-Crop)
+        // Decode photo and crop to match scaled slot dimensions
         val srcBmp = BitmapFactory.decodeFile(photoFile.absolutePath)
         if (srcBmp != null) {
             val targetW = slot.width * multiplier
             val targetH = slot.height * multiplier
-            val cropped = getCenterCroppedBitmap(srcBmp, targetW, targetH)
+            val cropped = getCroppedBitmapWithState(srcBmp, targetW, targetH, photoState)
             
             // Draw photo to canvas
             val rectDest = Rect(
@@ -766,8 +781,8 @@ private fun stitchPhotos(
     return outputFile.absolutePath
 }
 
-// Custom Center-Crop logic
-private fun getCenterCroppedBitmap(src: Bitmap, targetW: Int, targetH: Int): Bitmap {
+// Custom cropping using PhotoState translation/scale
+private fun getCroppedBitmapWithState(src: Bitmap, targetW: Int, targetH: Int, photoState: PhotoState): Bitmap {
     val srcW = src.width
     val srcH = src.height
     
@@ -776,20 +791,30 @@ private fun getCenterCroppedBitmap(src: Bitmap, targetW: Int, targetH: Int): Bit
     
     var cropW = srcW
     var cropH = srcH
-    var x = 0
-    var y = 0
     
     if (srcRatio > targetRatio) {
         // Src is wider, crop horizontally
+        cropH = srcH
         cropW = (srcH * targetRatio).toInt()
-        x = (srcW - cropW) / 2
     } else {
         // Src is taller, crop vertically
+        cropW = srcW
         cropH = (srcW / targetRatio).toInt()
-        y = (srcH - cropH) / 2
     }
     
-    val cropped = Bitmap.createBitmap(src, x, y, cropW, cropH)
+    // Apply user scale (zooming in makes the crop window smaller relative to source)
+    val actualCropW = (cropW / photoState.scale).toInt().coerceIn(1, srcW)
+    val actualCropH = (cropH / photoState.scale).toInt().coerceIn(1, srcH)
+    
+    // Calculate start positions based on normalized offset (0 to 1)
+    val maxX = srcW - actualCropW
+    val maxY = srcH - actualCropH
+    
+    // normalizedX = 1 means show left part (crop start = 0), normalizedX = 0 means show right part (crop start = maxX)
+    val x = ((srcW - actualCropW) * (1f - photoState.normalizedX)).toInt().coerceIn(0, maxX)
+    val y = ((srcH - actualCropH) * (1f - photoState.normalizedY)).toInt().coerceIn(0, maxY)
+    
+    val cropped = Bitmap.createBitmap(src, x, y, actualCropW, actualCropH)
     val scaled = Bitmap.createScaledBitmap(cropped, targetW, targetH, true)
     
     if (cropped != src) {
@@ -800,35 +825,203 @@ private fun getCenterCroppedBitmap(src: Bitmap, targetW: Int, targetH: Int): Bit
 
 @Composable
 fun PreviewPhotoContainer(
-    previewBitmap: Bitmap?,
-    frameAspectRatio: Float,
+    photoStates: List<PhotoState>,
+    frame: Frame,
+    selectedFilter: PhotoFilter,
+    activeTab: PreviewTab,
+    swapMode: Boolean,
+    selectedSwapIndex: Int?,
+    onPhotoClick: (Int) -> Unit,
+    onPhotoDrag: (Int, Offset) -> Unit,
     doodleLines: SnapshotStateList<DoodleLine>,
     activePenColor: Color,
     activeStrokeWidth: Float,
-    activeTab: PreviewTab,
     stickers: SnapshotStateList<Sticker>,
     selectedStickerId: String?,
     onStickerSelected: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val frameFile = remember(frame.id) { File(context.cacheDir, "frames/${frame.id}.png") }
+    val frameAspectRatio = frame.width.toFloat() / frame.height.toFloat()
+    
+    val parsedColor = remember(frame.backgroundColor) {
+        try {
+            Color(android.graphics.Color.parseColor(frame.backgroundColor))
+        } catch (e: Exception) {
+            Color.Black
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxHeight()
             .aspectRatio(frameAspectRatio)
             .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface),
+            .background(parsedColor),
         contentAlignment = Alignment.Center
     ) {
-        if (previewBitmap != null) {
-            Image(
-                bitmap = previewBitmap.asImageBitmap(),
-                contentDescription = "Preview Strip",
-                modifier = Modifier.fillMaxSize()
-            )
+        // 1. Photo Slots Container
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val containerWidth = maxWidth
+            val containerHeight = maxHeight
+            
+            val scaleX = containerWidth.value / frame.width.toFloat()
+            val scaleY = containerHeight.value / frame.height.toFloat()
+            
+            // Draw slots
+            frame.slots.forEachIndexed { index, slot ->
+                if (index < photoStates.size) {
+                    val photoState = photoStates[index]
+                    
+                    val slotLeft = (slot.x * scaleX).dp
+                    val slotTop = (slot.y * scaleY).dp
+                    val slotWidth = (slot.width * scaleX).dp
+                    val slotHeight = (slot.height * scaleY).dp
+                    
+                    // We need photo aspect ratio to calculate crop dimensions
+                    val photoAspectRatio = remember(photoState.path) {
+                        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeFile(photoState.path, options)
+                        if (options.outWidth > 0 && options.outHeight > 0) {
+                            options.outWidth.toFloat() / options.outHeight.toFloat()
+                        } else {
+                            1f
+                        }
+                    }
+                    
+                    // Compute image size to cover slot
+                    val slotRatio = slot.width.toFloat() / slot.height.toFloat()
+                    val (imageWidth, imageHeight) = if (photoAspectRatio > slotRatio) {
+                        Pair(slotHeight * photoAspectRatio, slotHeight)
+                    } else {
+                        Pair(slotWidth, slotWidth / photoAspectRatio)
+                    }
+                    
+                    val scaledWidth = imageWidth * photoState.scale
+                    val scaledHeight = imageHeight * photoState.scale
+                    
+                    val minX = slotWidth - scaledWidth
+                    val maxX = 0.dp
+                    val offsetX = minX + photoState.normalizedX.dp * (maxX.value - minX.value)
+                    
+                    val minY = slotHeight - scaledHeight
+                    val maxY = 0.dp
+                    val offsetY = minY + photoState.normalizedY.dp * (maxY.value - minY.value)
+                    
+                    val isSelectedForSwap = index == selectedSwapIndex
+                    
+                    Box(
+                        modifier = Modifier
+                            .offset(x = slotLeft, y = slotTop)
+                            .size(slotWidth, slotHeight)
+                            .clipToBounds()
+                            .background(Color.DarkGray)
+                            .then(
+                                if (swapMode) {
+                                    Modifier
+                                        .clickable { onPhotoClick(index) }
+                                        .border(
+                                            width = if (isSelectedForSwap) 4.dp else 2.dp,
+                                            color = if (isSelectedForSwap) Color.Green else Color.Yellow.copy(alpha = 0.7f)
+                                        )
+                                } else if (activeTab == PreviewTab.FRAME) {
+                                    Modifier.pointerInput(index) {
+                                        detectDragGestures { change, dragAmount ->
+                                            change.consume()
+                                            
+                                            val rangeX = maxX.toPx() - minX.toPx()
+                                            val rangeY = maxY.toPx() - minY.toPx()
+                                            
+                                            val newNormalizedX = if (rangeX > 0) {
+                                                (photoState.normalizedX + dragAmount.x / rangeX).coerceIn(0f, 1f)
+                                            } else {
+                                                photoState.normalizedX
+                                            }
+                                            
+                                            val newNormalizedY = if (rangeY > 0) {
+                                                (photoState.normalizedY + dragAmount.y / rangeY).coerceIn(0f, 1f)
+                                            } else {
+                                                photoState.normalizedY
+                                            }
+                                            
+                                            onPhotoDrag(index, Offset(newNormalizedX, newNormalizedY))
+                                        }
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            )
+                    ) {
+                        // Display photo
+                        AsyncImage(
+                            model = File(photoState.path),
+                            contentDescription = "Photo ${index + 1}",
+                            contentScale = ContentScale.FillBounds,
+                            colorFilter = getColorFilter(selectedFilter),
+                            modifier = Modifier
+                                .offset(x = offsetX, y = offsetY)
+                                .size(scaledWidth, scaledHeight)
+                        )
+                        
+                        // Swap indicator overlay
+                        if (swapMode) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        if (isSelectedForSwap) Color.Green.copy(alpha = 0.3f)
+                                        else Color.Black.copy(alpha = 0.4f)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (isSelectedForSwap) "Terpilih" else "Sentuh untuk Tukar",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
         
-        // Doodle canvas
+        // 2. Frame Overlay (on top of photos)
+        if (frameFile.exists()) {
+            AsyncImage(
+                model = frameFile,
+                contentDescription = "Frame Overlay",
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            // Draw white borders around slots as fallback
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val containerWidth = maxWidth
+                val containerHeight = maxHeight
+                val scaleX = containerWidth.value / frame.width.toFloat()
+                val scaleY = containerHeight.value / frame.height.toFloat()
+                
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    frame.slots.forEach { slot ->
+                        drawRect(
+                            color = Color.White,
+                            topLeft = Offset(slot.x * scaleX, slot.y * scaleY),
+                            size = androidx.compose.ui.geometry.Size(slot.width * scaleX, slot.height * scaleY),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                        )
+                    }
+                }
+            }
+        }
+        
+        // 3. Doodle canvas
         DoodleCanvas(
             lines = doodleLines,
             onLinesChanged = { newList ->
@@ -841,7 +1034,7 @@ fun PreviewPhotoContainer(
             modifier = Modifier.fillMaxSize()
         )
         
-        // Sticker overlay
+        // 4. Sticker overlay
         StickerOverlay(
             stickers = stickers,
             selectedStickerId = selectedStickerId,
@@ -859,6 +1052,54 @@ fun PreviewPhotoContainer(
             enabled = activeTab == PreviewTab.STICKER,
             modifier = Modifier.fillMaxSize()
         )
+    }
+}
+
+private fun getColorFilter(filter: PhotoFilter): ColorFilter? {
+    return when (filter) {
+        PhotoFilter.NORMAL -> null
+        PhotoFilter.MONO -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            0.213f, 0.715f, 0.072f, 0f, 0f,
+            0.213f, 0.715f, 0.072f, 0f, 0f,
+            0.213f, 0.715f, 0.072f, 0f, 0f,
+            0f,     0f,     0f,     1f, 0f
+        )))
+        PhotoFilter.WARM -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            1.15f, 0f, 0f, 0f, 0f,
+            0f, 1.05f, 0f, 0f, 0f,
+            0f, 0f, 0.85f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        )))
+        PhotoFilter.COOL -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            0.9f, 0f, 0f, 0f, 0f,
+            0f, 1.0f, 0f, 0f, 0f,
+            0f, 0f, 1.2f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        )))
+        PhotoFilter.VINTAGE -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            0.393f, 0.769f, 0.189f, 0f, 0f,
+            0.349f, 0.686f, 0.168f, 0f, 0f,
+            0.272f, 0.534f, 0.131f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        )))
+        PhotoFilter.VIVID -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            1.3148f, -0.286f,  -0.0288f, 0f, 0f,
+            -0.0852f, 1.114f,  -0.0288f, 0f, 0f,
+            -0.0852f, -0.286f, 1.3712f,  0f, 0f,
+            0f,       0f,      0f,       1f, 0f
+        )))
+        PhotoFilter.DREAMY -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            1.1f, 0f, 0f, 0f, 10f,
+            0f, 0.95f, 0f, 0f, 5f,
+            0f, 0f, 1.05f, 0f, 15f,
+            0f, 0f, 0f, 1f, 0f
+        )))
+        PhotoFilter.FILM -> ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            1.05f, 0f, 0.05f, 0f, -10f,
+            0.05f, 1.0f, 0f, 0f, 0f,
+            0f, 0.05f, 0.95f, 0f, 10f,
+            0f, 0f, 0f, 1f, 0f
+        )))
     }
 }
 
@@ -979,8 +1220,20 @@ fun StickerOverlay(
 }
 
 val emojiList = listOf(
-    "😎", "❤️", "✨", "👑", "🌟", "🎈", "🎉", "🎀", "🍕", "🧁",
-    "📸", "🎧", "🧸", "🐱", "🐶", "🌸", "⚡", "🍀", "🎃", "👻", "👽"
+    // Faces & Emoticons (12)
+    "😎", "😍", "🥰", "🤪", "🥳", "🤡", "😭", "🥵", "🥶", "🥺", "🤠", "👽",
+    // Hearts & Love (8)
+    "❤️", "💖", "💝", "💕", "💌", "💋", "🫶", "🎀",
+    // Celebrations & Magic (8)
+    "✨", "🌟", "⭐", "💫", "🔥", "⚡", "🌈", "🍀",
+    // Party & Decor (8)
+    "👑", "🎈", "🎉", "🎁", "🧸", "🔔", "💎", "🌸",
+    // Food & Drinks (10)
+    "🍕", "🧁", "🍩", "🍦", "🥤", "🍹", "🍿", "🍓", "🍒", "🥑",
+    // Music, Hobbies & Tech (8)
+    "📸", "🎧", "🎵", "🎸", "👾", "🎮", "🐱", "🐶",
+    // Spooky & Fun (6)
+    "🎃", "👻", "💀", "😈", "🚀", "🛸"
 )
 
 @Composable
@@ -1305,8 +1558,18 @@ fun DoodleSelectorPanel(
                                 color = if (activePenColor == color) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                 shape = CircleShape
                             )
-                            .clickable { onColorSelected(color) }
-                    )
+                            .clickable { onColorSelected(color) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (activePenColor == color) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Selected",
+                                tint = if (color == Color.White || color == Color(0xFFFFB703)) Color.Black else Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
