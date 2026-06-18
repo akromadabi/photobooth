@@ -225,11 +225,11 @@ class ThermalPrinterDriver : PrinterManager {
         )
         
         // Feed 4 lines: ESC d 4 (0x1B, 0x64, 0x04)
-        // If auto-cut is enabled, send GS V 0 (0x1D, 0x56, 0x00)
+        // If auto-cut is enabled, send GS V 66 0 (0x1D, 0x56, 0x42, 0x00)
         val cutCmd = if (configManager.printerAutoCut) {
             byteArrayOf(
                 0x1B, 0x64, 0x04,
-                0x1D, 0x56, 0x00
+                0x1D, 0x56, 0x42, 0x00
             )
         } else {
             byteArrayOf(
@@ -269,17 +269,29 @@ class ThermalPrinterDriver : PrinterManager {
         
         var socket: BluetoothSocket? = null
         return try {
-            socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
             try {
+                // 1. Try Insecure RFCOMM socket (standard for SPP printers to bypass PIN/pairing issues)
+                socket = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
                 socket.connect()
             } catch (e: IOException) {
-                // Fallback connection attempt using reflection on RFCOMM channel 1 (standard SPP fallback)
                 try {
-                    socket.close()
+                    socket?.close()
                 } catch (ce: Exception) {}
-                val m = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
-                socket = m.invoke(device, 1) as BluetoothSocket
-                socket.connect()
+                
+                // 2. Try Secure RFCOMM socket
+                try {
+                    socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
+                    socket.connect()
+                } catch (e2: IOException) {
+                    try {
+                        socket?.close()
+                    } catch (ce: Exception) {}
+                    
+                    // 3. Fallback connection attempt using reflection on RFCOMM channel 1
+                    val m = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
+                    socket = m.invoke(device, 1) as BluetoothSocket
+                    socket.connect()
+                }
             }
             
             val configManager = ConfigManager(context)
@@ -290,8 +302,10 @@ class ThermalPrinterDriver : PrinterManager {
             }
             val outputStream = socket.outputStream
             
-            // Transfer in chunks to prevent buffer overflow issues over Bluetooth SPP
-            val maxChunk = 1024
+            // Transfer in chunks to prevent buffer overflow issues over Bluetooth SPP.
+            // Using 4096 bytes chunk with a tiny 5ms delay matches the data rate perfectly
+            // to keep the printer buffer filled without causing starvation (stuttering).
+            val maxChunk = 4096
             var sent = 0
             while (sent < printData.size) {
                 val length = (printData.size - sent).coerceAtMost(maxChunk)
@@ -299,21 +313,19 @@ class ThermalPrinterDriver : PrinterManager {
                 outputStream.flush()
                 sent += length
                 
-                // Introduce a tiny delay between chunks to allow the printer's CPU
-                // and hardware buffer to digest the incoming data.
                 try {
-                    Thread.sleep(15)
+                    Thread.sleep(5)
                 } catch (e: InterruptedException) {
                     // Ignore
                 }
             }
             
-            // Critical: Wait for the printer to finish receiving and processing
+            // Critical: Wait for the printer to finish receiving and physically processing
             // the remaining data from the Bluetooth stacks/buffers before closing the socket connection.
             // If closed immediately, the last few bytes (including feed and auto-cut commands)
-            // will be truncated.
+            // will be truncated. Increased from 1s to 3s to guarantee physical print completion.
             try {
-                Thread.sleep(1000)
+                Thread.sleep(3000)
             } catch (e: InterruptedException) {
                 // Ignore
             }

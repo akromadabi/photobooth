@@ -890,7 +890,6 @@ fun PreviewPhotoContainer(
 
     Box(
         modifier = modifier
-            .fillMaxHeight()
             .aspectRatio(frameAspectRatio)
             .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
@@ -962,9 +961,12 @@ fun PreviewPhotoContainer(
                                             color = if (isSelectedForSwap) Color.Green else Color.Yellow.copy(alpha = 0.7f)
                                         )
                                 } else if (activeTab == PreviewTab.FRAME) {
+                                    val currentPhotoStateState = rememberUpdatedState(photoState)
+                                    val currentOnPhotoTransformState = rememberUpdatedState(onPhotoTransform)
                                     Modifier.pointerInput(index) {
                                         detectTransformGestures { _, pan, zoom, _ ->
-                                            val currentScale = photoState.scale
+                                            val currentPhotoState = currentPhotoStateState.value
+                                            val currentScale = currentPhotoState.scale
                                             val newScale = (currentScale * zoom).coerceIn(1.0f, 3.0f)
                                             
                                             val newScaledWidth = imageWidth * newScale
@@ -977,18 +979,18 @@ fun PreviewPhotoContainer(
                                             val rangeY = -newMinY.toPx()
                                             
                                             val newNormalizedX = if (rangeX > 0) {
-                                                (photoState.normalizedX + pan.x / rangeX).coerceIn(0f, 1f)
+                                                (currentPhotoState.normalizedX + pan.x / rangeX).coerceIn(0f, 1f)
                                             } else {
-                                                photoState.normalizedX
+                                                currentPhotoState.normalizedX
                                             }
                                             
                                             val newNormalizedY = if (rangeY > 0) {
-                                                (photoState.normalizedY + pan.y / rangeY).coerceIn(0f, 1f)
+                                                (currentPhotoState.normalizedY + pan.y / rangeY).coerceIn(0f, 1f)
                                             } else {
-                                                photoState.normalizedY
+                                                currentPhotoState.normalizedY
                                             }
                                             
-                                            onPhotoTransform(index, Offset(newNormalizedX, newNormalizedY), newScale)
+                                            currentOnPhotoTransformState.value(index, Offset(newNormalizedX, newNormalizedY), newScale)
                                         }
                                     }
                                 } else {
@@ -1737,7 +1739,7 @@ fun MiniFrameCard(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .width((140f * frameAspectRatio).dp)
+            .aspectRatio(frameAspectRatio)
             .clip(RoundedCornerShape(12.dp))
             .background(parsedColor)
             .border(

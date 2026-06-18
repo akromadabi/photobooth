@@ -33,6 +33,13 @@ object PrintTestHelper {
             return "Tipe printer aktif: Tidak Ada"
         }
 
+        val appVersionName = try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            "v${packageInfo.versionName}"
+        } catch (e: Exception) {
+            "v1.25.2"
+        }
+
         val bitmap = if (printerTypeToUse == "COLOR") {
             // Generate Color Test Page (width 800, height 1000)
             val w = 800
@@ -62,7 +69,7 @@ object PrintTestHelper {
             canvas.drawText("Tipe Printer: COLOR PRINTER (PDF/SYSTEM)", 80f, 200f, paint)
             canvas.drawText("Pengujian: TEST CETAK WARNA (COLOR TEST)", 80f, 260f, paint)
             canvas.drawText("Ukuran Kertas: A4 / 4R (Sesuai Setelan Dialog)", 80f, 320f, paint)
-            canvas.drawText("Aplikasi: Creative Studio Kiosk v1.16.0", 80f, 380f, paint)
+            canvas.drawText("Aplikasi: Creative Studio Kiosk $appVersionName", 80f, 380f, paint)
             
             // Draw color bands to test printer colors
             val colors = intArrayOf(
@@ -121,7 +128,7 @@ object PrintTestHelper {
             canvas.drawText("Ukuran Kertas: ${configManager.printerPaperWidth} mm", 30f, 230f, paint)
             canvas.drawText("Mode Protokol: ${configManager.thermalMode}", 30f, 280f, paint)
             canvas.drawText("Port/Alamat: ${configManager.printerAddress}", 30f, 330f, paint)
-            canvas.drawText("Aplikasi: Creative Studio Kiosk v1.16.0", 30f, 380f, paint)
+            canvas.drawText("Aplikasi: Creative Studio Kiosk $appVersionName", 30f, 380f, paint)
             
             // Checkerboard pattern to test thermal printing density
             paint.color = android.graphics.Color.BLACK
@@ -162,9 +169,9 @@ object PrintTestHelper {
         couponCode: String,
         packageName: String
     ): String {
-        // Width: 384 pixels, Height: 720 pixels
+        // Width: 384 pixels, Height: 530 pixels (compact layout to save paper)
         val w = 384
-        val h = 720
+        val h = 530
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         val paint = Paint().apply { isAntiAlias = true }
@@ -175,80 +182,80 @@ object PrintTestHelper {
         paint.color = android.graphics.Color.BLACK
         paint.style = Paint.Style.FILL
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = 24f
+        paint.textSize = 22f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("CREATIVE STUDIO", w / 2f, 50f, paint)
+        canvas.drawText("CREATIVE STUDIO", w / 2f, 40f, paint)
 
-        paint.textSize = 16f
+        paint.textSize = 14f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
-        canvas.drawText("\"Capture Your Best Moments\"", w / 2f, 80f, paint)
+        canvas.drawText("\"Capture Your Best Moments\"", w / 2f, 65f, paint)
 
         // Dashed line
         paint.strokeWidth = 2f
         paint.style = Paint.Style.STROKE
         var x = 20f
         while (x < w - 20f) {
-            canvas.drawLine(x, 110f, x + 10f, 110f, paint)
+            canvas.drawLine(x, 85f, x + 10f, 85f, paint)
             x += 15f
         }
 
         // Coupon details
         paint.style = Paint.Style.FILL
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = 18f
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("PAKET: ${packageName.uppercase()}", w / 2f, 150f, paint)
-
         paint.textSize = 16f
+        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        canvas.drawText("PAKET: ${packageName.uppercase()}", w / 2f, 120f, paint)
+
+        paint.textSize = 13f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
-        canvas.drawText("KODE KUPON:", w / 2f, 190f, paint)
+        canvas.drawText("KODE KUPON:", w / 2f, 155f, paint)
 
         // Large boxed coupon code
-        paint.textSize = 32f
+        paint.textSize = 26f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
         
         // Draw border box for coupon code
         val rectPaint = Paint().apply {
             color = android.graphics.Color.BLACK
-            strokeWidth = 3f
+            strokeWidth = 2.5f
             style = Paint.Style.STROKE
         }
-        canvas.drawRect(60f, 215f, w - 60f, 285f, rectPaint)
+        canvas.drawRect(70f, 170f, w - 70f, 225f, rectPaint)
         
         // Center text coupon code
-        canvas.drawText(couponCode, w / 2f, 262f, paint)
+        canvas.drawText(couponCode, w / 2f, 210f, paint)
 
-        // QR Code of the coupon code
+        // QR Code of the coupon code (compact 120px)
         try {
-            val qrSize = 180
+            val qrSize = 120
             val qrBmp = generateQrCode(couponCode, qrSize, qrSize)
-            canvas.drawBitmap(qrBmp, (w - qrSize) / 2f, 315f, paint)
+            canvas.drawBitmap(qrBmp, (w - qrSize) / 2f, 240f, paint)
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
         // Instructions
-        paint.textSize = 14f
+        paint.textSize = 12f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
-        canvas.drawText("Pindai QR atau masukkan kode kupon", w / 2f, 530f, paint)
-        canvas.drawText("pada menu pembayaran Kiosk Anda.", w / 2f, 555f, paint)
+        canvas.drawText("Pindai QR atau masukkan kode kupon", w / 2f, 385f, paint)
+        canvas.drawText("pada menu pembayaran Kiosk Anda.", w / 2f, 405f, paint)
 
         // Date & Cashier
         val dateStr = android.text.format.DateFormat.format("dd MMM yyyy HH:mm", java.util.Date()).toString()
-        paint.textSize = 12f
-        canvas.drawText("Tanggal: $dateStr", w / 2f, 600f, paint)
-        canvas.drawText("Kasir  : Kiosk Operator", w / 2f, 620f, paint)
+        paint.textSize = 11f
+        canvas.drawText("Tanggal: $dateStr", w / 2f, 440f, paint)
+        canvas.drawText("Kasir  : Kiosk Operator", w / 2f, 458f, paint)
 
         // Double line divider at bottom
         paint.strokeWidth = 2f
         paint.style = Paint.Style.STROKE
-        canvas.drawLine(20f, 650f, w - 20f, 650f, paint)
-        canvas.drawLine(20f, 655f, w - 20f, 655f, paint)
+        canvas.drawLine(20f, 480f, w - 20f, 480f, paint)
+        canvas.drawLine(20f, 484f, w - 20f, 484f, paint)
 
         paint.style = Paint.Style.FILL
-        paint.textSize = 14f
+        paint.textSize = 12f
         paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("TERIMA KASIH & SELAMAT BERFOTO!", w / 2f, 685f, paint)
+        canvas.drawText("TERIMA KASIH & SELAMAT BERFOTO!", w / 2f, 510f, paint)
 
         val driver = ThermalPrinterDriver()
         val result = driver.printBitmap(bmp, context)

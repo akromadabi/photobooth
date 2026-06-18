@@ -363,6 +363,12 @@ if (!$orderQueueItem) {
     die("Akses ditolak. Transaksi tidak ditemukan dalam antrean.");
 }
 
+// Redirect if already paid/redeemed to prevent losing session
+if ($orderQueueItem['status'] !== 'UNPAID') {
+    header("Location: order.php?session_id=" . urlencode($orderId));
+    exit;
+}
+
 $midtransToken = '';
 $midtransRedirectUrl = '';
 $midtransError = '';

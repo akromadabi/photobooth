@@ -684,7 +684,7 @@ fun AdminScreen(
                                         colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("SYNC KATALOG SEKARANG", fontWeight = FontWeight.Bold)
+                                        Text("SYNC KATALOG SEKARANG", fontWeight = FontWeight.Bold, color = White)
                                     }
                                 }
                             }
@@ -951,7 +951,7 @@ fun AdminScreen(
                                                 colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Text("PERIKSA PEMBARUAN", fontWeight = FontWeight.Bold)
+                                                Text("PERIKSA PEMBARUAN", fontWeight = FontWeight.Bold, color = White)
                                             }
                                         }
                                     } else {
@@ -1021,7 +1021,7 @@ fun AdminScreen(
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF52B788)),
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
-                                                    Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = White)
+                                                    Text("UNDUH & INSTAL SEKARANG", fontWeight = FontWeight.Bold, color = Color.White)
                                                 }
                                             }
                                         } else {
@@ -1042,7 +1042,7 @@ fun AdminScreen(
                                                 colors = ButtonDefaults.buttonColors(containerColor = BorderColor),
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Text("OK", fontWeight = FontWeight.Bold)
+                                                Text("OK", fontWeight = FontWeight.Bold, color = White)
                                             }
                                         }
                                     }
@@ -1115,7 +1115,7 @@ fun AdminScreen(
                                     .fillMaxWidth()
                                     .height(54.dp)
                             ) {
-                                Text("SIMPAN SEMUA PERUBAHAN", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White)
+                                Text("SIMPAN SEMUA PERUBAHAN", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                             }
                         }
 
@@ -1145,7 +1145,7 @@ fun AdminScreen(
                                          },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
                                     ) {
-                                        Text("Buka Setelan")
+                                        Text("Buka Setelan", color = Color.White)
                                     }
                                 },
                                 dismissButton = {
@@ -1551,6 +1551,156 @@ fun AdminScreen(
                                             )
                                         )
                                     }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Dither Preview Title
+                                    Text(
+                                        text = "Pratinjau Hasil Cetak (Dither Simulation)",
+                                        color = Color(0xFFE63946),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Simulasi tampilan foto pada kertas thermal (hitam-putih 1-bit) berdasarkan setelan Kontras, Kecerahan, Ketajaman & Denoise di atas.",
+                                        color = Gray,
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // Generate and process dummy bitmaps
+                                    val dummyPhoto = remember {
+                                        val w = 300
+                                        val h = 400
+                                        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                                        val canvas = Canvas(bmp)
+                                        val paint = Paint().apply { isAntiAlias = true }
+
+                                        // Background with linear gradient (gray-to-white)
+                                        paint.shader = android.graphics.LinearGradient(
+                                            0f, 0f, w.toFloat(), h.toFloat(),
+                                            android.graphics.Color.rgb(240, 240, 240),
+                                            android.graphics.Color.rgb(100, 100, 100),
+                                            android.graphics.Shader.TileMode.CLAMP
+                                        )
+                                        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+                                        paint.shader = null
+
+                                        // Draw Face (Skin)
+                                        paint.color = android.graphics.Color.rgb(235, 195, 165)
+                                        canvas.drawOval(w/2f - 65f, h/2f - 90f, w/2f + 65f, h/2f + 40f, paint)
+
+                                        // Hair
+                                        paint.color = android.graphics.Color.rgb(50, 45, 45)
+                                        canvas.drawArc(w/2f - 75f, h/2f - 110f, w/2f + 75f, h/2f - 20f, 180f, 180f, true, paint)
+                                        canvas.drawRect(w/2f - 75f, h/2f - 60f, w/2f - 55f, h/2f + 20f, paint)
+                                        canvas.drawRect(w/2f + 55f, h/2f - 60f, w/2f + 75f, h/2f + 20f, paint)
+
+                                        // Eyes
+                                        paint.color = android.graphics.Color.WHITE
+                                        canvas.drawOval(w/2f - 30f, h/2f - 40f, w/2f - 10f, h/2f - 25f, paint)
+                                        canvas.drawOval(w/2f + 10f, h/2f - 40f, w/2f + 30f, h/2f - 25f, paint)
+                                        paint.color = android.graphics.Color.BLACK
+                                        canvas.drawCircle(w/2f - 20f, h/2f - 32f, 5f, paint)
+                                        canvas.drawCircle(w/2f + 20f, h/2f - 32f, 5f, paint)
+
+                                        // Smile
+                                        paint.color = android.graphics.Color.rgb(200, 80, 80)
+                                        paint.style = Paint.Style.STROKE
+                                        paint.strokeWidth = 4f
+                                        canvas.drawArc(w/2f - 20f, h/2f - 5f, w/2f + 20f, h/2f + 15f, 0f, 180f, false, paint)
+
+                                        // Shaded sphere (test for brightness and contrast gradient)
+                                        paint.style = Paint.Style.FILL
+                                        paint.shader = android.graphics.RadialGradient(
+                                            w/2f + 65f, h - 85f, 50f,
+                                            android.graphics.Color.WHITE,
+                                            android.graphics.Color.BLACK,
+                                            android.graphics.Shader.TileMode.CLAMP
+                                        )
+                                        canvas.drawCircle(w/2f + 55f, h - 75f, 35f, paint)
+                                        paint.shader = null
+
+                                        // Checkerboard (test for sharpness)
+                                        paint.color = android.graphics.Color.rgb(80, 80, 80)
+                                        for (i in 0..4) {
+                                            for (j in 0..4) {
+                                                 if ((i + j) % 2 == 0) {
+                                                     canvas.drawRect(25f + i * 8f, h - 75f + j * 8f, 33f + i * 8f, h - 67f + j * 8f, paint)
+                                                 }
+                                            }
+                                        }
+
+                                        // Text label
+                                        paint.color = android.graphics.Color.BLACK
+                                        paint.textSize = 18f
+                                        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+                                        canvas.drawText("FOTO DUMMY", 20f, 40f, paint)
+
+                                        bmp
+                                    }
+
+                                    val ditheredPhoto = remember(dummyPhoto, thermalContrast, thermalBrightness, thermalSharpness, thermalDenoise) {
+                                        com.example.photobooth.print.DitherHelper.ditherFloydSteinberg(
+                                            dummyPhoto,
+                                            contrast = thermalContrast,
+                                            brightness = thermalBrightness,
+                                            sharpStrength = thermalSharpness,
+                                            denoise = thermalDenoise
+                                         )
+                                    }
+
+                                    Row(
+                                         modifier = Modifier.fillMaxWidth(),
+                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                         verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                         // Column 1: Original
+                                         Column(
+                                             modifier = Modifier.weight(1f),
+                                             horizontalAlignment = Alignment.CenterHorizontally
+                                         ) {
+                                             Text("Foto Asli", color = Gray, fontSize = 11.sp, modifier = Modifier.padding(bottom = 4.dp))
+                                             Box(
+                                                 modifier = Modifier
+                                                     .aspectRatio(3f / 4f)
+                                                     .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                                                     .clip(RoundedCornerShape(8.dp))
+                                                     .background(Color.White)
+                                             ) {
+                                                 Image(
+                                                     bitmap = dummyPhoto.asImageBitmap(),
+                                                     contentDescription = "Original Dummy Photo",
+                                                     modifier = Modifier.fillMaxSize()
+                                                 )
+                                             }
+                                         }
+
+                                         // Column 2: Simulated Thermal
+                                         Column(
+                                             modifier = Modifier.weight(1f),
+                                             horizontalAlignment = Alignment.CenterHorizontally
+                                         ) {
+                                             Text("Hasil Simulasi Cetak", color = Gray, fontSize = 11.sp, modifier = Modifier.padding(bottom = 4.dp))
+                                             Box(
+                                                 modifier = Modifier
+                                                     .aspectRatio(3f / 4f)
+                                                     .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                                                     .clip(RoundedCornerShape(8.dp))
+                                                     .background(Color.White)
+                                             ) {
+                                                 Image(
+                                                     bitmap = ditheredPhoto.asImageBitmap(),
+                                                     contentDescription = "Dithered Print Preview",
+                                                     modifier = Modifier.fillMaxSize()
+                                                 )
+                                             }
+                                         }
+                                    }
                                 }
                             }
                         }
@@ -1852,7 +2002,7 @@ fun AdminScreen(
                                         shape = RoundedCornerShape(8.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp)
                                     ) {
-                                        Text("Hubungkan", color = White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text("Hubungkan", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
@@ -1878,7 +2028,7 @@ fun AdminScreen(
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("UJI COBA CETAK STRUK", fontWeight = FontWeight.Bold, color = White)
+                                        Text("UJI COBA CETAK STRUK", fontWeight = FontWeight.Bold, color = Color.White)
                                     }
                                 }
                             }
@@ -2033,7 +2183,7 @@ fun AdminScreen(
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946)),
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = White)
+                                            Text("UJI COBA CETAK WARNA", fontWeight = FontWeight.Bold, color = Color.White)
                                         }
                                     }
                                 }
@@ -2318,8 +2468,8 @@ fun AdminScreen(
                                         ) {
                                             Text(
                                                 text = if (isThermalEnabled || !isThermalPrintChecked) "PROSES & CETAK KUPON 🎫" else "Aktifkan printer thermal untuk mencetak struk",
-                                                fontWeight = FontWeight.Bold,
-                                                color = White
+                                                 fontWeight = FontWeight.Bold,
+                                                 color = Color.White
                                             )
                                         }
                                     }
@@ -2600,7 +2750,7 @@ fun AdminScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("CETAK ULANG FOTO (REPRINT)", fontWeight = FontWeight.Bold)
+                                    Text("CETAK ULANG FOTO (REPRINT)", fontWeight = FontWeight.Bold, color = Color.White)
                                 }
                             }
 
@@ -2621,7 +2771,7 @@ fun AdminScreen(
                                 if (isSaving) {
                                     CircularProgressIndicator(color = White, modifier = Modifier.size(20.dp))
                                 } else {
-                                    Text("SIMPAN FOTO KE GALERI", fontWeight = FontWeight.Bold)
+                                    Text("SIMPAN FOTO KE GALERI", fontWeight = FontWeight.Bold, color = White)
                                 }
                             }
                             
@@ -2660,7 +2810,7 @@ fun AdminScreen(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
                         ) {
-                            Text("Printer Struk (Thermal)")
+                            Text("Printer Struk (Thermal)", color = Color.White)
                         }
                     },
                     dismissButton = {
@@ -2676,7 +2826,7 @@ fun AdminScreen(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                         ) {
-                            Text("Printer Warna")
+                            Text("Printer Warna", color = Color.White)
                         }
                     },
                     containerColor = BgCard
@@ -2767,132 +2917,7 @@ private suspend fun syncFramesFromBackend(context: Context, baseUrl: String, con
 
 // Run test print job
 private suspend fun testPrintJob(context: Context, configManager: ConfigManager, forceType: String? = null): String {
-    val printerTypeToUse = forceType ?: configManager.printerType
-    if (printerTypeToUse == "NONE") {
-        return "Tipe printer aktif: Tidak Ada"
-    }
-
-    val bitmap = if (printerTypeToUse == "COLOR") {
-        // Generate Color Test Page (width 800, height 1000)
-        val w = 800
-        val h = 1000
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val paint = Paint().apply { isAntiAlias = true }
-        
-        // Background
-        canvas.drawColor(android.graphics.Color.WHITE)
-        
-        // Outer border
-        paint.color = android.graphics.Color.RED
-        paint.strokeWidth = 8f
-        paint.style = Paint.Style.STROKE
-        canvas.drawRect(20f, 20f, w - 20f, h - 20f, paint)
-        
-        // Title
-        paint.style = Paint.Style.FILL
-        paint.color = android.graphics.Color.BLACK
-        paint.textSize = 40f
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("UJI COBA CETAK WARNA", 180f, 100f, paint)
-        
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
-        paint.textSize = 28f
-        canvas.drawText("Tipe Printer: COLOR PRINTER (PDF/SYSTEM)", 80f, 200f, paint)
-        canvas.drawText("Pengujian: TEST CETAK WARNA (COLOR TEST)", 80f, 260f, paint)
-        canvas.drawText("Ukuran Kertas: A4 / 4R (Sesuai Setelan Dialog)", 80f, 320f, paint)
-        canvas.drawText("Aplikasi: Creative Studio Kiosk v1.16.0", 80f, 380f, paint)
-        
-        // Draw color bands to test printer colors
-        val colors = intArrayOf(
-            android.graphics.Color.RED,
-            android.graphics.Color.GREEN,
-            android.graphics.Color.BLUE,
-            android.graphics.Color.YELLOW,
-            android.graphics.Color.CYAN,
-            android.graphics.Color.MAGENTA,
-            android.graphics.Color.BLACK
-        )
-        val colorNames = arrayOf("RED (MERAH)", "GREEN (HIJAU)", "BLUE (BIRU)", "YELLOW (KUNING)", "CYAN (BIRU MUDA)", "MAGENTA (MERAH MUDA)", "BLACK (HITAM)")
-        
-        paint.textSize = 22f
-        for (i in colors.indices) {
-            val y = 460f + i * 60f
-            paint.color = colors[i]
-            paint.style = Paint.Style.FILL
-            canvas.drawRect(80f, y, 200f, y + 40f, paint)
-            
-            paint.color = android.graphics.Color.BLACK
-            canvas.drawText(colorNames[i], 230f, y + 28f, paint)
-        }
-        
-        paint.textSize = 26f
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("Status: Printer Warna Siap!", 240f, 920f, paint)
-        
-        bmp
-    } else {
-        // Generate Thermal Test Page (width 384, height 600)
-        val w = 384
-        val h = 600
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val paint = Paint().apply { isAntiAlias = true }
-        
-        canvas.drawColor(android.graphics.Color.WHITE)
-        
-        // Border
-        paint.color = android.graphics.Color.BLACK
-        paint.strokeWidth = 4f
-        paint.style = Paint.Style.STROKE
-        canvas.drawRect(10f, 10f, w - 10f, h - 10f, paint)
-        
-        // Title
-        paint.style = Paint.Style.FILL
-        paint.textSize = 24f
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("UJI COBA CETAK STRUK", 60f, 60f, paint)
-        
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
-        paint.textSize = 16f
-        canvas.drawText("Tipe Printer: RECEIPT PRINTER (THERMAL)", 30f, 130f, paint)
-        canvas.drawText("Pengujian: TEST CETAK STRUK (THERMAL TEST)", 30f, 180f, paint)
-        canvas.drawText("Ukuran Kertas: ${configManager.printerPaperWidth} mm", 30f, 230f, paint)
-        canvas.drawText("Mode Protokol: ${configManager.thermalMode}", 30f, 280f, paint)
-        canvas.drawText("Port/Alamat: ${configManager.printerAddress}", 30f, 330f, paint)
-        canvas.drawText("Aplikasi: Creative Studio Kiosk v1.16.0", 30f, 380f, paint)
-        
-        // Checkerboard pattern to test thermal printing density
-        paint.color = android.graphics.Color.BLACK
-        val startY = 430f
-        for (i in 0..2) {
-            val yPos = startY + i * 25f
-            for (j in 0..11) {
-                val xPos = 40f + j * 25f
-                if ((i + j) % 2 == 0) {
-                    canvas.drawRect(xPos, yPos, xPos + 25f, yPos + 25f, paint)
-                }
-            }
-        }
-        
-        paint.textSize = 18f
-        paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-        canvas.drawText("Status: Printer Struk Siap!", 65f, 550f, paint)
-        
-        bmp
-    }
-
-    val driver: com.example.photobooth.print.PrinterManager = when (printerTypeToUse) {
-        "THERMAL" -> ThermalPrinterDriver()
-        "COLOR" -> ColorPrinterDriver()
-        else -> return "Tipe printer terkonfigurasi: Tidak Ada"
-    }
-    
-    val result = driver.printBitmap(bitmap, context)
-    return when (result) {
-        is PrintResult.Success -> "Test print sukses terkirim ke printer!"
-        is PrintResult.Error -> "Gagal mencetak: ${result.message}"
-    }
+    return com.example.photobooth.print.PrintTestHelper.runTestPrint(context, configManager, forceType)
 }
 
 // Reprint from history: Download image and send to printer driver

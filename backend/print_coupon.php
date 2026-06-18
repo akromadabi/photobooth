@@ -46,7 +46,7 @@ if (file_exists($settingsFile)) {
 }
 $promoText = isset($settings['coupon_promo_text']) ? $settings['coupon_promo_text'] : '';
 
-$cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff-01';
+$cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Kiosk Operator';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -63,93 +63,83 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
             font-family: 'Courier New', Courier, monospace;
             background-color: #ffffff;
             color: #000000;
-            padding: 10px;
+            padding: 5px;
             width: 100%;
-            max-width: 300px;
+            max-width: 280px;
             margin: 0 auto;
         }
         .receipt-container {
             text-align: center;
             width: 100%;
-        }
-        .header-line {
-            border-top: 1px dashed #000;
-            border-bottom: 1px dashed #000;
-            margin: 6px 0;
-            padding: 4px 0;
-        }
-        .divider {
-            border-top: 1px dashed #000;
-            margin: 10px 0;
-        }
-        .double-divider {
-            border-top: 1px double #000;
-            margin: 10px 0;
+            padding: 5px 0;
         }
         .title {
             font-weight: bold;
             font-size: 15px;
-            letter-spacing: 1px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
         .subtitle {
             font-size: 11px;
-            margin-top: 2px;
+            margin-bottom: 4px;
         }
-        .meta-info {
-            text-align: left;
+        .dashed-line {
             font-size: 11px;
-            margin: 8px 0;
-            line-height: 1.4;
-        }
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-        }
-        .coupon-title {
-            font-weight: bold;
-            font-size: 12px;
-            margin: 10px 0 5px 0;
-        }
-        .coupon-box {
-            border: 2px solid #000;
-            padding: 8px 0;
-            font-size: 20px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin: 5px auto 10px auto;
-            width: 80%;
-            text-align: center;
+            margin: 4px 0;
+            letter-spacing: -0.5px;
         }
         .package-info {
             font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin: 6px 0;
+        }
+        .coupon-label {
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        .coupon-box {
+            border: 1.5px solid #000;
+            padding: 5px 0;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin: 4px auto;
+            width: 65%;
+            text-align: center;
         }
         .qr-container {
-            margin: 12px 0;
+            margin: 6px 0;
             display: flex;
             justify-content: center;
         }
-        .instructions {
-            font-size: 11px;
-            line-height: 1.4;
-            margin: 10px 0;
+        .qr-container canvas {
+            width: 110px !important;
+            height: 110px !important;
         }
-        .promo-section {
-            font-size: 11px;
-            line-height: 1.4;
-            text-align: left;
-            margin: 10px 0;
-            padding: 6px;
-            border: 1px dashed #000;
-            white-space: pre-wrap; /* Preserves line breaks from admin text */
+        .instructions {
+            font-size: 10.5px;
+            line-height: 1.3;
+            margin: 6px 0;
+        }
+        .meta-info {
+            font-size: 10px;
+            margin: 6px 0;
+            line-height: 1.3;
+            text-align: center;
+        }
+        .double-line {
+            margin: 6px 0;
+        }
+        .double-line .line-1, .double-line .line-2 {
+            border-top: 1px solid #000;
+            margin-bottom: 2px;
         }
         .footer {
             font-size: 11px;
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 4px;
         }
         .no-print-btn {
             background-color: #000;
@@ -169,7 +159,7 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
                 left: 0;
                 right: 0;
                 background: #f8f9fa;
-                padding: 12px;
+                padding: 10px;
                 text-align: center;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 z-index: 1000;
@@ -179,21 +169,18 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
                 gap: 12px;
             }
             .control-bar button {
-                padding: 8px 20px;
+                padding: 6px 16px;
                 font-weight: bold;
                 border-radius: 4px;
-                transition: background 0.2s;
-            }
-            .control-bar button:hover {
-                background-color: #333;
+                cursor: pointer;
             }
             body {
-                padding-top: 70px;
+                padding-top: 60px;
             }
             .receipt-container {
                 border: 1px dashed #aaa;
-                padding: 20px;
-                margin-bottom: 30px;
+                padding: 15px;
+                margin-bottom: 15px;
                 background: #fff;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.05);
             }
@@ -221,7 +208,7 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
             .receipt-container {
                 page-break-inside: avoid;
                 break-inside: avoid;
-                padding: 10px 0;
+                padding: 5px 0;
             }
         }
     </style>
@@ -254,23 +241,16 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
         $dateStr = date('d M Y H:i', $selectedCoupon['created_at']);
     ?>
     <div class="receipt-container">
-        <div class="title">CREATIVE PHOTOBOOTH</div>
+        <div class="title">CREATIVE STUDIO</div>
         <div class="subtitle">"Capture Your Best Moments"</div>
         
-        <div class="header-line">
-            <div class="meta-row">
-                <span>Tanggal: <?php echo $dateStr; ?></span>
-            </div>
-            <div class="meta-row">
-                <span>Kasir  : <?php echo $cashier; ?></span>
-            </div>
-        </div>
+        <div class="dashed-line">--------------------------------</div>
 
         <div class="package-info">
-            Paket: <?php echo htmlspecialchars($packageName); ?>
+            PAKET: <?php echo htmlspecialchars(strtoupper($packageName)); ?>
         </div>
 
-        <div class="coupon-title">KODE KUPON:</div>
+        <div class="coupon-label">KODE KUPON:</div>
         <div class="coupon-box">
             <?php echo htmlspecialchars($code); ?>
         </div>
@@ -280,16 +260,22 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
         </div>
 
         <div class="instructions">
-            Masukkan kupon sebagai metode pembayaran Anda
+            Pindai QR atau masukkan kode kupon<br>
+            pada menu pembayaran Kiosk Anda.
         </div>
 
-        <?php if (!empty($promoText)): ?>
-        <div class="promo-section"><?php echo htmlspecialchars($promoText); ?></div>
-        <?php endif; ?>
+        <div class="meta-info">
+            Tanggal: <?php echo $dateStr; ?><br>
+            Kasir  : <?php echo $cashier; ?>
+        </div>
 
-        <div class="double-divider"></div>
+        <div class="double-line">
+            <div class="line-1"></div>
+            <div class="line-2"></div>
+        </div>
+
         <div class="footer">
-            Terima kasih & Selamat Berfoto!
+            TERIMA KASIH & SELAMAT BERFOTO!
         </div>
     </div>
     <?php endforeach; ?>
@@ -302,7 +288,7 @@ $cashier = isset($_GET['cashier']) ? htmlspecialchars($_GET['cashier']) : 'Staff
                 new QRious({
                     element: document.getElementById('qr-code-' + index),
                     value: coupon.code,
-                    size: 130,
+                    size: 110,
                     level: 'H'
                 });
             });

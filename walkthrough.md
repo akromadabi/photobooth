@@ -162,3 +162,30 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
 ### 5. Build & Rilis APK v1.25.0
 * Mendaftarkan `versionName = "1.25.0"` dan `versionCode = 36` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
 * Menjalankan build Gradle secara bersih untuk memperbarui file pembaruan `backend/update.json` dan menyalin APK terbaru `backend/app-debug.apk`.
+
+
+---
+
+## Update: Perbaikan Cetak Bluetooth & Versi Dinamis (v1.25.2)
+
+### 1. Perbaikan Aliran Cetak (Anti-Tersendat)
+* **Pengiriman Paket Optimal**: Mengubah pengiriman data Bluetooth SPP menjadi ukuran paket **4096 byte (4 KB)** dengan jeda **5ms**. Ini mempercepat aliran data agar buffer printer tidak kehabisan data di tengah jalan (menyebabkan kertas tersendat-sendat), namun tetap menjaga batas kestabilan agar buffer Android tidak overflow.
+
+### 2. Perbaikan Pemotongan Kertas Otomatis (Auto-Cut)
+* **Kompatibilitas Komando Cut**: Mengganti perintah potong kertas lama (`0x1D, 0x56, 0x00`) menjadi perintah standard feed-and-cut ESC/POS yang sangat luas kompatibilitasnya: **`0x1D, 0x56, 0x42, 0x00`** (GS V 66 0).
+* **Jeda Socket Terbuka**: Meningkatkan waktu tunggu sebelum menutup koneksi Bluetooth socket menjadi **3 detik** setelah seluruh data selesai dikirim. Ini memastikan printer memiliki cukup waktu untuk menyelesaikan pencetakan fisik dan mengeksekusi pemotongan kertas secara tuntas.
+
+### 3. Koneksi Bluetooth Insecure
+* Mengimplementasikan percobaan pembukaan socket RFCOMM secara Insecure (`createInsecureRfcommSocketToServiceRecord`) terlebih dahulu sebelum mencoba Secure socket atau reflection fallback. Ini membebaskan perangkat dari popup permintaan PIN pairing Bluetooth yang sering gagal dan meminimalisir error koneksi acak.
+
+### 4. Teks Versi Dinamis pada Struk Uji Coba
+* Menghapus teks versi hardcoded `"v1.16.0"` pada cetakan struk uji coba di [PrintTestHelper.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/print/PrintTestHelper.kt).
+* Menggantinya dengan pembacaan dinamis versi aplikasi langsung dari Package Manager Android. Struk uji coba sekarang akan menampilkan versi yang sebenarnya berjalan (misalnya `v1.25.2`).
+
+### 5. Penyederhanaan Kode Admin
+* Menghapus duplikasi kode generator test print di [AdminScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/admin/AdminScreen.kt) dan mendelegasikan pemanggilan sepenuhnya ke kelas pembantu bersama [PrintTestHelper.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/print/PrintTestHelper.kt).
+
+### 6. Build & Rilis APK v1.25.2
+* Menaikkan `versionName` ke `"1.25.2"` dan `versionCode` ke `38` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle secara bersih untuk memperbarui file pembaruan `backend/update.json`, menyalin APK terbaru `backend/app-debug.apk`, dan mencadangkan salinannya ke root: `app-debug_v1.25.2.apk`.
+

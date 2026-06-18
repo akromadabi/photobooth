@@ -79,6 +79,62 @@ if (file_exists($configPath)) {
 // Check if we are in Remote Controller mode (?session_id=...)
 $sessionId = isset($_GET['session_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['session_id']) : '';
 $isRemoteMode = !empty($sessionId);
+
+if ($isRemoteMode) {
+    // Save session to cookie/PHP session if it is currently active
+    $state = getQueueState($queueFile);
+    $sessionExists = false;
+    $sessionStatus = '';
+    foreach ($state['queue_list'] as $item) {
+        if ($item['session_id'] === $sessionId) {
+            $sessionExists = true;
+            $sessionStatus = $item['status'];
+            break;
+        }
+    }
+    
+    if ($sessionExists) {
+        if (in_array($sessionStatus, ['WAITING', 'ACTIVE', 'CAPTURING'])) {
+            $_SESSION['active_session_id'] = $sessionId;
+            setcookie('active_session_id', $sessionId, time() + 7200, '/');
+        } elseif ($sessionStatus === 'FINISHED') {
+            // Clear session indicators once session is complete
+            unset($_SESSION['active_session_id']);
+            setcookie('active_session_id', '', time() - 3600, '/');
+        }
+    }
+} else {
+    // If on ordering/catalog page, check if there's an ongoing session
+    $savedSessionId = '';
+    if (isset($_SESSION['active_session_id']) && !empty($_SESSION['active_session_id'])) {
+        $savedSessionId = $_SESSION['active_session_id'];
+    } elseif (isset($_COOKIE['active_session_id']) && !empty($_COOKIE['active_session_id'])) {
+        $savedSessionId = $_COOKIE['active_session_id'];
+    }
+    
+    if (!empty($savedSessionId)) {
+        $state = getQueueState($queueFile);
+        $isActive = false;
+        foreach ($state['queue_list'] as $item) {
+            if ($item['session_id'] === $savedSessionId) {
+                if (in_array($item['status'], ['WAITING', 'ACTIVE', 'CAPTURING'])) {
+                    $isActive = true;
+                }
+                break;
+            }
+        }
+        
+        if ($isActive) {
+            // Redirect back to active session
+            header("Location: order.php?session_id=" . urlencode($savedSessionId));
+            exit;
+        } else {
+            // Clear expired/finished session from memory
+            unset($_SESSION['active_session_id']);
+            setcookie('active_session_id', '', time() - 3600, '/');
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -597,10 +653,7 @@ $isRemoteMode = !empty($sessionId);
         .frame-item-card.active .frame-item-preview {
             transform: translateY(-2px);
         }
-
-        .frame-item-card.active .frame-item-preview img {
-            filter: drop-shadow(0 0 12px rgba(247, 184, 1, 0.75)) drop-shadow(0 0 4px rgba(247, 184, 1, 0.4));
-        }
+        
         
         .frame-item-preview img {
             max-width: 100%;
