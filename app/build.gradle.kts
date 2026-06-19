@@ -15,11 +15,35 @@ android {
         versionName = "1.26.0"
     }
 
+    // ── Release Signing ──────────────────────────────────────────────────────
+    // Keystore properties dibaca dari gradle.properties (tidak di-commit ke git)
+    signingConfigs {
+        create("release") {
+            val keystorePath  = project.findProperty("RELEASE_KEYSTORE_PATH") as String?
+            val keystorePass  = project.findProperty("RELEASE_KEYSTORE_PASSWORD") as String?
+            val keyAliasValue = project.findProperty("RELEASE_KEY_ALIAS") as String?
+            val keyPass       = project.findProperty("RELEASE_KEY_PASSWORD") as String?
+
+            if (keystorePath != null && file(keystorePath).exists()) {
+                storeFile     = file(keystorePath)
+                storePassword = keystorePass
+                keyAlias      = keyAliasValue
+                keyPassword   = keyPass
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+        }
+        debug {
+            // Debug tetap pakai debug keystore bawaan Android Studio
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
     compileOptions {
@@ -110,8 +134,10 @@ val apkVersionCode = android.defaultConfig.versionCode
 val apkVersionName = android.defaultConfig.versionName
 
 tasks.register<Copy>("copyApkToBackend") {
-    from(layout.buildDirectory.dir("outputs/apk/debug"))
-    include("app-debug.apk")
+    // Gunakan release APK agar tidak dipindai berulang oleh Play Protect
+    from(layout.buildDirectory.dir("outputs/apk/release"))
+    include("app-release.apk")
+    rename("app-release.apk", "app-debug.apk") // tetap nama lama agar backend kompatibel
     into(rootDirFile.resolve("backend"))
 }
 
@@ -136,10 +162,14 @@ tasks.register("generateUpdateJson") {
     }
 }
 
-// Automatically execute the finalizers after assembleDebug completes successfully
+// Jalankan copy & updateJson setelah assembleRelease selesai
 afterEvaluate {
-    tasks.named("assembleDebug") {
+    tasks.named("assembleRelease") {
         finalizedBy("copyApkToBackend", "generateUpdateJson")
+    }
+    // Tetap support assembleDebug untuk development
+    tasks.named("assembleDebug") {
+        finalizedBy("generateUpdateJson")
     }
 }
 

@@ -207,15 +207,17 @@ class ThermalPrinterDriver : PrinterManager {
         val widthBytes = (width + 7) / 8
         val raster = DitherHelper.convertTo1BitRaster(dithered)
         dithered.recycle()
-        
-        // Initialize printer: ESC @ (0x1B, 0x40)
-        val initCmd = byteArrayOf(0x1B, 0x40)
-        
+
+        // ── NOTE: ESC @ (hard reset) is sent SEPARATELY before this data in printViaBluetooth
+        // so we do NOT include it here to avoid the reset clearing the bitmap command.
+
         // Print density: GS ~ n (0x1D, 0x7E, n) where n is 0..4 (mapped from 1..5)
         val densityVal = (configManager.printDensity - 1).coerceIn(0, 4).toByte()
         val densityCmd = byteArrayOf(0x1D, 0x7E, densityVal)
 
-        // Print raster bit image: GS v 0 0 (0x1D, 0x76, 0x30, 0x00)
+        // Select bit-image mode: ESC * (some printers need this to enter graphics mode)
+        // Using GS v 0 (Raster mode) which is the universal ESC/POS raster command.
+        // GS v 0 m xL xH yL yH [data]  --  m=0 normal, m=1 double-width, etc.
         val headerCmd = byteArrayOf(
             0x1D, 0x76, 0x30, 0x00,
             (widthBytes % 256).toByte(),
@@ -224,28 +226,28 @@ class ThermalPrinterDriver : PrinterManager {
             (height / 256).toByte()
         )
         
-        // Feed 4 lines: ESC d 4 (0x1B, 0x64, 0x04)
-        // If auto-cut is enabled, send GS V 66 0 (0x1D, 0x56, 0x42, 0x00)
-        val cutCmd = if (configManager.printerAutoCut) {
+        // Feed 4 lines then cut if enabled
+        // ESC d n  (0x1B, 0x64, n): feed n lines
+        // GS V B 0 (0x1D, 0x56, 0x42, 0x00): partial cut
+        val feedCutCmd = if (configManager.printerAutoCut) {
             byteArrayOf(
-                0x1B, 0x64, 0x04,
-                0x1D, 0x56, 0x42, 0x00
+                0x1B, 0x64, 0x06,       // feed 6 lines for clean cut
+                0x1D, 0x56, 0x42, 0x00  // partial cut
             )
         } else {
             byteArrayOf(
-                0x1B, 0x64, 0x04
+                0x1B, 0x64, 0x04        // feed 4 lines only
             )
         }
         
-        val totalSize = initCmd.size + densityCmd.size + headerCmd.size + raster.size + cutCmd.size
+        val totalSize = densityCmd.size + headerCmd.size + raster.size + feedCutCmd.size
         val command = ByteArray(totalSize)
         
         var offset = 0
-        System.arraycopy(initCmd, 0, command, offset, initCmd.size); offset += initCmd.size
         System.arraycopy(densityCmd, 0, command, offset, densityCmd.size); offset += densityCmd.size
         System.arraycopy(headerCmd, 0, command, offset, headerCmd.size); offset += headerCmd.size
         System.arraycopy(raster, 0, command, offset, raster.size); offset += raster.size
-        System.arraycopy(cutCmd, 0, command, offset, cutCmd.size)
+        System.arraycopy(feedCutCmd, 0, command, offset, feedCutCmd.size)
         
         return command
     }
@@ -294,42 +296,59 @@ class ThermalPrinterDriver : PrinterManager {
                 }
             }
             
+            val outputStream = socket.outputStream
+            val inputStream = socket.inputStream
+
+            // ── Step 1: Drain stale bytes from a previous session / partial print.
+            // Some BT printer chipsets leave leftover ACK or status bytes in the RX buffer
+            // that confuse the next job if not cleared.
+            try {
+                val available = inputStream.available()
+                if (available > 0) {
+                    inputStream.skip(available.toLong())
+                }
+            } catch (e: Exception) { /* ignore */ }
+
+            // ── Step 2: Hard-reset the printer with ESC @ before every job.
+            // This clears any partial command state from the previous print session
+            // and is the primary fix for "second print shows raw code" bug.
+            val resetCmd = byteArrayOf(0x1B, 0x40)
+            outputStream.write(resetCmd)
+            outputStream.flush()
+            // Give the printer time to process the reset before sending print data.
+            try { Thread.sleep(200) } catch (e: InterruptedException) { }
+
+            // ── Step 3: Generate and send the actual print payload.
             val configManager = ConfigManager(context)
             val printData = if (configManager.thermalMode == "ESC_POS") {
                 generateEscPosData(bitmap, configManager)
             } else {
                 generateTsplData(bitmap, configManager)
             }
-            val outputStream = socket.outputStream
-            
-            // Transfer in chunks to prevent buffer overflow issues over Bluetooth SPP.
-            // Using 4096 bytes chunk with a tiny 5ms delay matches the data rate perfectly
-            // to keep the printer buffer filled without causing starvation (stuttering).
-            val maxChunk = 4096
+
+            // ── Step 4: Stream data in small 512-byte chunks with 20ms inter-chunk delay.
+            // Smaller chunks + longer delay prevent buffer overrun on slower BT SPP
+            // printer chipsets, which was the root cause of stuttering/incomplete prints.
+            val maxChunk = 512
             var sent = 0
             while (sent < printData.size) {
                 val length = (printData.size - sent).coerceAtMost(maxChunk)
                 outputStream.write(printData, sent, length)
                 outputStream.flush()
                 sent += length
-                
                 try {
-                    Thread.sleep(5)
-                } catch (e: InterruptedException) {
-                    // Ignore
-                }
+                    Thread.sleep(20)
+                } catch (e: InterruptedException) { }
             }
-            
-            // Critical: Wait for the printer to finish receiving and physically processing
-            // the remaining data from the Bluetooth stacks/buffers before closing the socket connection.
-            // If closed immediately, the last few bytes (including feed and auto-cut commands)
-            // will be truncated. Increased from 1s to 3s to guarantee physical print completion.
+
+            // ── Step 5: Final wait — let the printer physically print and cut before
+            // we close the socket. Android's BT stack has its own internal TX buffer;
+            // closing too early causes the last commands (feed/cut) to be dropped.
+            // 5 seconds is a safe margin for a full photo-strip print job.
             try {
-                Thread.sleep(3000)
-            } catch (e: InterruptedException) {
-                // Ignore
-            }
-            
+                Thread.sleep(5000)
+            } catch (e: InterruptedException) { }
+
             PrintResult.Success
         } catch (e: IOException) {
             PrintResult.Error("Koneksi Bluetooth ke printer gagal: ${e.message}")
