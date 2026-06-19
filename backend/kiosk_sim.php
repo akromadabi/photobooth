@@ -4289,7 +4289,77 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             imgOverlay.src = `../${selectedFrame.image_url}`;
             imgOverlay.onload = () => {
                 bgCtx.drawImage(imgOverlay, 0, 0, frameW, frameH);
+                
+                // Draw dynamic elements if any
+                if (selectedFrame.is_dynamic) {
+                    drawDynamicElements();
+                }
             };
+        }
+
+        function drawDynamicElements() {
+            let eventIdValue = kioskMode === 'DEDICATED' ? activeEventId : currentSessionEventId;
+            let activeEvent = serverConfig.events ? serverConfig.events.find(e => e.id === eventIdValue) : null;
+            if (!activeEvent) return;
+
+            const de = selectedFrame.dynamic_elements;
+            if (!de) return;
+
+            // Helper to draw texts
+            function drawTexts() {
+                if (de.texts) {
+                    de.texts.forEach(textConfig => {
+                        let textStr = "";
+                        if (textConfig.type === 'event_name') {
+                            textStr = activeEvent.name || "Creative Photo Studio";
+                        } else if (textConfig.type === 'event_subtitle') {
+                            textStr = activeEvent.subtitle || "Sweet Memories";
+                        } else if (textConfig.type === 'event_hashtag') {
+                            textStr = activeEvent.hashtag || "#photobooth";
+                        }
+
+                        if (textStr) {
+                            bgCtx.save();
+                            bgCtx.fillStyle = textConfig.color || '#000000';
+                            let fontStyle = textConfig.font_style || 'normal';
+                            let fontStyleStr = "";
+                            if (fontStyle === 'bold') fontStyleStr = 'bold ';
+                            else if (fontStyle === 'italic') fontStyleStr = 'italic ';
+                            else if (fontStyle === 'bold_italic') fontStyleStr = 'bold italic ';
+                            
+                            bgCtx.font = `${fontStyleStr}${textConfig.font_size}px Outfit, sans-serif`;
+                            bgCtx.textAlign = textConfig.align || 'center';
+                            bgCtx.textBaseline = 'top';
+
+                            let xPos = textConfig.x;
+                            let yPos = textConfig.y;
+                            
+                            // Multiline split support
+                            let lines = textStr.split('\n');
+                            let leading = textConfig.font_size * 1.25;
+                            lines.forEach((line, lineIdx) => {
+                                bgCtx.fillText(line, xPos, yPos + (lineIdx * leading));
+                            });
+                            bgCtx.restore();
+                        }
+                    });
+                }
+            }
+
+            // Draw logo first if enabled
+            if (de.logo && activeEvent.logo_url) {
+                const imgLogo = new Image();
+                imgLogo.src = `../${activeEvent.logo_url}`;
+                imgLogo.onload = () => {
+                    bgCtx.drawImage(imgLogo, de.logo.x, de.logo.y, de.logo.width, de.logo.height);
+                    drawTexts();
+                };
+                imgLogo.onerror = () => {
+                    drawTexts();
+                };
+            } else {
+                drawTexts();
+            }
         }
 
         // Draw doodle signature canvas mouse/touch event listeners

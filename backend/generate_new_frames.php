@@ -1322,5 +1322,40 @@ imagepng($imgManga, $outputDir . 'magazine_manga.png');
 imagedestroy($imgManga);
 
 
-echo "All 18 frames generated successfully!\n";
+// ==========================================
+// 19. DYNAMIC EVENT STRIP (dynamic_event_strip.png)
+// ==========================================
+echo "Generating dynamic_event_strip.png...\n";
+$imgDyn = imagecreatetruecolor(600, 2000);
+imagealphablending($imgDyn, false);
+imagesavealpha($imgDyn, true);
+
+$bgDyn = imagecolorallocate($imgDyn, 255, 255, 255); // Opaque White
+imagefill($imgDyn, 0, 0, $bgDyn);
+
+$dynSlots = [
+    ['x' => 50, 'y' => 480, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 920, 'w' => 500, 'h' => 375]
+];
+
+$transparent = imagecolorallocatealpha($imgDyn, 0, 0, 0, 127);
+foreach ($dynSlots as $slot) {
+    imagefilledrectangle($imgDyn, $slot['x'], $slot['y'], $slot['x'] + $slot['w'] - 1, $slot['y'] + $slot['h'] - 1, $transparent);
+}
+imagealphablending($imgDyn, true);
+
+$borderColor = imagecolorallocate($imgDyn, 220, 220, 220); // Very light grey border for photo slots
+foreach ($dynSlots as $slot) {
+    imagerectangle($imgDyn, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $borderColor);
+}
+
+// Draw static branding at the very bottom
+$grey = imagecolorallocate($imgDyn, 120, 120, 120);
+drawText($imgDyn, 12, 0, -1, 1920, $grey, 'arial', 'photobooth by @polling.id');
+
+imagepng($imgDyn, $outputDir . 'dynamic_event_strip.png');
+imagedestroy($imgDyn);
+
+
+echo "All 19 frames generated successfully!\n";
 ?>

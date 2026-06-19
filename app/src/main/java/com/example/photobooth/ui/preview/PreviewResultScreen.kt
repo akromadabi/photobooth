@@ -57,6 +57,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import coil.compose.AsyncImage
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
+import com.example.photobooth.data.FrameConfig
+import com.example.photobooth.data.EventInfo
+import com.google.gson.Gson
 import com.example.photobooth.ui.frame.getFramesForLayout
 import com.example.photobooth.theme.AppTheme
 import com.example.photobooth.theme.AppThemeType
@@ -349,7 +352,7 @@ fun PreviewResultScreen(
                         isProcessingConfirm = true
                         scope.launch {
                             val finalPath = withContext(Dispatchers.Default) {
-                                stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
+                                stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList(), eventId, configManager)
                             }
                             isProcessingConfirm = false
                             val shouldPrint = configManager.printerType != "NONE"
@@ -516,7 +519,7 @@ fun PreviewResultScreen(
                             isProcessingConfirm = true
                             scope.launch {
                                 val finalPath = withContext(Dispatchers.Default) {
-                                    stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList())
+                                    stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList(), eventId, configManager)
                                 }
                                 isProcessingConfirm = false
                                 val shouldPrint = configManager.printerType != "NONE"
@@ -577,7 +580,9 @@ private fun stitchPhotos(
     frame: Frame,
     filter: PhotoFilter,
     doodleLines: List<DoodleLine>,
-    stickers: List<Sticker>
+    stickers: List<Sticker>,
+    eventId: String,
+    configManager: ConfigManager
 ): String {
     val multiplier = if (frame.width < 800) 3 else 2
     
@@ -723,6 +728,90 @@ private fun stitchPhotos(
         paint.textSize = 36f * multiplier
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         canvas.drawText("CREATIVE STUDIO", 150f * multiplier, 1720f * multiplier, paint)
+    }
+
+    // Render dynamic text and logo if frame is marked as dynamic
+    if (frame.isDynamic == true) {
+        val activeEvent = if (!eventId.isNullOrEmpty()) {
+            try {
+                val json = configManager.syncedFramesJson
+                if (json.isNotEmpty()) {
+                    val config = Gson().fromJson(json, FrameConfig::class.java)
+                    config?.events?.firstOrNull { it.id == eventId }
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+
+        val dyn = frame.dynamicElements
+        
+        // 1. Draw Logo
+        val logoRect = dyn?.logo
+        if (logoRect != null && activeEvent != null) {
+            val logoFile = File(context.cacheDir, "logos/logo_${activeEvent.id}.png")
+            if (logoFile.exists()) {
+                val logoBmp = BitmapFactory.decodeFile(logoFile.absolutePath)
+                if (logoBmp != null) {
+                    val destX = logoRect.x * multiplier
+                    val destY = logoRect.y * multiplier
+                    val destW = logoRect.width * multiplier
+                    val destH = logoRect.height * multiplier
+                    
+                    val rectDest = Rect(destX, destY, destX + destW, destY + destH)
+                    canvas.drawBitmap(logoBmp, null, rectDest, paint)
+                    logoBmp.recycle()
+                }
+            }
+        }
+        
+        // 2. Draw Texts
+        dyn?.texts?.forEach { textConfig ->
+            val textStr = when (textConfig.type) {
+                "event_name" -> activeEvent?.name ?: "Creative Photo Studio"
+                "event_subtitle" -> activeEvent?.subtitle ?: "Sweet Memories"
+                "event_hashtag" -> activeEvent?.hashtag ?: "#photobooth"
+                else -> ""
+            }
+            
+            if (textStr.isNotEmpty()) {
+                val textPaint = Paint().apply {
+                    isAntiAlias = true
+                    color = try {
+                        android.graphics.Color.parseColor(textConfig.color ?: "#ffffff")
+                    } catch (e: Exception) {
+                        android.graphics.Color.WHITE
+                    }
+                    textSize = textConfig.fontSize.toFloat() * multiplier
+                    
+                    val style = textConfig.fontStyle ?: "normal"
+                    val typefaceStyle = when (style) {
+                        "bold" -> Typeface.BOLD
+                        "italic" -> Typeface.ITALIC
+                        "bold_italic" -> Typeface.BOLD_ITALIC
+                        else -> Typeface.NORMAL
+                    }
+                    typeface = Typeface.create(Typeface.SANS_SERIF, typefaceStyle)
+                    
+                    textAlign = when (textConfig.align ?: "center") {
+                        "left" -> Paint.Align.LEFT
+                        "right" -> Paint.Align.RIGHT
+                        else -> Paint.Align.CENTER
+                    }
+                }
+                
+                val xPos = (textConfig.x * multiplier).toFloat()
+                val yPos = (textConfig.y * multiplier).toFloat()
+                
+                val lines = textStr.split("\n")
+                var currentY = yPos
+                val leading = textPaint.textSize * 1.25f
+                lines.forEach { line ->
+                    canvas.drawText(line, xPos, currentY, textPaint)
+                    currentY += leading
+                }
+            }
+        }
     }
 
     // Bake relative doodles directly onto final high-resolution Canvas

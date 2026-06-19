@@ -48,6 +48,33 @@ object CatalogSync {
                     }
                 }
                 
+                // Download all event logo files if any
+                val logosDir = File(context.cacheDir, "logos")
+                if (!logosDir.exists()) logosDir.mkdirs()
+                
+                frameConfig.events?.forEach { event ->
+                    val relativePath = event.logoUrl
+                    if (!relativePath.isNullOrEmpty()) {
+                        try {
+                            val fileUrl = URL("$finalUrl$relativePath")
+                            val connection = fileUrl.openConnection()
+                            connection.connectTimeout = 10000
+                            connection.readTimeout = 15000
+                            
+                            // We can use a fixed logo_{event.id}.png, or map it. Let's save it as logo_{event.id}.png
+                            val localFile = File(logosDir, "logo_${event.id}.png")
+                            
+                            connection.getInputStream().use { input ->
+                                FileOutputStream(localFile).use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                
                 "Sinkronisasi berhasil! Berhasil mendownload ${frameConfig.frames.size} bingkai secara offline."
             } catch (e: Exception) {
                 "Kesalahan sinkronisasi: ${e.localizedMessage}"

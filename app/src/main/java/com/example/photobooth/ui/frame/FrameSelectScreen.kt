@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -83,6 +84,43 @@ fun FrameSelectScreen(
         getFramesForLayout(context, layoutType, configManager, eventId)
     }
 
+    val resolvedFrames = remember(frames) {
+        frames.map {
+            val cat = when {
+                !it.category.isNullOrEmpty() -> it.category
+                it.id.contains("classic", ignoreCase = true) || it.id.contains("black", ignoreCase = true) || it.id.contains("grid", ignoreCase = true) -> "Classic"
+                it.id.contains("creative", ignoreCase = true) || it.id.contains("red", ignoreCase = true) || it.id.contains("blue", ignoreCase = true) || it.id.contains("pink", ignoreCase = true) -> "Creative"
+                it.id.contains("aesthetic", ignoreCase = true) || it.id.contains("seoul", ignoreCase = true) -> "Aesthetic"
+                it.id.contains("love", ignoreCase = true) || it.id.contains("cyber", ignoreCase = true) || it.id.contains("neon", ignoreCase = true) -> "Y2K"
+                it.id.contains("magazine", ignoreCase = true) || it.id.contains("travel", ignoreCase = true) || it.id.contains("manga", ignoreCase = true) || it.id.contains("sports", ignoreCase = true) || it.id.contains("music", ignoreCase = true) || it.id.contains("gaming", ignoreCase = true) -> "Magazine"
+                it.id.contains("receipt", ignoreCase = true) || it.id.contains("ticket", ignoreCase = true) || it.id.contains("slip", ignoreCase = true) || it.id.contains("prescription", ignoreCase = true) || it.id.contains("bank", ignoreCase = true) || it.id.contains("cinema", ignoreCase = true) || it.id.contains("coffee", ignoreCase = true) || it.id.contains("clinic", ignoreCase = true) || it.id.contains("supermarket", ignoreCase = true) -> "Receipt"
+                it.isDynamic == true -> "Dynamic"
+                else -> "Classic"
+            }
+            it.copy(category = cat)
+        }
+    }
+
+    val categories = remember(resolvedFrames) {
+        val cats = resolvedFrames.map { it.category ?: "Classic" }.distinct().sorted().toMutableList()
+        if (cats.size > 1) {
+            cats.add(0, "Semua")
+        }
+        cats.toList()
+    }
+
+    var selectedCategory by remember(categories) {
+        mutableStateOf(if (categories.contains("Semua")) "Semua" else categories.firstOrNull() ?: "")
+    }
+
+    val filteredFrames = remember(resolvedFrames, selectedCategory) {
+        if (selectedCategory == "Semua" || selectedCategory.isEmpty()) {
+            resolvedFrames
+        } else {
+            resolvedFrames.filter { it.category == selectedCategory }
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -113,10 +151,41 @@ fun FrameSelectScreen(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 20.dp)
             )
 
-            if (frames.isEmpty()) {
+            if (categories.size > 1) {
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
+                ) {
+                    items(categories) { category ->
+                        val isSelected = category == selectedCategory
+                        val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(containerColor)
+                                .clickable { selectedCategory = category }
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = category,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = contentColor
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (filteredFrames.isEmpty()) {
                 Box(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
@@ -135,7 +204,7 @@ fun FrameSelectScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(frames) { frame ->
+                    items(filteredFrames) { frame ->
                         FrameCard(
                             frame = frame,
                             onClick = { onFrameSelected(frame.id) }

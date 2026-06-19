@@ -21,6 +21,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,8 +35,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +52,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
+import com.example.photobooth.data.FrameConfig
+import com.example.photobooth.data.EventInfo
 import com.example.photobooth.ui.frame.getFramesForLayout
 import com.example.photobooth.theme.AppTheme
 import com.example.photobooth.theme.AppThemeType
@@ -58,6 +68,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Rect
 import com.google.android.gms.tasks.Tasks
+import com.google.gson.Gson
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,6 +144,7 @@ fun CameraCaptureScreen(
             onBackClick = onBackClick,
             onCaptureComplete = onCaptureComplete,
             modifier = modifier,
+            eventId = eventId,
             sessionId = sessionId,
             packageId = packageId,
             characterId = characterId
@@ -148,6 +160,7 @@ fun CameraCaptureLayout(
     onBackClick: () -> Unit,
     onCaptureComplete: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
+    eventId: String = "general",
     sessionId: String = "",
     packageId: String = "",
     characterId: String = ""
@@ -159,6 +172,32 @@ fun CameraCaptureLayout(
     val totalShots = if (characterId.isNotEmpty()) 1 else frame.slots.size
     var currentShotIndex by remember { mutableIntStateOf(0) }
     val capturedPaths = remember { mutableStateListOf<String>() }
+
+    // Resolve event details
+    val eventInfo = remember(eventId) {
+        val syncedJson = configManager.syncedFramesJson
+        if (syncedJson.isNotEmpty()) {
+            try {
+                val config = Gson().fromJson(syncedJson, FrameConfig::class.java)
+                config.events?.firstOrNull { it.id == eventId }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    // Determine the aspect ratio from the active slot
+    val slotAspectRatio = remember(frame, currentShotIndex) {
+        val activeSlot = frame.slots.getOrNull(currentShotIndex) ?: frame.slots.firstOrNull()
+        if (activeSlot != null && activeSlot.width > 0 && activeSlot.height > 0) {
+            activeSlot.width.toFloat() / activeSlot.height.toFloat()
+        } else {
+            1.3333f // Fallback to 4:3 landscape
+        }
+    }
 
     // Initialize Indonesian Voice Assistant Manager
     val voiceManager = remember { VoiceManager(context) }
@@ -370,92 +409,220 @@ fun CameraCaptureLayout(
         }
     }
 
+    val themeColors = AppTheme.colors
+    val infiniteTransition = rememberInfiniteTransition()
+
+    // Glowing border color animation
+    val cameraBorderGlow by infiniteTransition.animateColor(
+        initialValue = themeColors.primary.copy(alpha = 0.5f),
+        targetValue = themeColors.primary,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(themeColors.background)
     ) {
-        // Fullscreen Camera Preview
-        AndroidView(
-            factory = { previewView },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Guide Frame transparent overlay (gives the feeling of a photobooth border)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.2f))
-        )
-
-        // Close Button (to abort)
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(16.dp)
-                .align(Alignment.TopStart)
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-        ) {
-            Icon(imageVector = Icons.Default.Close, contentDescription = "Abort", tint = Color.White)
-        }
-
-        // Floating Badge showing current slot (e.g. "FOTO 1 / 4")
-        Card(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(16.dp)
-                .align(Alignment.TopEnd),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f))
-        ) {
-            Text(
-                text = "FOTO ${currentShotIndex + 1} / $totalShots",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        if (isLandscape) {
+            // --- LANDSCAPE MODE: Original Fullscreen Layout ---
+            // Fullscreen Camera Preview
+            AndroidView(
+                factory = { 
+                    previewView.apply {
+                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
             )
-        }
 
-        // Big Countdown Timer Overlay
-        AnimatedVisibility(
-            visible = countdownValue > 0,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
-            modifier = Modifier.align(Alignment.Center)
-        ) {
+            // Guide Frame transparent overlay (gives the feeling of a photobooth border)
             Box(
                 modifier = Modifier
-                    .size(160.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.2f))
+            )
+
+            // Close Button (to abort)
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(16.dp)
+                    .align(Alignment.TopStart)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+            ) {
+                Icon(imageVector = Icons.Default.Close, contentDescription = "Abort", tint = Color.White)
+            }
+
+            // Floating Badge showing current slot (e.g. "FOTO 1 / 4")
+            Card(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(16.dp)
+                    .align(Alignment.TopEnd),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f))
             ) {
                 Text(
-                    text = countdownValue.toString(),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 80.sp,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.Center
+                    text = "FOTO ${currentShotIndex + 1} / $totalShots",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            // Big Countdown Timer Overlay
+            AnimatedVisibility(
+                visible = countdownValue > 0 && isTimerActive,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut(),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(160.dp)
+                        .background(themeColors.primary.copy(alpha = 0.85f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = countdownValue.toString(),
+                        color = themeColors.buttonContent,
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            // Camera Shutter Flash effect (white flash overlay)
+            if (showFlashOverlay) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White)
+                )
+            }
+        } else {
+            // --- PORTRAIT MODE: Custom Bounded Layout with Header & Filmstrip ---
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 1. Top Part (Event Header & Twinkling Stars Decoration)
+                EventHeader(
+                    eventInfo = eventInfo,
+                    onBackClick = onBackClick
+                )
+
+                // 2. Center Part (Camera Preview in aspect ratio box)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        border = BorderStroke(3.dp, cameraBorderGlow),
+                        colors = CardDefaults.cardColors(containerColor = Color.Black),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(slotAspectRatio)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Camera preview bounded inside the card
+                            AndroidView(
+                                factory = { 
+                                    previewView.apply {
+                                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            // Flash Overlay (Inside preview box)
+                            if (showFlashOverlay) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.White)
+                                )
+                            }
+
+                            // Floating current slot indicator (e.g. "FOTO 1 / 4")
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(12.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "POSING: FOTO ${currentShotIndex + 1} / $totalShots",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Center Big Countdown Timer (Inside preview box)
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = countdownValue > 0 && isTimerActive,
+                                enter = fadeIn() + scaleIn(),
+                                exit = fadeOut() + scaleOut(),
+                                modifier = Modifier.align(Alignment.Center)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(96.dp)
+                                        .background(themeColors.primary.copy(alpha = 0.85f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = countdownValue.toString(),
+                                        color = themeColors.buttonContent,
+                                        fontSize = 48.sp,
+                                        fontWeight = FontWeight.Black,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Bottom Part (Filmstrip & Control Text)
+                FilmstripProgress(
+                    totalShots = totalShots,
+                    currentShotIndex = currentShotIndex,
+                    capturedPaths = capturedPaths,
+                    countdownValue = countdownValue,
+                    isTimerActive = isTimerActive,
+                    slotAspectRatio = slotAspectRatio,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
         }
 
-        // Camera Shutter Flash effect (white flash overlay)
-        if (showFlashOverlay) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-            )
-        }
-
-        // Waiting for Smile overlay
+        // Waiting for Smile overlay (shown on top of everything)
         if (isWaitingForSmile) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f)),
+                    .background(Color.Black.copy(alpha = 0.6f)),
                 contentAlignment = Alignment.Center
             ) {
                 val isCutePastel = AppTheme.type == AppThemeType.CUTE_PASTEL
@@ -528,6 +695,332 @@ fun CameraCaptureLayout(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun EventHeader(
+    eventInfo: EventInfo?,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val themeColors = AppTheme.colors
+    val infiniteTransition = rememberInfiniteTransition()
+    
+    // Animate a set of twinkling star offsets and opacities
+    val twinklingAlpha1 by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val twinklingAlpha2 by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 0.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val twinklingScale by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        themeColors.cardBackground,
+                        themeColors.cardBackground.copy(alpha = 0.9f),
+                        Color.Transparent
+                    )
+                )
+            )
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        // Twinkling stars or decorative particles in background
+        androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+            val width = size.width
+            val height = size.height
+            
+            // Draw a few twinkling cross stars
+            val stars = listOf(
+                Pair(0.15f, 0.3f) to twinklingAlpha1,
+                Pair(0.85f, 0.25f) to twinklingAlpha2,
+                Pair(0.75f, 0.7f) to twinklingAlpha1,
+                Pair(0.2f, 0.75f) to twinklingAlpha2,
+                Pair(0.5f, 0.15f) to twinklingAlpha1
+            )
+            
+            stars.forEach { (pos, alpha) ->
+                val x = pos.first * width
+                val y = pos.second * height
+                // Draw a small cross star
+                val starColor = themeColors.accentColor.copy(alpha = alpha)
+                drawLine(
+                    color = starColor,
+                    start = Offset(x - 6.dp.toPx() * twinklingScale, y),
+                    end = Offset(x + 6.dp.toPx() * twinklingScale, y),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawLine(
+                    color = starColor,
+                    start = Offset(x, y - 6.dp.toPx() * twinklingScale),
+                    end = Offset(x, y + 6.dp.toPx() * twinklingScale),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Close / Abort button
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    .size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Abort",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Branding text / Title
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = eventInfo?.name?.uppercase() ?: "SMILE BOOTH",
+                    color = themeColors.onBackground,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Text(
+                    text = eventInfo?.subtitle ?: eventInfo?.hashtag ?: "#BeautifulMoments",
+                    color = themeColors.onBackground.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Decorative logo or icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(themeColors.primary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "📸",
+                    fontSize = 24.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FilmstripProgress(
+    totalShots: Int,
+    currentShotIndex: Int,
+    capturedPaths: List<String>,
+    countdownValue: Int,
+    isTimerActive: Boolean,
+    slotAspectRatio: Float,
+    modifier: Modifier = Modifier
+) {
+    val themeColors = AppTheme.colors
+    
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = themeColors.cardBackground.copy(alpha = 0.9f)),
+        border = BorderStroke(1.dp, themeColors.border.copy(alpha = 0.3f)),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "GALERI POSE",
+                color = themeColors.onCardBackground.copy(alpha = 0.6f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                for (index in 0 until totalShots) {
+                    val isCaptured = index < capturedPaths.size
+                    val isActive = index == currentShotIndex
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        FilmstripSlotCard(
+                            index = index,
+                            isCaptured = isCaptured,
+                            isActive = isActive,
+                            capturedPath = capturedPaths.getOrNull(index),
+                            countdownValue = countdownValue,
+                            isTimerActive = isTimerActive,
+                            slotAspectRatio = slotAspectRatio
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FilmstripSlotCard(
+    index: Int,
+    isCaptured: Boolean,
+    isActive: Boolean,
+    capturedPath: String?,
+    countdownValue: Int,
+    isTimerActive: Boolean,
+    slotAspectRatio: Float
+) {
+    val themeColors = AppTheme.colors
+    val infiniteTransition = rememberInfiniteTransition()
+
+    // Glowing border for active slot card
+    val activeBorderGlow by infiniteTransition.animateColor(
+        initialValue = themeColors.primary.copy(alpha = 0.4f),
+        targetValue = themeColors.primary,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val activeScale by infiniteTransition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val cardBorder = when {
+        isCaptured -> BorderStroke(1.5.dp, themeColors.primary)
+        isActive -> BorderStroke(2.dp, activeBorderGlow)
+        else -> BorderStroke(1.dp, themeColors.border.copy(alpha = 0.5f))
+    }
+
+    val cardScale = if (isActive && isTimerActive) activeScale else 1f
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        border = cardBorder,
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isCaptured -> Color.Black
+                isActive -> themeColors.primary.copy(alpha = 0.15f)
+                else -> Color.Black.copy(alpha = 0.3f)
+            }
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(slotAspectRatio)
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isCaptured && capturedPath != null) {
+                // Load captured thumbnail
+                val bitmap = remember(capturedPath) {
+                    try {
+                        BitmapFactory.decodeFile(capturedPath)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
+                if (bitmap != null) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(animationSpec = tween(500))
+                    ) {
+                        androidx.compose.foundation.Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Pose ${index + 1}",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            } else if (isActive) {
+                if (isTimerActive && countdownValue > 0) {
+                    // Show animated countdown text
+                    Text(
+                        text = countdownValue.toString(),
+                        color = themeColors.primary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                } else {
+                    // Pulse camera icon waiting to start
+                    val pulseAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.4f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800, easing = EaseInOut),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                    Text(
+                        text = "📸",
+                        fontSize = 18.sp,
+                        modifier = Modifier.graphicsLayer { alpha = pulseAlpha }
+                    )
+                }
+            } else {
+                // Future slot: show index
+                Text(
+                    text = (index + 1).toString(),
+                    color = themeColors.onCardBackground.copy(alpha = 0.3f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

@@ -597,6 +597,113 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_packages') {
     exit;
 }
 
+// Action: Save Event
+if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
+    $eventId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['event_id']);
+    $eventName = trim($_POST['event_name']);
+    $eventCode = strtoupper(trim($_POST['event_code']));
+    $eventSubtitle = trim($_POST['event_subtitle'] ?? '');
+    $eventHashtag = trim($_POST['event_hashtag'] ?? '');
+    $primaryColor = trim($_POST['primary_color'] ?? '#e63946');
+    $secondaryColor = trim($_POST['secondary_color'] ?? '#ffffff');
+    
+    $configPath = __DIR__ . '/frames/config.json';
+    $config = ['events' => [], 'frames' => []];
+    if (file_exists($configPath)) {
+        $config = json_decode(file_get_contents($configPath), true);
+    }
+    
+    $eventIndex = -1;
+    if (isset($config['events'])) {
+        foreach ($config['events'] as $idx => $evt) {
+            if ($evt['id'] === $eventId) {
+                $eventIndex = $idx;
+                break;
+            }
+        }
+    } else {
+        $config['events'] = [];
+    }
+    
+    $logoUrl = "";
+    if ($eventIndex !== -1) {
+        $logoUrl = isset($config['events'][$eventIndex]['logo_url']) ? $config['events'][$eventIndex]['logo_url'] : "";
+    }
+    
+    if (isset($_FILES['event_logo']) && $_FILES['event_logo']['error'] === UPLOAD_ERR_OK) {
+        if (!file_exists(__DIR__ . '/frames/logos')) {
+            mkdir(__DIR__ . '/frames/logos', 0777, true);
+        }
+        $fileTmpPath = $_FILES['event_logo']['tmp_name'];
+        $fileName = $_FILES['event_logo']['name'];
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        if (in_array($fileExtension, ['png', 'jpg', 'jpeg'])) {
+            $newFileName = 'logo_' . $eventId . '.' . $fileExtension;
+            $destPath = __DIR__ . '/frames/logos/' . $newFileName;
+            if (move_uploaded_file($fileTmpPath, $destPath)) {
+                $logoUrl = 'frames/logos/' . $newFileName;
+            }
+        }
+    }
+    
+    $newEvent = [
+        'id' => $eventId,
+        'name' => $eventName,
+        'code' => $eventCode,
+        'subtitle' => $eventSubtitle,
+        'hashtag' => $eventHashtag,
+        'logo_url' => $logoUrl,
+        'primary_color' => $primaryColor,
+        'secondary_color' => $secondaryColor
+    ];
+    
+    if ($eventIndex !== -1) {
+        $config['events'][$eventIndex] = $newEvent;
+    } else {
+        $config['events'][] = $newEvent;
+    }
+    
+    $config['version'] = isset($config['version']) ? intval($config['version']) + 1 : 1;
+    file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
+    
+    header('Location: admin.php?status=event_saved#events');
+    exit;
+}
+
+// Action: Delete Event
+if (isset($_GET['action']) && $_GET['action'] === 'delete_event' && isset($_GET['id'])) {
+    $eventId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id']);
+    $configPath = __DIR__ . '/frames/config.json';
+    if ($eventId && $eventId !== 'general') {
+        $config = ['events' => [], 'frames' => []];
+        if (file_exists($configPath)) {
+            $config = json_decode(file_get_contents($configPath), true);
+        }
+        
+        $updatedEvents = [];
+        foreach ($config['events'] as $evt) {
+            if ($evt['id'] === $eventId) {
+                if (!empty($evt['logo_url'])) {
+                    $logoFile = __DIR__ . '/' . $evt['logo_url'];
+                    if (file_exists($logoFile)) {
+                        unlink($logoFile);
+                    }
+                }
+            } else {
+                $updatedEvents[] = $evt;
+            }
+        }
+        
+        $config['events'] = $updatedEvents;
+        $config['version'] = isset($config['version']) ? intval($config['version']) + 1 : 1;
+        file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
+        
+        header('Location: admin.php?status=event_deleted#events');
+        exit;
+    }
+}
+
 // Action: Save Frame Layout Config
 $configPath = __DIR__ . '/frames/config.json';
 if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
@@ -667,6 +774,63 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
     }
     
     if ($frameId && $frameName && ($fileUploaded || $frameIndex !== -1)) {
+        $category = isset($_POST['category']) ? trim($_POST['category']) : 'Classic';
+        $isDynamic = isset($_POST['is_dynamic']) && $_POST['is_dynamic'] == '1' ? true : false;
+        
+        $dynamicElements = null;
+        if ($isDynamic) {
+            $dynamicElements = [
+                'logo' => null,
+                'texts' => []
+            ];
+            
+            if (isset($_POST['dynamic_logo_enable']) && $_POST['dynamic_logo_enable'] == '1') {
+                $dynamicElements['logo'] = [
+                    'x' => intval($_POST['dynamic_logo_x'] ?? 300),
+                    'y' => intval($_POST['dynamic_logo_y'] ?? 1720),
+                    'width' => intval($_POST['dynamic_logo_w'] ?? 120),
+                    'height' => intval($_POST['dynamic_logo_h'] ?? 120),
+                    'align' => $_POST['dynamic_logo_align'] ?? 'center'
+                ];
+            }
+            
+            if (isset($_POST['dynamic_name_enable']) && $_POST['dynamic_name_enable'] == '1') {
+                $dynamicElements['texts'][] = [
+                    'type' => 'event_name',
+                    'x' => intval($_POST['dynamic_name_x'] ?? 300),
+                    'y' => intval($_POST['dynamic_name_y'] ?? 1860),
+                    'font_size' => intval($_POST['dynamic_name_size'] ?? 28),
+                    'font_style' => $_POST['dynamic_name_style'] ?? 'bold',
+                    'color' => $_POST['dynamic_name_color'] ?? '#ffffff',
+                    'align' => $_POST['dynamic_name_align'] ?? 'center'
+                ];
+            }
+            
+            if (isset($_POST['dynamic_subtitle_enable']) && $_POST['dynamic_subtitle_enable'] == '1') {
+                $dynamicElements['texts'][] = [
+                    'type' => 'event_subtitle',
+                    'x' => intval($_POST['dynamic_subtitle_x'] ?? 300),
+                    'y' => intval($_POST['dynamic_subtitle_y'] ?? 1900),
+                    'font_size' => intval($_POST['dynamic_subtitle_size'] ?? 20),
+                    'font_style' => $_POST['dynamic_subtitle_style'] ?? 'normal',
+                    'color' => $_POST['dynamic_subtitle_color'] ?? '#cccccc',
+                    'align' => $_POST['dynamic_subtitle_align'] ?? 'center'
+                ];
+            }
+            
+            if (isset($_POST['dynamic_hashtag_enable']) && $_POST['dynamic_hashtag_enable'] == '1') {
+                $dynamicElements['texts'][] = [
+                    'type' => 'event_hashtag',
+                    'x' => intval($_POST['dynamic_hashtag_x'] ?? 300),
+                    'y' => intval($_POST['dynamic_hashtag_y'] ?? 1930),
+                    'font_size' => intval($_POST['dynamic_hashtag_size'] ?? 16),
+                    'font_style' => $_POST['dynamic_hashtag_style'] ?? 'italic',
+                    'color' => $_POST['dynamic_hashtag_color'] ?? '#aaaaaa',
+                    'align' => $_POST['dynamic_hashtag_align'] ?? 'center'
+                ];
+            }
+        }
+
         $newFrame = [
             "id" => $frameId,
             "name" => $frameName,
@@ -676,7 +840,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
             "height" => intval($imageHeight),
             "background_color" => $bgColor ? $bgColor : "#ffffff",
             "image_url" => $targetFileUrl,
-            "slots" => $slots
+            "slots" => $slots,
+            "category" => $category,
+            "is_dynamic" => $isDynamic,
+            "dynamic_elements" => $dynamicElements
         ];
         
         if ($frameIndex !== -1) {
@@ -1071,10 +1238,10 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .page-title {
-            font-size: 1.35rem;
-            font-weight: 800;
+            font-size: 1.15rem;
+            font-weight: 600;
             color: var(--text-main);
-            letter-spacing: -0.5px;
+            letter-spacing: -0.2px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -1255,10 +1422,10 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .card-title {
-            font-size: 1.15rem;
-            font-weight: 800;
+            font-size: 0.95rem;
+            font-weight: 600;
             color: #1e293b;
-            letter-spacing: -0.3px;
+            letter-spacing: normal;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1442,22 +1609,22 @@ foreach ($weeklyStats as $date => $cnt) {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .custom-table th {
             background-color: #f8fafc;
             color: var(--text-muted);
-            font-weight: 700;
-            padding: 14px 18px;
+            font-weight: 600;
+            padding: 10px 14px;
             text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 0.8px;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
             border-bottom: 1px solid #f1f5f9;
         }
 
         .custom-table td {
-            padding: 14px 18px;
+            padding: 10px 14px;
             border-bottom: 1px solid #f1f5f9;
             color: var(--text-main);
         }
@@ -1701,10 +1868,10 @@ foreach ($weeklyStats as $date => $cnt) {
         .modal-close:hover { background-color: var(--danger-light); color: var(--danger); }
 
         .modal-title {
-            font-size: 1.2rem;
-            font-weight: 800;
+            font-size: 1.05rem;
+            font-weight: 600;
             color: var(--text-main);
-            letter-spacing: -0.3px;
+            letter-spacing: normal;
         }
 
         .modal-split {
@@ -1774,6 +1941,136 @@ foreach ($weeklyStats as $date => $cnt) {
             gap: 20px;
             margin-top: 20px;
         }
+        /* Events Management Styling */
+        .events-grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 16px;
+        }
+        .event-card {
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .event-card:hover {
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.08);
+            border-color: rgba(226, 232, 240, 0.8);
+            transform: translateY(-2px);
+        }
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #3b82f6);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .event-card:hover::before {
+            opacity: 1;
+        }
+        .event-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .event-card-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .event-card-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .event-card-logo i {
+            font-size: 1.5rem;
+            color: #94a3b8;
+        }
+        .event-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+        .event-card-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .event-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .event-detail-item i {
+            color: #64748b;
+            width: 16px;
+            text-align: center;
+        }
+        .event-badge-code {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .event-colors-preview {
+            display: flex;
+            gap: 6px;
+        }
+        .event-color-pill {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .event-card-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 16px;
+            margin-top: auto;
+        }
+        .event-card-actions .btn-secondary,
+        .event-card-actions .btn-danger {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 8px;
+        }
+
         .frame-card-admin {
             background: #ffffff;
             border: 1px solid rgba(226, 232, 240, 0.7);
@@ -2032,6 +2329,11 @@ foreach ($weeklyStats as $date => $cnt) {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             font-weight: bold;
             line-height: 1;
+            transition: all 0.15s ease-in-out;
+        }
+        .slot-rect-close:hover {
+            background: #dc2626;
+            transform: scale(1.18);
         }
         .slot-rect-resize {
             position: absolute;
@@ -2043,6 +2345,73 @@ foreach ($weeklyStats as $date => $cnt) {
             cursor: se-resize;
             border-top-left-radius: 3px;
             border: 1px solid white;
+            transition: all 0.15s ease-in-out;
+        }
+        .slot-rect-resize:hover {
+            transform: scale(1.22);
+        }
+        /* Dynamic Elements Dummy Widgets */
+        .dyn-dummy-rect {
+            position: absolute;
+            border-style: dashed;
+            border-width: 2px;
+            box-sizing: border-box;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: move;
+            border-radius: 6px;
+            z-index: 15;
+            padding: 4px;
+            text-align: center;
+        }
+        .dyn-dummy-logo {
+            border-color: #0ea5e9;
+            background: rgba(14, 165, 233, 0.15);
+            color: #0284c7;
+        }
+        .dyn-dummy-logo .slot-rect-resize {
+            background: #0ea5e9 !important;
+            border-color: white !important;
+        }
+        .dyn-dummy-text {
+            /* Since X is the center coordinate, we want left to define the horizontal center,
+               using transform to shift it horizontally by -50% */
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        .dyn-dummy-name {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.15);
+            color: #6d28d9;
+        }
+        .dyn-dummy-subtitle {
+            border-color: #ec4899;
+            background: rgba(236, 72, 153, 0.15);
+            color: #be185d;
+        }
+        .dyn-dummy-hashtag {
+            border-color: #f97316;
+            background: rgba(249, 115, 22, 0.15);
+            color: #c2410c;
+        }
+        .dyn-dummy-meta-label {
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(15, 23, 42, 0.08);
+            pointer-events: none;
+        }
+        .dyn-dummy-text-content {
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.1;
+            pointer-events: none;
         }
         .editor-help-text {
             font-size: 0.75rem;
@@ -2637,6 +3006,9 @@ foreach ($weeklyStats as $date => $cnt) {
                 <a href="#" class="nav-item" data-tab="frames">
                     <span class="nav-icon"><i class="fa-solid fa-image"></i></span> Bingkai Kiosk
                 </a>
+                <a href="#" class="nav-item" data-tab="events">
+                    <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Manajemen Event
+                </a>
             </nav>
             <div class="sidebar-footer">
                 <a href="admin.php?action=logout" class="nav-item logout-link">
@@ -2666,85 +3038,17 @@ foreach ($weeklyStats as $date => $cnt) {
 
             <!-- Scrollable Workspace Body -->
             <main class="content-body">
-                
-                <!-- Action Status Banners -->
-                <?php if (isset($_GET['status'])): ?>
-                    <?php if ($_GET['status'] === 'saved'): ?>
-                        <div class="alert-status alert-saved">
-                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
-                            <span>Remote kiosk configuration successfully updated and synced!</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'packages_saved'): ?>
-                        <div class="alert-status alert-saved">
-                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
-                            <span>Package features and prices updated successfully!</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'queue_reset'): ?>
-                        <div class="alert-status alert-cleared">
-                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
-                            <span>All kiosk queues cleared successfully!</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'deleted'): ?>
-                        <div class="alert-status alert-deleted">
-                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
-                            <span>Selected photo session permanently removed from disk!</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'frame_saved'): ?>
-                        <div class="alert-status alert-saved">
-                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
-                            <span>Bingkai foto berhasil disimpan & disinkronisasikan!</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'frame_deleted'): ?>
-                        <div class="alert-status alert-deleted">
-                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
-                            <span>Bingkai foto berhasil dihapus secara permanen dari disk!</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'frame_error'): ?>
-                        <div class="alert-status alert-cleared">
-                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
-                            <span>Gagal menyimpan bingkai! Harap unggah gambar PNG transparan yang valid.</span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'bulk_created'): ?>
-                        <div class="alert-status alert-saved">
-                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
-                            <span>Berhasil men-generate <?php echo intval($_GET['count'] ?? 0); ?> kupon massal baru!</span>
-                            <?php if (!empty($_GET['print_codes'])): ?>
-                            <!-- JavaScript to auto open printing page for bulk codes -->
-                            <script>
-                                window.addEventListener('DOMContentLoaded', () => {
-                                    window.open('print_coupon.php?code=<?php echo urlencode($_GET['print_codes']); ?>', '_blank');
-                                });
-                            </script>
-                            <?php endif; ?>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'coupon_created'): ?>
-                        <div class="alert-status alert-saved">
-                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
-                            <span>Kupon <strong><?php echo htmlspecialchars($_GET['print_code'] ?? ''); ?></strong> berhasil dibuat dan sedang dikirim ke printer!</span>
-                            <!-- JavaScript to auto open printing page -->
-                            <script>
-                                window.addEventListener('DOMContentLoaded', () => {
-                                    window.open('print_coupon.php?code=<?php echo urlencode($_GET['print_code'] ?? ''); ?>', '_blank');
-                                });
-                            </script>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'coupon_error'): ?>
-                        <div class="alert-status alert-cleared">
-                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
-                            <span>Gagal membuat kupon: <?php echo htmlspecialchars($_GET['msg'] ?? 'Error tidak diketahui'); ?></span>
-                        </div>
-                    <?php elseif ($_GET['status'] === 'coupon_deleted'): ?>
-                        <div class="alert-status alert-deleted">
-                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
-                            <span>Kupon berhasil dihapus secara permanen!</span>
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
-
-                <!-- DYNAMIC TAB PANES -->
+          
+                <!-- DYNAMIC TAB PANES -->ANES -->
 
                 <!-- TAB: Dashboard -->
                 <div class="tab-pane active" id="tab-dashboard">
+                    <?php if (isset($_GET['status']) && $_GET['status'] === 'deleted'): ?>
+                        <div class="alert-status alert-deleted" style="margin-bottom: 20px;">
+                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                            <span>Selected photo session permanently removed from disk!</span>
+                        </div>
+                    <?php endif; ?>
                     <!-- Upper Metrics Row (Horizontal Cards) -->
                     <div class="metrics-grid">
                         <div class="metric-card">
@@ -2798,7 +3102,7 @@ foreach ($weeklyStats as $date => $cnt) {
                             <div class="status-widget">
                                 <div class="status-row">
                                     <span class="label">Antrean Aktif</span>
-                                    <span class="val" style="color: var(--primary); font-weight: 800;">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
+                                    <span class="val" style="color: var(--primary); font-weight: 600;">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
                                 </div>
                                 <div class="status-row">
                                     <span class="label">Printer Active</span>
@@ -2854,6 +3158,12 @@ foreach ($weeklyStats as $date => $cnt) {
 
                 <!-- TAB: Settings -->
                 <div class="tab-pane" id="tab-settings">
+                    <?php if (isset($_GET['status']) && $_GET['status'] === 'saved'): ?>
+                        <div class="alert-status alert-saved" style="margin-bottom: 20px;">
+                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                            <span>Remote kiosk configuration successfully updated and synced!</span>
+                        </div>
+                    <?php endif; ?>
                     <div class="card-section">
                         <div class="card-header">
                             <div class="card-title"><i class="fa-solid fa-sliders"></i> Pengaturan Kontrol Kiosk</div>
@@ -3359,6 +3669,12 @@ foreach ($weeklyStats as $date => $cnt) {
 
                 <!-- TAB: Queue -->
                 <div class="tab-pane" id="tab-queue">
+                    <?php if (isset($_GET['status']) && $_GET['status'] === 'queue_reset'): ?>
+                        <div class="alert-status alert-cleared" style="margin-bottom: 20px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
+                            <span>All kiosk queues cleared successfully!</span>
+                        </div>
+                    <?php endif; ?>
                     <div class="card-section">
                         <div class="card-header">
                             <div class="card-title"><i class="fa-solid fa-hourglass-half"></i> Antrean Remote Kiosk</div>
@@ -3373,7 +3689,7 @@ foreach ($weeklyStats as $date => $cnt) {
                             <div class="status-widget" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; width: 100%;">
                                 <div class="status-row">
                                     <span class="label">Antrean Aktif:</span>
-                                    <span class="val" style="color: var(--warning-dark); font-size: 1.1rem; font-weight: 800;">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
+                                    <span class="val" style="color: var(--warning-dark); font-size: 1.05rem; font-weight: 600;">#<?php echo htmlspecialchars($queueState['active_queue_number']); ?></span>
                                 </div>
                                 <div class="status-row">
                                     <span class="label">Sesi Aktif saat ini:</span>
@@ -3381,7 +3697,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </div>
                                 <div class="status-row">
                                     <span class="label">Menunggu (Waiting):</span>
-                                    <span class="val" style="color: var(--danger-dark); font-size: 1.1rem; font-weight: 800;"><?php 
+                                    <span class="val" style="color: var(--danger-dark); font-size: 1.05rem; font-weight: 600;"><?php 
                                         $waitingNum = 0;
                                         foreach ($queueState['queue_list'] as $item) {
                                             if ($item['status'] === 'WAITING') $waitingNum++;
@@ -3452,6 +3768,12 @@ foreach ($weeklyStats as $date => $cnt) {
 
                 <!-- TAB: Packages -->
                 <div class="tab-pane" id="tab-packages">
+                    <?php if (isset($_GET['status']) && $_GET['status'] === 'packages_saved'): ?>
+                        <div class="alert-status alert-saved" style="margin-bottom: 20px;">
+                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                            <span>Package features and prices updated successfully!</span>
+                        </div>
+                    <?php endif; ?>
                     <div class="card-section">
                         <div class="card-header">
                             <div class="card-title"><i class="fa-solid fa-box-archive"></i> Manajemen Paket & Fitur Kiosk</div>
@@ -3462,7 +3784,7 @@ foreach ($weeklyStats as $date => $cnt) {
                             <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
                                 <?php foreach ($packagesList as $pkg): ?>
                                     <div class="card-section" style="border: 1px solid var(--border-color); background-color: #f8fafc; border-radius: 18px; margin-bottom: 0;">
-                                        <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-main); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
                                             <i class="fa-solid fa-gift" style="color: var(--primary);"></i> <?php echo htmlspecialchars($pkg['name']); ?>
                                         </div>
                                         
@@ -3566,6 +3888,41 @@ foreach ($weeklyStats as $date => $cnt) {
 
                 <!-- TAB: Coupons (Kelola Kupon & Voucher) -->
                 <div class="tab-pane" id="tab-coupons">
+                    <?php if (isset($_GET['status'])): ?>
+                        <?php if ($_GET['status'] === 'bulk_created'): ?>
+                            <div class="alert-status alert-saved" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                                <span>Berhasil men-generate <?php echo intval($_GET['count'] ?? 0); ?> kupon massal baru!</span>
+                                <?php if (!empty($_GET['print_codes'])): ?>
+                                <script>
+                                    window.addEventListener('DOMContentLoaded', () => {
+                                        window.open('print_coupon.php?code=<?php echo urlencode($_GET['print_codes']); ?>', '_blank');
+                                    });
+                                </script>
+                                <?php endif; ?>
+                            </div>
+                        <?php elseif ($_GET['status'] === 'coupon_created'): ?>
+                            <div class="alert-status alert-saved" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                                <span>Kupon <strong><?php echo htmlspecialchars($_GET['print_code'] ?? ''); ?></strong> berhasil dibuat dan sedang dikirim ke printer!</span>
+                                <script>
+                                    window.addEventListener('DOMContentLoaded', () => {
+                                        window.open('print_coupon.php?code=<?php echo urlencode($_GET['print_code'] ?? ''); ?>', '_blank');
+                                    });
+                                </script>
+                            </div>
+                        <?php elseif ($_GET['status'] === 'coupon_error'): ?>
+                            <div class="alert-status alert-cleared" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                                <span>Gagal membuat kupon: <?php echo htmlspecialchars($_GET['msg'] ?? 'Error tidak diketahui'); ?></span>
+                            </div>
+                        <?php elseif ($_GET['status'] === 'coupon_deleted'): ?>
+                            <div class="alert-status alert-deleted" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                                <span>Kupon berhasil dihapus secara permanen!</span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <div class="card-section" style="margin-bottom: 24px;">
                         <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 20px;">
                             <div class="card-title"><i class="fa-solid fa-ticket"></i> Buat Kupon Baru</div>
@@ -3652,7 +4009,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <?php $counter = 1; foreach ($allCoupons as $coupon): ?>
                                             <tr>
                                                 <td style="color: var(--text-muted);"><?php echo $counter++; ?>.</td>
-                                                <td style="font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--primary); letter-spacing: 0.5px;">
+                                                <td style="font-family: monospace; font-size: 0.9rem; font-weight: 600; color: var(--primary); letter-spacing: 0.5px;">
                                                     <?php echo htmlspecialchars($coupon['code']); ?>
                                                 </td>
                                                 <td>
@@ -3690,10 +4047,10 @@ foreach ($weeklyStats as $date => $cnt) {
                                                     ?>
                                                 </td>
                                                 <td style="text-align: center;">
-                                                    <a href="print_coupon.php?code=<?php echo urlencode($coupon['code']); ?>" target="_blank" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; background-color: var(--info-dark); border: none;">
+                                                    <a href="print_coupon.php?code=<?php echo urlencode($coupon['code']); ?>" target="_blank" class="btn-primary" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; background-color: var(--info-dark); border: none;">
                                                         <i class="fa-solid fa-print"></i> <span class="btn-text">Cetak</span>
                                                     </a>
-                                                    <a href="admin.php?action=delete_coupon&code=<?php echo urlencode($coupon['code']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus kupon <?php echo htmlspecialchars($coupon['code']); ?>?');" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; background-color: var(--danger-dark); border: none; margin-left: 5px;">
+                                                    <a href="admin.php?action=delete_coupon&code=<?php echo urlencode($coupon['code']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus kupon <?php echo htmlspecialchars($coupon['code']); ?>?');" class="btn-primary" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; background-color: var(--danger-dark); border: none; margin-left: 5px;">
                                                         <i class="fa-solid fa-trash"></i> <span class="btn-text">Hapus</span>
                                                     </a>
                                                 </td>
@@ -3725,6 +4082,24 @@ foreach ($weeklyStats as $date => $cnt) {
 
                 <!-- TAB: Frames (Manajemen Bingkai & Visual Editor) -->
                 <div class="tab-pane" id="tab-frames">
+                    <?php if (isset($_GET['status'])): ?>
+                        <?php if ($_GET['status'] === 'frame_saved'): ?>
+                            <div class="alert-status alert-saved" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                                <span>Bingkai foto berhasil disimpan & disinkronisasikan!</span>
+                            </div>
+                        <?php elseif ($_GET['status'] === 'frame_deleted'): ?>
+                            <div class="alert-status alert-deleted" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                                <span>Bingkai foto berhasil dihapus secara permanen dari disk!</span>
+                            </div>
+                        <?php elseif ($_GET['status'] === 'frame_error'): ?>
+                            <div class="alert-status alert-cleared" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                                <span>Gagal menyimpan bingkai! Harap unggah gambar PNG transparan yang valid.</span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <!-- sub-view: LIST BINGKAI -->
                     <div id="framesListView">
                         <div class="card-section">
@@ -3858,6 +4233,141 @@ foreach ($weeklyStats as $date => $cnt) {
                                         </div>
                                         
                                         <div class="form-group">
+                                            <label>Kategori Bingkai</label>
+                                            <select id="editorFrameCategorySelect" class="form-input" style="background: white;" onchange="if(this.value=='__custom__'){document.getElementById('editorFrameCategoryCustomGroup').style.display='block';document.getElementById('editorFrameCategory').value='';}else{document.getElementById('editorFrameCategoryCustomGroup').style.display='none';document.getElementById('editorFrameCategory').value=this.value;}">
+                                                <option value="Classic">Classic</option>
+                                                <option value="Creative">Creative</option>
+                                                <option value="Aesthetic">Aesthetic</option>
+                                                <option value="Y2K">Y2K</option>
+                                                <option value="Magazine">Magazine</option>
+                                                <option value="Receipt">Receipt</option>
+                                                <option value="Dynamic">Dynamic</option>
+                                                <option value="__custom__">-- Kustom Baru --</option>
+                                            </select>
+                                            <input type="hidden" id="editorFrameCategory" name="category" value="Classic">
+                                        </div>
+                                        <div class="form-group" id="editorFrameCategoryCustomGroup" style="display: none;">
+                                            <label>Nama Kategori Kustom</label>
+                                            <input type="text" id="editorFrameCategoryCustom" class="form-input" placeholder="misal: Ultah Anak" style="background: white;" oninput="document.getElementById('editorFrameCategory').value=this.value">
+                                        </div>
+
+                                        <!-- Opsi Bingkai Dinamis -->
+                                        <div class="form-group" style="background: #f8fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 12px; margin-top: 8px;">
+                                            <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; user-select: none; margin-bottom: 0;">
+                                                <input type="checkbox" id="editorFrameIsDynamic" name="is_dynamic" value="1" onchange="toggleDynamicFields(this.checked)" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                                <span>Jadikan Bingkai Dinamis</span>
+                                            </label>
+                                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px; line-height: 1.3;">Jika aktif, teks & logo event akan digambar programmatik di atas koordinat yang disetting.</span>
+                                            
+                                            <!-- Dynamic fields container -->
+                                            <div id="dynamicFieldsContainer" style="display: none; flex-direction: column; gap: 12px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                                                <!-- LOGO PLACEMENT -->
+                                                <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                                                    <label style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; margin-bottom: 0; cursor: pointer;">
+                                                        <input type="checkbox" id="dyn_logo_enable" name="dynamic_logo_enable" value="1">
+                                                        <span>Tampilkan Logo Event</span>
+                                                    </label>
+                                                    <!-- Hidden Logo Fields -->
+                                                    <input type="hidden" name="dynamic_logo_x" id="dyn_logo_x" value="250">
+                                                    <input type="hidden" name="dynamic_logo_y" id="dyn_logo_y" value="840">
+                                                    <input type="hidden" name="dynamic_logo_w" id="dyn_logo_w" value="100">
+                                                    <input type="hidden" name="dynamic_logo_h" id="dyn_logo_h" value="100">
+                                                    <input type="hidden" name="dynamic_logo_align" value="center">
+                                                </div>
+                                                
+                                                <!-- NAMA EVENT PLACEMENT -->
+                                                <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                                                    <label style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; margin-bottom: 0; cursor: pointer;">
+                                                        <input type="checkbox" id="dyn_name_enable" name="dynamic_name_enable" value="1">
+                                                        <span>Tampilkan Nama Event</span>
+                                                    </label>
+                                                    
+                                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                                                        <div>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Warna Hex</span>
+                                                            <input type="text" name="dynamic_name_color" id="dyn_name_color" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; height: 32px;" value="#000000">
+                                                        </div>
+                                                        <div>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Gaya</span>
+                                                            <select name="dynamic_name_style" id="dyn_name_style" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; background: white; height: 32px;">
+                                                                <option value="bold">Bold</option>
+                                                                <option value="normal">Normal</option>
+                                                                <option value="italic">Italic</option>
+                                                                <option value="bold_italic">Bold Italic</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Hidden Nama Fields -->
+                                                    <input type="hidden" name="dynamic_name_x" id="dyn_name_x" value="300">
+                                                    <input type="hidden" name="dynamic_name_y" id="dyn_name_y" value="140">
+                                                    <input type="hidden" name="dynamic_name_size" id="dyn_name_size" value="28">
+                                                    <input type="hidden" name="dynamic_name_align" value="center">
+                                                </div>
+                                                
+                                                <!-- SUBTITLE EVENT PLACEMENT -->
+                                                <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                                                    <label style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; margin-bottom: 0; cursor: pointer;">
+                                                        <input type="checkbox" id="dyn_subtitle_enable" name="dynamic_subtitle_enable" value="1">
+                                                        <span>Tampilkan Subtitle/Tanggal</span>
+                                                    </label>
+                                                    
+                                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                                                        <div>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Warna Hex</span>
+                                                            <input type="text" name="dynamic_subtitle_color" id="dyn_subtitle_color" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; height: 32px;" value="#333333">
+                                                        </div>
+                                                        <div>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Gaya</span>
+                                                            <select name="dynamic_subtitle_style" id="dyn_subtitle_style" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; background: white; height: 32px;">
+                                                                <option value="italic">Italic</option>
+                                                                <option value="normal">Normal</option>
+                                                                <option value="bold">Bold</option>
+                                                                <option value="bold_italic">Bold Italic</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Hidden Subtitle Fields -->
+                                                    <input type="hidden" name="dynamic_subtitle_x" id="dyn_subtitle_x" value="300">
+                                                    <input type="hidden" name="dynamic_subtitle_y" id="dyn_subtitle_y" value="380">
+                                                    <input type="hidden" name="dynamic_subtitle_size" id="dyn_subtitle_size" value="20">
+                                                    <input type="hidden" name="dynamic_subtitle_align" value="center">
+                                                </div>
+                                                
+                                                <!-- HASHTAG EVENT PLACEMENT -->
+                                                <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                                                    <label style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; margin-bottom: 0; cursor: pointer;">
+                                                        <input type="checkbox" id="dyn_hashtag_enable" name="dynamic_hashtag_enable" value="1">
+                                                        <span>Tampilkan Hashtag Event</span>
+                                                    </label>
+                                                    
+                                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                                                        <div>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Warna Hex</span>
+                                                            <input type="text" name="dynamic_hashtag_color" id="dyn_hashtag_color" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; height: 32px;" value="#000000">
+                                                        </div>
+                                                        <div>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Gaya</span>
+                                                            <select name="dynamic_hashtag_style" id="dyn_hashtag_style" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; background: white; height: 32px;">
+                                                                <option value="bold">Bold</option>
+                                                                <option value="normal">Normal</option>
+                                                                <option value="italic">Italic</option>
+                                                                <option value="bold_italic">Bold Italic</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Hidden Hashtag Fields -->
+                                                    <input type="hidden" name="dynamic_hashtag_x" id="dyn_hashtag_x" value="300">
+                                                    <input type="hidden" name="dynamic_hashtag_y" id="dyn_hashtag_y" value="1440">
+                                                    <input type="hidden" name="dynamic_hashtag_size" id="dyn_hashtag_size" value="22">
+                                                    <input type="hidden" name="dynamic_hashtag_align" value="center">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
                                             <label id="fileInputLabel">File Gambar Bingkai (PNG Transparan)</label>
                                             <input type="file" id="editorFrameFile" name="frame_image" class="form-input" accept="image/png" style="background: white;" onchange="handleImageUpload(event)">
                                         </div>
@@ -3923,6 +4433,116 @@ foreach ($weeklyStats as $date => $cnt) {
                                     </div>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Events -->
+                <div class="tab-pane" id="tab-events">
+                    <?php if (isset($_GET['status'])): ?>
+                        <?php if ($_GET['status'] === 'event_saved'): ?>
+                            <div class="alert-status alert-saved" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
+                                <span>Event berhasil disimpan & disinkronisasikan!</span>
+                            </div>
+                        <?php elseif ($_GET['status'] === 'event_deleted'): ?>
+                            <div class="alert-status alert-deleted" style="margin-bottom: 20px;">
+                                <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i>
+                                <span>Event berhasil dihapus secara permanen!</span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    <div class="card-section" style="margin-bottom: 0; min-height: 500px;">
+                        <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                            <div class="card-title"><i class="fa-solid fa-calendar-days"></i> Daftar Event Aktif</div>
+                            <button type="button" class="btn-primary" onclick="openEventModal()" style="font-size: 0.85rem; padding: 10px 18px;">
+                                <i class="fa-solid fa-plus"></i> Tambah Event Baru
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px; text-align: center;">Logo</th>
+                                        <th>Nama Event</th>
+                                        <th style="width: 100px;">Kode</th>
+                                        <th>Subtitle</th>
+                                        <th>Hashtag</th>
+                                        <th style="width: 80px;">Warna</th>
+                                        <th style="width: 140px; text-align: right;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($eventsList)): ?>
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                                <i class="fa-regular fa-calendar-xmark" style="font-size: 2.5rem; margin-bottom: 12px; color: #cbd5e1; display: block;"></i>
+                                                <span style="font-weight: 600; display: block;">Belum ada event kustom yang terdaftar.</span>
+                                                <span style="font-size: 0.8rem; margin-top: 4px; display: block;">Klik tombol "Tambah Event Baru" di atas untuk membuat event.</span>
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($eventsList as $evt): ?>
+                                            <tr>
+                                                <td style="text-align: center;">
+                                                    <div style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; vertical-align: middle;">
+                                                        <?php if (!empty($evt['logo_url']) && file_exists(__DIR__ . '/' . $evt['logo_url'])): ?>
+                                                            <img src="<?php echo htmlspecialchars($evt['logo_url']); ?>?v=<?php echo time(); ?>" style="width: 100%; height: 100%; object-fit: contain;">
+                                                        <?php else: ?>
+                                                            <i class="fa-solid fa-calendar-days" style="color: #cbd5e1; font-size: 1.2rem;"></i>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;"><?php echo htmlspecialchars($evt['name']); ?></span>
+                                                </td>
+                                                <td>
+                                                    <span class="event-badge-code" style="font-size: 0.75rem;"><?php echo htmlspecialchars($evt['code']); ?></span>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($evt['subtitle'])): ?>
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                                                            <i class="fa-solid fa-calendar" style="font-size: 0.7rem; color: #64748b;"></i>
+                                                            <?php echo htmlspecialchars($evt['subtitle']); ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($evt['hashtag'])): ?>
+                                                        <span style="color: #3b82f6; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+                                                            <i class="fa-solid fa-hashtag" style="font-size: 0.7rem;"></i>
+                                                            <?php echo htmlspecialchars($evt['hashtag']); ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                                        <span class="event-color-pill" style="background: <?php echo htmlspecialchars($evt['primary_color'] ?? '#e63946'); ?>; width: 12px; height: 12px;" title="Warna Utama (<?php echo htmlspecialchars($evt['primary_color'] ?? '#e63946'); ?>)"></span>
+                                                        <span class="event-color-pill" style="background: <?php echo htmlspecialchars($evt['secondary_color'] ?? '#ffffff'); ?>; width: 12px; height: 12px;" title="Warna Sekunder (<?php echo htmlspecialchars($evt['secondary_color'] ?? '#ffffff'); ?>)"></span>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align: right;">
+                                                    <div style="display: inline-flex; gap: 6px;">
+                                                        <button type="button" class="btn-secondary" onclick="editEvent(<?php echo htmlspecialchars(json_encode($evt)); ?>)" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px;">
+                                                            <i class="fa-solid fa-pen" style="font-size: 0.7rem;"></i> Edit
+                                                        </button>
+                                                        <?php if ($evt['id'] !== 'general'): ?>
+                                                            <a href="admin.php?action=delete_event&id=<?php echo urlencode($evt['id']); ?>" class="btn-danger" style="text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;" onclick="return confirm('Apakah Anda yakin ingin menghapus event ini? Semua bingkai yang terhubung akan dialihkan ke Umum.')">
+                                                                <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i> Hapus
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -4040,6 +4660,95 @@ foreach ($weeklyStats as $date => $cnt) {
             </div>
         </div>
     </div>
+
+    <!-- TAB: Events -->
+    <!-- Modal Event Editor -->
+    <div class="modal" id="eventEditorModal">
+        <div class="modal-content" style="max-width: 650px;">
+            <button type="button" class="modal-close" onclick="closeEventModal()">&times;</button>
+            <div class="modal-title" id="eventFormTitle" style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-calendar-plus" style="color: var(--primary);"></i>
+                <span>Tambah Event Baru</span>
+            </div>
+            
+            <form method="POST" action="admin.php" enctype="multipart/form-data" id="eventEditorForm">
+                <input type="hidden" name="action" value="save_event">
+                <input type="hidden" id="eventIsEditing" value="0">
+                
+                <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="event_id">ID Event (Kode Unik, Alphanumeric)</label>
+                            <input type="text" id="event_id" name="event_id" class="form-input" placeholder="misal: ultah_budi_17" required style="background: white;">
+                            <span id="eventIdNote" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">ID unik sistem, tidak boleh mengandung spasi.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="event_name">Nama Event</label>
+                            <input type="text" id="event_name" name="event_name" class="form-input" placeholder="misal: Sweet Seventeen Budi" required style="background: white;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="event_code">Kode Akses Kiosk (Event Code)</label>
+                            <input type="text" id="event_code" name="event_code" class="form-input" placeholder="misal: BUDI17" required style="background: white; text-transform: uppercase;">
+                            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Input di Kiosk Home Screen untuk masuk.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="event_subtitle">Subtitle / Tanggal Event (Opsional)</label>
+                            <input type="text" id="event_subtitle" name="event_subtitle" class="form-input" placeholder="misal: 26 Juni 2026" style="background: white;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="event_hashtag">Hashtag Event (Opsional)</label>
+                        <input type="text" id="event_hashtag" name="event_hashtag" class="form-input" placeholder="misal: #BudiSweet17" style="background: white;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; align-items: start;">
+                        <div class="form-group">
+                            <label>Logo Event (PNG Transparan)</label>
+                            <input type="file" name="event_logo" class="form-input" style="background: white;" accept="image/png, image/jpeg, image/jpg">
+                            <div id="eventLogoPreviewContainer" style="display: none; margin-top: 10px; align-items: center; gap: 10px;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Logo saat ini:</span>
+                                <img id="eventLogoPreviewImg" src="" style="height: 40px; object-fit: contain; border: 1px solid var(--border-color); padding: 2px; border-radius: 4px; background: #f8fafc;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Warna Tema Event (Untuk Custom Style)</label>
+                            <div style="display: flex; gap: 12px; margin-top: 4px;">
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Utama</span>
+                                    <div style="display: flex; gap: 6px;">
+                                        <input type="color" id="primaryColorPicker" class="form-input" style="width: 40px; padding: 2px; height: 38px; background: white; border-radius: 6px;" value="#e63946" oninput="document.getElementById('primary_color').value = this.value">
+                                        <input type="text" id="primary_color" name="primary_color" class="form-input" value="#e63946" required style="background: white; flex: 1; padding: 8px 10px; font-size: 0.85rem;" oninput="document.getElementById('primaryColorPicker').value = this.value">
+                                    </div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Sekunder</span>
+                                    <div style="display: flex; gap: 6px;">
+                                        <input type="color" id="secondaryColorPicker" class="form-input" style="width: 40px; padding: 2px; height: 38px; background: white; border-radius: 6px;" value="#ffffff" oninput="document.getElementById('secondary_color').value = this.value">
+                                        <input type="text" id="secondary_color" name="secondary_color" class="form-input" value="#ffffff" required style="background: white; flex: 1; padding: 8px 10px; font-size: 0.85rem;" oninput="document.getElementById('secondaryColorPicker').value = this.value">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <button type="button" class="btn-secondary" onclick="closeEventModal()" style="padding: 10px 20px;">
+                            Batal
+                        </button>
+                        <button type="submit" class="btn-primary" style="padding: 10px 20px;">
+                            <i class="fa-solid fa-save"></i> Simpan Event
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
 
     <script>
         // Tab switching logic (Supports Desktop sidebar, Mobile bottom-nav, and Bottom Sheet)
@@ -4399,6 +5108,10 @@ foreach ($weeklyStats as $date => $cnt) {
             if (event.target === zoomModal) {
                 closeFrameZoom();
             }
+            const eventModal = document.getElementById('eventEditorModal');
+            if (event.target === eventModal) {
+                closeEventModal();
+            }
         }
 
         // --- Visual Frame Editor JS Logic ---
@@ -4441,6 +5154,22 @@ foreach ($weeklyStats as $date => $cnt) {
             updateSelectionButtons();
             updateUndoRedoButtons();
             
+            // Reset Category & Dynamic Frame fields
+            document.getElementById('editorFrameCategorySelect').value = 'Classic';
+            if (document.getElementById('editorFrameCategoryCustomGroup')) {
+                document.getElementById('editorFrameCategoryCustomGroup').style.display = 'none';
+            }
+            document.getElementById('editorFrameCategory').value = 'Classic';
+            document.getElementById('editorFrameIsDynamic').checked = false;
+            if (typeof toggleDynamicFields === 'function') {
+                toggleDynamicFields(false);
+            }
+            
+            document.getElementById('dyn_logo_enable').checked = false;
+            document.getElementById('dyn_name_enable').checked = false;
+            document.getElementById('dyn_subtitle_enable').checked = false;
+            document.getElementById('dyn_hashtag_enable').checked = false;
+
             document.getElementById('layerModeGroup').style.display = 'none';
             document.getElementById('autoDetectHolesGroup').style.display = 'none';
             setLayerMode('back');
@@ -4680,6 +5409,7 @@ foreach ($weeklyStats as $date => $cnt) {
             });
             
             updateSlotsDataField();
+            renderDynamicDummies();
         }
 
         function updateSelectionDOM() {
@@ -5592,8 +6322,7 @@ foreach ($weeklyStats as $date => $cnt) {
             
             document.getElementById('slotsDataInput').value = JSON.stringify(scaledSlots);
         }
-
-        function editFrame(frame) {
+function editFrame(frame) {
             showFrameEditor();
             
             // Populate form
@@ -5605,6 +6334,83 @@ foreach ($weeklyStats as $date => $cnt) {
             document.getElementById('editorBgColor').value = frame.background_color || '#ffffff';
             document.getElementById('editorBgColorPicker').value = frame.background_color || '#ffffff';
             
+            // Populate category
+            var cat = frame.category || 'Classic';
+            var selectVal = cat;
+            var customGroupDisplay = 'none';
+            if (cat !== 'Classic' && cat !== 'Creative' && cat !== 'Aesthetic' && cat !== 'Y2K' && cat !== 'Magazine' && cat !== 'Receipt' && cat !== 'Dynamic') {
+                selectVal = '__custom__';
+                customGroupDisplay = 'block';
+                document.getElementById('editorFrameCategoryCustom').value = cat;
+            }
+            document.getElementById('editorFrameCategorySelect').value = selectVal;
+            document.getElementById('editorFrameCategoryCustomGroup').style.display = customGroupDisplay;
+            document.getElementById('editorFrameCategory').value = cat;
+            
+            // Populate dynamic elements
+            var isDyn = frame.is_dynamic ? true : false;
+            document.getElementById('editorFrameIsDynamic').checked = isDyn;
+            toggleDynamicFields(isDyn);
+            
+            if (isDyn && frame.dynamic_elements) {
+                var de = frame.dynamic_elements;
+                
+                // Logo
+                if (de.logo) {
+                    document.getElementById('dyn_logo_enable').checked = true;
+                    document.getElementById('dyn_logo_x').value = de.logo.x || 300;
+                    document.getElementById('dyn_logo_y').value = de.logo.y || 1720;
+                    document.getElementById('dyn_logo_w').value = de.logo.width || 120;
+                    document.getElementById('dyn_logo_h').value = de.logo.height || 120;
+                } else {
+                    document.getElementById('dyn_logo_enable').checked = false;
+                }
+                
+                // Texts mapping
+                var nameEl = de.texts ? de.texts.find(t => t.type === 'event_name') : null;
+                var subEl = de.texts ? de.texts.find(t => t.type === 'event_subtitle') : null;
+                var hashEl = de.texts ? de.texts.find(t => t.type === 'event_hashtag') : null;
+                
+                if (nameEl) {
+                    document.getElementById('dyn_name_enable').checked = true;
+                    document.getElementById('dyn_name_x').value = nameEl.x || 300;
+                    document.getElementById('dyn_name_y').value = nameEl.y || 1860;
+                    document.getElementById('dyn_name_size').value = nameEl.font_size || 28;
+                    document.getElementById('dyn_name_color').value = nameEl.color || '#ffffff';
+                    document.getElementById('dyn_name_style').value = nameEl.font_style || 'bold';
+                } else {
+                    document.getElementById('dyn_name_enable').checked = false;
+                }
+                
+                if (subEl) {
+                    document.getElementById('dyn_subtitle_enable').checked = true;
+                    document.getElementById('dyn_subtitle_x').value = subEl.x || 300;
+                    document.getElementById('dyn_subtitle_y').value = subEl.y || 1900;
+                    document.getElementById('dyn_subtitle_size').value = subEl.font_size || 20;
+                    document.getElementById('dyn_subtitle_color').value = subEl.color || '#cccccc';
+                    document.getElementById('dyn_subtitle_style').value = subEl.font_style || 'normal';
+                } else {
+                    document.getElementById('dyn_subtitle_enable').checked = false;
+                }
+                
+                if (hashEl) {
+                    document.getElementById('dyn_hashtag_enable').checked = true;
+                    document.getElementById('dyn_hashtag_x').value = hashEl.x || 300;
+                    document.getElementById('dyn_hashtag_y').value = hashEl.y || 1930;
+                    document.getElementById('dyn_hashtag_size').value = hashEl.font_size || 16;
+                    document.getElementById('dyn_hashtag_color').value = hashEl.color || '#aaaaaa';
+                    document.getElementById('dyn_hashtag_style').value = hashEl.font_style || 'italic';
+                } else {
+                    document.getElementById('dyn_hashtag_enable').checked = false;
+                }
+            } else {
+                // Reset all dynamic fields inputs
+                document.getElementById('dyn_logo_enable').checked = false;
+                document.getElementById('dyn_name_enable').checked = false;
+                document.getElementById('dyn_subtitle_enable').checked = false;
+                document.getElementById('dyn_hashtag_enable').checked = false;
+            }
+
             // Allow not uploading a file when editing
             document.getElementById('editorFrameFile').required = false;
             document.getElementById('fileInputLabel').innerText = "Ganti Gambar Bingkai (Opsional, format PNG)";
@@ -5660,8 +6466,396 @@ foreach ($weeklyStats as $date => $cnt) {
             checkImg.src = origUrl;
         }
 
+        function editEvent(evt) {
+            document.getElementById('eventFormTitle').innerHTML = '<i class="fa-solid fa-calendar-minus" style="color: var(--primary);"></i> <span>Edit Event: ' + evt.name + '</span>';
+            document.getElementById('event_id').value = evt.id;
+            document.getElementById('event_id').readOnly = true; // Protect key modification
+            document.getElementById('eventIdNote').innerText = "ID Event tidak dapat diubah setelah dibuat.";
+            document.getElementById('event_name').value = evt.name;
+            document.getElementById('event_code').value = evt.code;
+            document.getElementById('event_subtitle').value = evt.subtitle || '';
+            document.getElementById('event_hashtag').value = evt.hashtag || '';
+            
+            document.getElementById('primary_color').value = evt.primary_color || '#e63946';
+            document.getElementById('primaryColorPicker').value = evt.primary_color || '#e63946';
+            document.getElementById('secondary_color').value = evt.secondary_color || '#ffffff';
+            document.getElementById('secondaryColorPicker').value = evt.secondary_color || '#ffffff';
+            
+            if (evt.logo_url) {
+                document.getElementById('eventLogoPreviewImg').src = evt.logo_url + '?v=' + Date.now();
+                document.getElementById('eventLogoPreviewContainer').style.display = 'flex';
+            } else {
+                document.getElementById('eventLogoPreviewContainer').style.display = 'none';
+            }
+            
+            document.getElementById('eventIsEditing').value = '1';
+            
+            // Show modal
+            document.getElementById('eventEditorModal').classList.add('active');
+            document.getElementById('event_name').focus();
+        }
+
+        function resetEventForm() {
+            document.getElementById('eventFormTitle').innerHTML = '<i class="fa-solid fa-calendar-plus" style="color: var(--primary);"></i> <span>Tambah Event Baru</span>';
+            document.getElementById('event_id').value = '';
+            document.getElementById('event_id').readOnly = false;
+            document.getElementById('eventIdNote').innerText = "ID unik sistem, tidak boleh mengandung spasi.";
+            document.getElementById('event_name').value = '';
+            document.getElementById('event_code').value = '';
+            document.getElementById('event_subtitle').value = '';
+            document.getElementById('event_hashtag').value = '';
+            
+            document.getElementById('primary_color').value = '#e63946';
+            document.getElementById('primaryColorPicker').value = '#e63946';
+            document.getElementById('secondary_color').value = '#ffffff';
+            document.getElementById('secondaryColorPicker').value = '#ffffff';
+            
+            document.getElementById('eventLogoPreviewContainer').style.display = 'none';
+            document.getElementById('eventIsEditing').value = '0';
+        }
+
+        function openEventModal() {
+            resetEventForm();
+            document.getElementById('eventEditorModal').classList.add('active');
+            document.getElementById('event_id').focus();
+        }
+
+        function closeEventModal() {
+            document.getElementById('eventEditorModal').classList.remove('active');
+        }
+
+        function toggleDynamicFields(show) {
+            var container = document.getElementById('dynamicFieldsContainer');
+            if (container) {
+                container.style.display = show ? 'flex' : 'none';
+            }
+            renderDynamicDummies();
+        }
+
+        function renderDynamicDummies() {
+            const wrapper = document.getElementById('canvasWrapper');
+            if (!wrapper) return;
+            
+            // Clear old dynamic dummies
+            const oldDummies = wrapper.querySelectorAll('.dyn-dummy-rect');
+            oldDummies.forEach(d => d.remove());
+            
+            // Check if dynamic mode is active
+            const isDynamic = document.getElementById('editorFrameIsDynamic').checked;
+            if (!isDynamic) return;
+            
+            const previewImg = document.getElementById('canvasImg');
+            if (!previewImg || previewImg.naturalWidth === 0) return;
+            
+            const previewW = previewImg.clientWidth;
+            const previewH = previewImg.clientHeight;
+            
+            const naturalW = previewImg.naturalWidth;
+            const naturalH = previewImg.naturalHeight;
+            
+            const scaleX = naturalW / previewW;
+            const scaleY = naturalH / previewH;
+            
+            // 1. Logo Dummy
+            const logoEnable = document.getElementById('dyn_logo_enable').checked;
+            if (logoEnable) {
+                const logoX = parseFloat(document.getElementById('dyn_logo_x').value) || 0;
+                const logoY = parseFloat(document.getElementById('dyn_logo_y').value) || 0;
+                const logoW = parseFloat(document.getElementById('dyn_logo_w').value) || 100;
+                const logoH = parseFloat(document.getElementById('dyn_logo_h').value) || 100;
+                
+                const dummy = document.createElement('div');
+                dummy.className = 'dyn-dummy-rect dyn-dummy-logo';
+                dummy.style.left = Math.round(logoX / scaleX) + 'px';
+                dummy.style.top = Math.round(logoY / scaleY) + 'px';
+                dummy.style.width = Math.round(logoW / scaleX) + 'px';
+                dummy.style.height = Math.round(logoH / scaleY) + 'px';
+                
+                dummy.innerHTML = `
+                    <div class="dyn-dummy-meta-label" style="color: #0284c7;">Logo</div>
+                    <i class="fa-regular fa-image" style="font-size: 14px; margin-bottom: 2px;"></i>
+                    <div class="slot-rect-close" onclick="deleteDynamicDummy('logo')">&times;</div>
+                    <div class="slot-rect-resize"></div>
+                `;
+                
+                setupDynamicDummyInteract(dummy, 'logo', scaleX, scaleY);
+                wrapper.appendChild(dummy);
+            }
+            
+            // 2. Name Dummy
+            const nameEnable = document.getElementById('dyn_name_enable').checked;
+            if (nameEnable) {
+                const nameX = parseFloat(document.getElementById('dyn_name_x').value) || 0;
+                const nameY = parseFloat(document.getElementById('dyn_name_y').value) || 0;
+                const nameSize = parseFloat(document.getElementById('dyn_name_size').value) || 24;
+                const nameColor = document.getElementById('dyn_name_color').value || '#000000';
+                const nameStyle = document.getElementById('dyn_name_style').value || 'normal';
+                
+                const dummy = document.createElement('div');
+                dummy.className = 'dyn-dummy-rect dyn-dummy-text dyn-dummy-name';
+                dummy.style.left = Math.round(nameX / scaleX) + 'px';
+                dummy.style.top = Math.round(nameY / scaleY) + 'px';
+                
+                let fontStyleStr = '';
+                let fontWeightStr = 'normal';
+                if (nameStyle === 'bold' || nameStyle === 'bold_italic') fontWeightStr = 'bold';
+                if (nameStyle === 'italic' || nameStyle === 'bold_italic') fontStyleStr = 'italic';
+                
+                const previewFontSize = Math.round(nameSize / scaleY);
+                
+                dummy.innerHTML = `
+                    <div class="dyn-dummy-meta-label" style="color: #6d28d9;">Nama Event</div>
+                    <div class="dyn-dummy-text-content" style="font-size: ${previewFontSize}px; color: ${nameColor}; font-weight: ${fontWeightStr}; font-style: ${fontStyleStr};">[NAMA EVENT]</div>
+                    <div class="slot-rect-close" onclick="deleteDynamicDummy('name')">&times;</div>
+                    <div class="slot-rect-resize"></div>
+                `;
+                
+                setupDynamicDummyInteract(dummy, 'name', scaleX, scaleY);
+                wrapper.appendChild(dummy);
+            }
+            
+            // 3. Subtitle Dummy
+            const subEnable = document.getElementById('dyn_subtitle_enable').checked;
+            if (subEnable) {
+                const subX = parseFloat(document.getElementById('dyn_subtitle_x').value) || 0;
+                const subY = parseFloat(document.getElementById('dyn_subtitle_y').value) || 0;
+                const subSize = parseFloat(document.getElementById('dyn_subtitle_size').value) || 20;
+                const subColor = document.getElementById('dyn_subtitle_color').value || '#333333';
+                const subStyle = document.getElementById('dyn_subtitle_style').value || 'normal';
+                
+                const dummy = document.createElement('div');
+                dummy.className = 'dyn-dummy-rect dyn-dummy-text dyn-dummy-subtitle';
+                dummy.style.left = Math.round(subX / scaleX) + 'px';
+                dummy.style.top = Math.round(subY / scaleY) + 'px';
+                
+                let fontStyleStr = '';
+                let fontWeightStr = 'normal';
+                if (subStyle === 'bold' || subStyle === 'bold_italic') fontWeightStr = 'bold';
+                if (subStyle === 'italic' || subStyle === 'bold_italic') fontStyleStr = 'italic';
+                
+                const previewFontSize = Math.round(subSize / scaleY);
+                
+                dummy.innerHTML = `
+                    <div class="dyn-dummy-meta-label" style="color: #be185d;">Subtitle</div>
+                    <div class="dyn-dummy-text-content" style="font-size: ${previewFontSize}px; color: ${subColor}; font-weight: ${fontWeightStr}; font-style: ${fontStyleStr};">[SUBTITLE / TANGGAL]</div>
+                    <div class="slot-rect-close" onclick="deleteDynamicDummy('subtitle')">&times;</div>
+                    <div class="slot-rect-resize"></div>
+                `;
+                
+                setupDynamicDummyInteract(dummy, 'subtitle', scaleX, scaleY);
+                wrapper.appendChild(dummy);
+            }
+            
+            // 4. Hashtag Dummy
+            const hashEnable = document.getElementById('dyn_hashtag_enable').checked;
+            if (hashEnable) {
+                const hashX = parseFloat(document.getElementById('dyn_hashtag_x').value) || 0;
+                const hashY = parseFloat(document.getElementById('dyn_hashtag_y').value) || 0;
+                const hashSize = parseFloat(document.getElementById('dyn_hashtag_size').value) || 16;
+                const hashColor = document.getElementById('dyn_hashtag_color').value || '#666666';
+                const hashStyle = document.getElementById('dyn_hashtag_style').value || 'normal';
+                
+                const dummy = document.createElement('div');
+                dummy.className = 'dyn-dummy-rect dyn-dummy-text dyn-dummy-hashtag';
+                dummy.style.left = Math.round(hashX / scaleX) + 'px';
+                dummy.style.top = Math.round(hashY / scaleY) + 'px';
+                
+                let fontStyleStr = '';
+                let fontWeightStr = 'normal';
+                if (hashStyle === 'bold' || hashStyle === 'bold_italic') fontWeightStr = 'bold';
+                if (hashStyle === 'italic' || hashStyle === 'bold_italic') fontStyleStr = 'italic';
+                
+                const previewFontSize = Math.round(hashSize / scaleY);
+                
+                dummy.innerHTML = `
+                    <div class="dyn-dummy-meta-label" style="color: #c2410c;">Hashtag</div>
+                    <div class="dyn-dummy-text-content" style="font-size: ${previewFontSize}px; color: ${hashColor}; font-weight: ${fontWeightStr}; font-style: ${fontStyleStr};">[HASHTAG EVENT]</div>
+                    <div class="slot-rect-close" onclick="deleteDynamicDummy('hashtag')">&times;</div>
+                    <div class="slot-rect-resize"></div>
+                `;
+                
+                setupDynamicDummyInteract(dummy, 'hashtag', scaleX, scaleY);
+                wrapper.appendChild(dummy);
+            }
+        }
+
+        function setupDynamicDummyInteract(el, type, scaleX, scaleY) {
+            const wrapper = document.getElementById('canvasWrapper');
+            const resizeHandle = el.querySelector('.slot-rect-resize');
+            
+            el.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('slot-rect-resize') || e.target.classList.contains('slot-rect-close')) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const startX = e.clientX;
+                const startY = e.clientY;
+                
+                let startLeft = 0;
+                let startTop = 0;
+                
+                if (type === 'logo') {
+                    startLeft = parseFloat(document.getElementById('dyn_logo_x').value) || 0;
+                    startTop = parseFloat(document.getElementById('dyn_logo_y').value) || 0;
+                } else if (type === 'name') {
+                    startLeft = parseFloat(document.getElementById('dyn_name_x').value) || 0;
+                    startTop = parseFloat(document.getElementById('dyn_name_y').value) || 0;
+                } else if (type === 'subtitle') {
+                    startLeft = parseFloat(document.getElementById('dyn_subtitle_x').value) || 0;
+                    startTop = parseFloat(document.getElementById('dyn_subtitle_y').value) || 0;
+                } else if (type === 'hashtag') {
+                    startLeft = parseFloat(document.getElementById('dyn_hashtag_x').value) || 0;
+                    startTop = parseFloat(document.getElementById('dyn_hashtag_y').value) || 0;
+                }
+                
+                function onMouseMove(moveEvent) {
+                    const dx = moveEvent.clientX - startX;
+                    const dy = moveEvent.clientY - startY;
+                    
+                    const naturalDx = Math.round(dx * scaleX);
+                    const naturalDy = Math.round(dy * scaleY);
+                    
+                    const newLeft = startLeft + naturalDx;
+                    const newTop = startTop + naturalDy;
+                    
+                    if (type === 'logo') {
+                        document.getElementById('dyn_logo_x').value = newLeft;
+                        document.getElementById('dyn_logo_y').value = newTop;
+                        el.style.left = Math.round(newLeft / scaleX) + 'px';
+                        el.style.top = Math.round(newTop / scaleY) + 'px';
+                    } else if (type === 'name') {
+                        document.getElementById('dyn_name_x').value = newLeft;
+                        document.getElementById('dyn_name_y').value = newTop;
+                        el.style.left = Math.round(newLeft / scaleX) + 'px';
+                        el.style.top = Math.round(newTop / scaleY) + 'px';
+                    } else if (type === 'subtitle') {
+                        document.getElementById('dyn_subtitle_x').value = newLeft;
+                        document.getElementById('dyn_subtitle_y').value = newTop;
+                        el.style.left = Math.round(newLeft / scaleX) + 'px';
+                        el.style.top = Math.round(newTop / scaleY) + 'px';
+                    } else if (type === 'hashtag') {
+                        document.getElementById('dyn_hashtag_x').value = newLeft;
+                        document.getElementById('dyn_hashtag_y').value = newTop;
+                        el.style.left = Math.round(newLeft / scaleX) + 'px';
+                        el.style.top = Math.round(newTop / scaleY) + 'px';
+                    }
+                }
+                
+                function onMouseUp() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    saveHistoryState();
+                }
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+            
+            if (resizeHandle) {
+                if (type === 'logo') {
+                    resizeHandle.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+                        
+                        const startW = parseFloat(document.getElementById('dyn_logo_w').value) || 100;
+                        const startH = parseFloat(document.getElementById('dyn_logo_h').value) || 100;
+                        
+                        function onMouseMove(moveEvent) {
+                            const dx = moveEvent.clientX - startX;
+                            const dy = moveEvent.clientY - startY;
+                            
+                            const naturalDx = Math.round(dx * scaleX);
+                            const naturalDy = Math.round(dy * scaleY);
+                            
+                            const newW = Math.max(10, startW + naturalDx);
+                            const newH = Math.max(10, startH + naturalDy);
+                            
+                            document.getElementById('dyn_logo_w').value = newW;
+                            document.getElementById('dyn_logo_h').value = newH;
+                            
+                            el.style.width = Math.round(newW / scaleX) + 'px';
+                            el.style.height = Math.round(newH / scaleY) + 'px';
+                        }
+                        
+                        function onMouseUp() {
+                            document.removeEventListener('mousemove', onMouseMove);
+                            document.removeEventListener('mouseup', onMouseUp);
+                            saveHistoryState();
+                        }
+                        
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.addEventListener('mouseup', onMouseUp);
+                    });
+                } else {
+                    // Resizing text (name, subtitle, hashtag) scales the event font size
+                    resizeHandle.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const startY = e.clientY;
+                        const startSize = parseFloat(document.getElementById('dyn_' + type + '_size').value) || 20;
+                        
+                        function onMouseMove(moveEvent) {
+                            const dy = moveEvent.clientY - startY;
+                            const naturalDy = Math.round(dy * scaleY);
+                            
+                            const newSize = Math.max(6, Math.min(150, startSize + Math.round(naturalDy)));
+                            
+                            document.getElementById('dyn_' + type + '_size').value = newSize;
+                            
+                            const textEl = el.querySelector('.dyn-dummy-text-content');
+                            if (textEl) {
+                                textEl.style.fontSize = Math.round(newSize / scaleY) + 'px';
+                            }
+                        }
+                        
+                        function onMouseUp() {
+                            document.removeEventListener('mousemove', onMouseMove);
+                            document.removeEventListener('mouseup', onMouseUp);
+                            saveHistoryState();
+                            renderDynamicDummies();
+                        }
+                        
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.addEventListener('mouseup', onMouseUp);
+                    });
+                }
+            }
+        }
+
+        function deleteDynamicDummy(type) {
+            const checkbox = document.getElementById('dyn_' + type + '_enable');
+            if (checkbox) {
+                checkbox.checked = false;
+                renderDynamicDummies();
+                saveHistoryState();
+            }
+        }
+
+        function bindDynamicFieldChangeListeners() {
+            const ids = [
+                'editorFrameIsDynamic',
+                'dyn_logo_enable', 'dyn_logo_x', 'dyn_logo_y', 'dyn_logo_w', 'dyn_logo_h',
+                'dyn_name_enable', 'dyn_name_x', 'dyn_name_y', 'dyn_name_size', 'dyn_name_color', 'dyn_name_style',
+                'dyn_subtitle_enable', 'dyn_subtitle_x', 'dyn_subtitle_y', 'dyn_subtitle_size', 'dyn_subtitle_color', 'dyn_subtitle_style',
+                'dyn_hashtag_enable', 'dyn_hashtag_x', 'dyn_hashtag_y', 'dyn_hashtag_size', 'dyn_hashtag_color', 'dyn_hashtag_style'
+            ];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', renderDynamicDummies);
+                    el.addEventListener('change', renderDynamicDummies);
+                }
+            });
+        }
+
         // Global Event Listeners for Editor
         document.addEventListener('DOMContentLoaded', () => {
+            bindDynamicFieldChangeListeners();
             const wrapper = document.getElementById('canvasWrapper');
             if (wrapper) {
                 wrapper.addEventListener('mousedown', function(e) {
@@ -5794,6 +6988,10 @@ foreach ($weeklyStats as $date => $cnt) {
             <div class="bottom-sheet-item" data-tab="frames">
                 <span class="icon" style="color: var(--info);"><i class="fa-solid fa-image"></i></span>
                 <span style="margin-top: 4px;">Bingkai Kiosk</span>
+            </div>
+            <div class="bottom-sheet-item" data-tab="events">
+                <span class="icon" style="color: var(--primary);"><i class="fa-solid fa-calendar-days"></i></span>
+                <span style="margin-top: 4px;">Manajemen Event</span>
             </div>
             <a href="admin.php?action=logout" class="bottom-sheet-item logout">
                 <span class="icon" style="color: var(--danger);"><i class="fa-solid fa-right-from-bracket"></i></span>

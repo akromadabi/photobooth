@@ -183,7 +183,12 @@ class ThermalPrinterDriver : PrinterManager {
         return command
     }
 
-    private fun generateEscPosData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
+    /**
+     * Menghasilkan data gambar ESC/POS TANPA perintah feed/cut di akhir.
+     * Digunakan oleh Bluetooth: data gambar dikirim dulu sepenuhnya ke buffer printer,
+     * baru perintah cetak/cut dikirim terpisah setelah printer siap.
+     */
+    private fun generateEscPosImageData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
         val targetWidth = when (configManager.printerPaperWidth) {
             50 -> 320
             58 -> 384
@@ -208,16 +213,11 @@ class ThermalPrinterDriver : PrinterManager {
         val raster = DitherHelper.convertTo1BitRaster(dithered)
         dithered.recycle()
 
-        // ── NOTE: ESC @ (hard reset) is sent SEPARATELY before this data in printViaBluetooth
-        // so we do NOT include it here to avoid the reset clearing the bitmap command.
-
-        // Print density: GS ~ n (0x1D, 0x7E, n) where n is 0..4 (mapped from 1..5)
+        // Print density: GS ~ n
         val densityVal = (configManager.printDensity - 1).coerceIn(0, 4).toByte()
         val densityCmd = byteArrayOf(0x1D, 0x7E, densityVal)
 
-        // Select bit-image mode: ESC * (some printers need this to enter graphics mode)
-        // Using GS v 0 (Raster mode) which is the universal ESC/POS raster command.
-        // GS v 0 m xL xH yL yH [data]  --  m=0 normal, m=1 double-width, etc.
+        // GS v 0: raster bit-image header (printer tahu total baris di sini, tapi belum cetak)
         val headerCmd = byteArrayOf(
             0x1D, 0x76, 0x30, 0x00,
             (widthBytes % 256).toByte(),
@@ -225,31 +225,46 @@ class ThermalPrinterDriver : PrinterManager {
             (height % 256).toByte(),
             (height / 256).toByte()
         )
-        
-        // Feed 4 lines then cut if enabled
-        // ESC d n  (0x1B, 0x64, n): feed n lines
-        // GS V B 0 (0x1D, 0x56, 0x42, 0x00): partial cut
-        val feedCutCmd = if (configManager.printerAutoCut) {
-            byteArrayOf(
-                0x1B, 0x64, 0x06,       // feed 6 lines for clean cut
-                0x1D, 0x56, 0x42, 0x00  // partial cut
-            )
-        } else {
-            byteArrayOf(
-                0x1B, 0x64, 0x04        // feed 4 lines only
-            )
-        }
-        
-        val totalSize = densityCmd.size + headerCmd.size + raster.size + feedCutCmd.size
+
+        // Hanya data gambar — tanpa feed/cut
+        val totalSize = densityCmd.size + headerCmd.size + raster.size
         val command = ByteArray(totalSize)
-        
         var offset = 0
         System.arraycopy(densityCmd, 0, command, offset, densityCmd.size); offset += densityCmd.size
         System.arraycopy(headerCmd, 0, command, offset, headerCmd.size); offset += headerCmd.size
-        System.arraycopy(raster, 0, command, offset, raster.size); offset += raster.size
-        System.arraycopy(feedCutCmd, 0, command, offset, feedCutCmd.size)
-        
+        System.arraycopy(raster, 0, command, offset, raster.size)
         return command
+    }
+
+    /**
+     * Menghasilkan perintah feed + cut (atau feed saja) sebagai byte terpisah.
+     * Dikirim SETELAH semua data gambar selesai masuk ke buffer printer.
+     */
+    private fun generateEscPosFeedCutCmd(configManager: ConfigManager): ByteArray {
+        return if (configManager.printerAutoCut) {
+            byteArrayOf(
+                0x1B, 0x64, 0x06,       // ESC d 6: feed 6 lines
+                0x1D, 0x56, 0x42, 0x00  // GS V B 0: partial cut
+            )
+        } else {
+            byteArrayOf(
+                0x1B, 0x64, 0x04        // ESC d 4: feed 4 lines
+            )
+        }
+    }
+
+    /**
+     * Menghasilkan data ESC/POS lengkap (gambar + feed/cut) untuk non-BT (USB/Network).
+     * ── NOTE: ESC @ (hard reset) is sent SEPARATELY before this data in printViaBluetooth
+     * so we do NOT include it here to avoid the reset clearing the bitmap command.
+     */
+    private fun generateEscPosData(bitmap: Bitmap, configManager: ConfigManager): ByteArray {
+        val imageData = generateEscPosImageData(bitmap, configManager)
+        val feedCutCmd = generateEscPosFeedCutCmd(configManager)
+        val result = ByteArray(imageData.size + feedCutCmd.size)
+        System.arraycopy(imageData, 0, result, 0, imageData.size)
+        System.arraycopy(feedCutCmd, 0, result, imageData.size, feedCutCmd.size)
+        return result
     }
 
     @SuppressLint("MissingPermission")
@@ -352,23 +367,48 @@ class ThermalPrinterDriver : PrinterManager {
                 generateTsplData(bitmap, configManager)
             }
 
-            // ── Step 4: Kirim data dalam potongan kecil (chunk) dengan jeda antar-chunk.
-            // Potongan kecil 512 byte + jeda 30ms mencegah buffer overflow pada chipset
-            // printer BT SPP yang lambat — akar masalah cetakan terputus/tidak lengkap.
-            val maxChunk = 512
-            var sent = 0
-            while (sent < printData.size) {
-                val length = (printData.size - sent).coerceAtMost(maxChunk)
-                outputStream.write(printData, sent, length)
-                outputStream.flush()
-                sent += length
-                try { Thread.sleep(30) } catch (e: InterruptedException) { }
-            }
+            // ── Step 4: Kirim SEMUA data sekaligus — "buffer dulu, cetak total".
+            //
+            // Strategi: pisahkan data gambar dari perintah cetak/cut.
+            //   • imageData  → ditulis satu kali (satu write()) ke buffer printer
+            //   • flush()    → Android RFCOMM stack kirim semuanya, flow control otomatis
+            //   • Tunggu printer selesai men-buffer dan mencetak semua dot
+            //   • Baru kirim perintah feed/cut terpisah agar tidak "terpotong" di tengah data
+            //
+            // Kenapa ini lebih baik dari chunking manual:
+            //   - Tidak ada pause buatan di tengah raster data → tidak ada baris kosong
+            //   - RFCOMM sudah handle fragmentasi + flow control sendiri
+            //   - Printer terima semua data bitmap ke buffer → cetak smooth dari atas ke bawah
 
-            // ── Step 5: Tunggu printer selesai mencetak dan memotong kertas secara fisik
-            // sebelum socket ditutup. Buffer TX internal Android bisa menyebabkan
-            // perintah terakhir (feed/cut) terpotong jika koneksi ditutup terlalu cepat.
-            try { Thread.sleep(6000) } catch (e: InterruptedException) { }
+            if (configManager.thermalMode == "ESC_POS") {
+                // ESC/POS: pisah gambar vs perintah cut
+                val imageData = generateEscPosImageData(bitmap, configManager)
+                val feedCutCmd = generateEscPosFeedCutCmd(configManager)
+
+                // Kirim SEMUA data gambar sekaligus (satu write)
+                outputStream.write(imageData)
+                outputStream.flush()
+
+                // Tunggu printer selesai cetak semua baris sebelum kirim cut
+                // ≈ estimasi waktu cetak: total_bytes / (203dpi * kecepatan mm/s * bytes_per_baris)
+                // Aman: tunggu 6 detik untuk strip panjang
+                try { Thread.sleep(6000) } catch (e: InterruptedException) { }
+
+                // Sekarang kirim feed + cut sebagai perintah terpisah
+                outputStream.write(feedCutCmd)
+                outputStream.flush()
+
+                // Beri waktu fisik untuk motor feed + pisau cut
+                try { Thread.sleep(1500) } catch (e: InterruptedException) { }
+            } else {
+                // TSPL: printer sudah buffer-by-design — terima semua command, cetak saat PRINT dipanggil
+                // Kirim sekaligus, PRINT 1,1 + CUT sudah ada di dalam printData
+                outputStream.write(printData)
+                outputStream.flush()
+
+                // Tunggu printer selesai cetak + cut
+                try { Thread.sleep(7000) } catch (e: InterruptedException) { }
+            }
 
             PrintResult.Success
         } catch (e: IOException) {
