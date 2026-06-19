@@ -137,13 +137,13 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
             :root {
-                --bg-color: #f1f5f9;
+                --bg-color: #f8f7f4;
                 --card-bg: #ffffff;
                 --primary: #4f46e5;
                 --primary-hover: #4338ca;
-                --text-main: #0f172a;
-                --text-muted: #475569;
-                --border-color: #e2e8f0;
+                --text-main: #1a1a1a;
+                --text-muted: #666666;
+                --border-color: #e8e5e0;
             }
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -205,7 +205,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
                 font-weight: 800;
                 font-size: 2.1rem;
                 letter-spacing: -1px;
-                color: #1e293b;
+                color: var(--text-main);
             }
             .logo span { color: var(--primary); }
             .subtitle {
@@ -244,7 +244,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
             input[type="password"] {
                 width: 100%;
                 padding: 16px 16px 16px 48px;
-                background-color: #f8fafc;
+                background-color: #faf9f6;
                 border: 1px solid var(--border-color);
                 border-radius: 16px;
                 color: var(--text-main);
@@ -261,7 +261,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
             input[type="password"]:focus {
                 border-color: var(--primary);
                 background-color: #ffffff;
-                box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+                box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
             }
             .btn {
                 width: 100%;
@@ -707,13 +707,45 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_event' && isset($_GET[
 // Action: Save Frame Layout Config
 $configPath = __DIR__ . '/frames/config.json';
 if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
-    $frameId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['frame_id']);
+    $frameId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['frame_id'] ?? '');
     $frameName = trim($_POST['frame_name']);
     $layoutType = $_POST['layout_type']; // 'strip', 'grid', 'postcard'
     $eventId = $_POST['event_id'];
     $bgColor = trim($_POST['background_color']);
     $slotsJson = isset($_POST['slots_data']) ? $_POST['slots_data'] : '[]';
     $slots = json_decode($slotsJson, true);
+    
+    // Load config first to resolve ID and check collisions
+    $config = ['events' => [], 'frames' => []];
+    if (file_exists($configPath)) {
+        $config = json_decode(file_get_contents($configPath), true);
+    }
+    
+    if (empty($frameId)) {
+        // Generate slug from frame_name
+        $frameId = preg_replace('/[^a-z0-9_-]/', '', strtolower(str_replace(' ', '_', $frameName)));
+        if (empty($frameId)) {
+            $frameId = 'frame_' . time();
+        }
+        
+        // Collision check
+        $baseId = $frameId;
+        $counter = 1;
+        $exists = true;
+        while ($exists) {
+            $exists = false;
+            foreach ($config['frames'] as $f) {
+                if ($f['id'] === $frameId) {
+                    $exists = true;
+                    break;
+                }
+            }
+            if ($exists) {
+                $frameId = $baseId . '_' . $counter;
+                $counter++;
+            }
+        }
+    }
     
     $fileUploaded = false;
     $targetFileUrl = "";
@@ -743,12 +775,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
                 $targetFileUrl = 'frames/' . $newFileName;
             }
         }
-    }
-    
-    // Load config
-    $config = ['events' => [], 'frames' => []];
-    if (file_exists($configPath)) {
-        $config = json_decode(file_get_contents($configPath), true);
     }
     
     $frameIndex = -1;
@@ -1045,12 +1071,12 @@ foreach ($weeklyStats as $date => $cnt) {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-main: #f8fafc;
+            --bg-main: #f8f7f4;
             --bg-card: #ffffff;
             --bg-sidebar: #ffffff;
-            --border-color: #f1f5f9;
-            --text-main: #0f172a;
-            --text-muted: #475569;
+            --border-color: #e8e5e0;
+            --text-main: #1a1a1a;
+            --text-muted: #666666;
             
             --primary: #4f46e5;
             --primary-hover: #4338ca;
@@ -1092,9 +1118,18 @@ foreach ($weeklyStats as $date => $cnt) {
             background: #94a3b8;
         }
 
+        @keyframes grid-flow {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
         body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg-main);
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(79, 70, 229, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(79, 70, 229, 0.015) 1px, transparent 1px);
+            animation: grid-flow 30s linear infinite;
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -1113,7 +1148,7 @@ foreach ($weeklyStats as $date => $cnt) {
         .sidebar {
             width: 280px;
             background-color: var(--bg-sidebar);
-            border-right: 1px solid #f1f5f9;
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             padding: 32px 24px;
@@ -1126,7 +1161,7 @@ foreach ($weeklyStats as $date => $cnt) {
 
         .sidebar-brand {
             padding-bottom: 24px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
             margin-bottom: 32px;
         }
 
@@ -1134,7 +1169,7 @@ foreach ($weeklyStats as $date => $cnt) {
             font-weight: 800;
             font-size: 1.5rem;
             letter-spacing: -1px;
-            color: #1e293b;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1177,23 +1212,13 @@ foreach ($weeklyStats as $date => $cnt) {
 
         .nav-item:hover {
             color: var(--text-main);
-            background-color: #f8fafc;
+            background-color: #f5f3f0;
         }
 
         .nav-item.active {
-            color: var(--primary);
-            background-color: var(--primary-light);
-        }
-        
-        .nav-item.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 20%;
-            height: 60%;
-            width: 4px;
+            color: #ffffff;
             background-color: var(--primary);
-            border-radius: 0 4px 4px 0;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.15);
         }
 
         .nav-icon {
@@ -1227,7 +1252,7 @@ foreach ($weeklyStats as $date => $cnt) {
         .top-header {
             background-color: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
             padding: 18px 40px;
             display: flex;
             justify-content: space-between;
@@ -1316,15 +1341,26 @@ foreach ($weeklyStats as $date => $cnt) {
             display: none;
         }
 
-        .tab-pane.active {
-            display: block;
-            animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .tab-pane.active > * {
+            opacity: 0;
+            animation: fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .tab-pane.active > *:nth-child(1) { animation-delay: 0.04s; }
+        .tab-pane.active > *:nth-child(2) { animation-delay: 0.08s; }
+        .tab-pane.active > *:nth-child(3) { animation-delay: 0.12s; }
+        .tab-pane.active > *:nth-child(4) { animation-delay: 0.16s; }
+        .tab-pane.active > *:nth-child(5) { animation-delay: 0.20s; }
+        .tab-pane.active > *:nth-child(6) { animation-delay: 0.24s; }
+        .tab-pane.active > *:nth-child(7) { animation-delay: 0.28s; }
 
         /* Metrics grid */
         .metrics-grid {
@@ -1336,20 +1372,20 @@ foreach ($weeklyStats as $date => $cnt) {
 
         .metric-card {
             background-color: var(--bg-card);
-            border: 1px solid rgba(226, 232, 240, 0.7);
+            border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 20px 24px;
             display: flex;
             align-items: center;
             gap: 16px;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
-            border-color: rgba(79, 70, 229, 0.15);
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(79, 70, 229, 0.25);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
         }
 
         .metric-icon {
@@ -1405,11 +1441,18 @@ foreach ($weeklyStats as $date => $cnt) {
         /* Card Section styling */
         .card-section {
             background-color: var(--bg-card);
-            border: 1px solid rgba(226, 232, 240, 0.7);
+            border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 28px;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
             margin-bottom: 24px;
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .card-section:hover {
+            transform: translateY(-4px) scale(1.005);
+            border-color: rgba(79, 70, 229, 0.25);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
         }
 
         .card-header {
@@ -1455,8 +1498,8 @@ foreach ($weeklyStats as $date => $cnt) {
 
         .form-input, .form-select {
             padding: 10px 14px;
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background-color: #faf9f6;
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             color: var(--text-main);
             font-family: inherit;
@@ -1468,7 +1511,7 @@ foreach ($weeklyStats as $date => $cnt) {
         .form-input:focus, .form-select:focus {
             border-color: var(--primary);
             background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
         }
 
         /* Checkbox styling */
@@ -1477,16 +1520,17 @@ foreach ($weeklyStats as $date => $cnt) {
             align-items: center;
             gap: 10px;
             padding: 10px 14px;
-            background-color: #f8fafc;
+            background-color: #faf9f6;
             border-radius: 10px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border-color);
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .checkbox-container:hover {
             border-color: var(--primary);
-            background-color: var(--primary-light);
+            background-color: #faf9f6;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
         }
 
         .checkbox-container input[type="checkbox"] {
@@ -1549,8 +1593,8 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .btn-secondary:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
+            background-color: #fbfbfa;
+            border-color: #c3c0b9;
             transform: translateY(-0.5px);
         }
 
@@ -1602,7 +1646,7 @@ foreach ($weeklyStats as $date => $cnt) {
             width: 100%;
             overflow-x: auto;
             border-radius: 12px;
-            border: 1px solid #f1f5f9;
+            border: 1px solid var(--border-color);
         }
 
         .custom-table {
@@ -1613,19 +1657,19 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .custom-table th {
-            background-color: #f8fafc;
+            background-color: #faf9f6;
             color: var(--text-muted);
             font-weight: 600;
             padding: 10px 14px;
             text-transform: uppercase;
             font-size: 0.65rem;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .custom-table td {
             padding: 10px 14px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
             color: var(--text-main);
         }
 
@@ -1634,7 +1678,7 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .custom-table tbody tr:hover {
-            background-color: #f8fafc;
+            background-color: #fbfbfa;
         }
 
         /* Status Badges */
@@ -2144,6 +2188,82 @@ foreach ($weeklyStats as $date => $cnt) {
             text-decoration: none;
             cursor: pointer;
             border: none;
+        }
+        
+        .frame-row-preview {
+            width: 55px;
+            height: 70px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: #faf9f6;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            margin: 0 auto;
+        }
+        .frame-row-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+        .frame-row-preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .frame-row-preview:hover {
+            transform: scale(1.05);
+            border-color: var(--primary) !important;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+        }
+        .frame-row-preview:hover .frame-row-preview-overlay {
+            opacity: 1;
+        }
+        .frame-row-preview:hover img {
+            transform: scale(1.08);
+        }
+        .color-palette-picker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            background: none;
+            cursor: pointer;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .color-palette-picker:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+        }
+        .color-palette-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        .color-palette-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        .color-palette-picker::-moz-color-swatch {
+            border: none;
+            border-radius: 50%;
         }
         
         /* Visual Editor Layout */
@@ -2983,9 +3103,12 @@ foreach ($weeklyStats as $date => $cnt) {
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
-            <div class="sidebar-brand">
-                <div class="logo">Creative<span>Studio</span></div>
-                <div class="logo-sub">Kiosk Controller</div>
+            <div class="sidebar-brand" style="display: flex; align-items: center; gap: 12px; padding: 12px 0 24px 0;">
+                <div class="brand-icon" style="width: 40px; height: 40px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">CS</div>
+                <div class="brand-text">
+                    <div style="font-weight: 800; font-size: 1.15rem; letter-spacing: -0.5px; color: var(--text-main); line-height: 1.2;">Creative <span style="color: var(--primary);">Studio</span></div>
+                    <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 2px;">Kiosk Controller</div>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active" data-tab="dashboard">
@@ -3039,7 +3162,7 @@ foreach ($weeklyStats as $date => $cnt) {
             <!-- Scrollable Workspace Body -->
             <main class="content-body">
           
-                <!-- DYNAMIC TAB PANES -->ANES -->
+                <!-- DYNAMIC TAB PANES -->
 
                 <!-- TAB: Dashboard -->
                 <div class="tab-pane active" id="tab-dashboard">
@@ -4110,51 +4233,78 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </button>
                             </div>
                             
-                            <div class="frames-grid">
-                                <?php if (empty($framesList)): ?>
-                                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 60px 40px;">
-                                        <i class="fa-solid fa-image-portrait" style="font-size: 3rem; margin-bottom: 12px; color: #cbd5e1;"></i>
-                                        <p style="font-weight: 600;">Belum ada bingkai kustom.</p>
-                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Klik tombol di atas untuk membuat bingkai pertamamu!</p>
-                                    </div>
-                                <?php else: ?>
-                                    <?php foreach ($framesList as $f): ?>
-                                        <div class="frame-card-admin">
-                                            <div class="frame-card-preview-admin" onclick="openFrameZoom(<?php echo htmlspecialchars(json_encode($f)); ?>)">
-                                                <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" alt="<?php echo htmlspecialchars($f['name']); ?>" onerror="this.src='https://placehold.co/150x180/121212/ffffff?text=No+Preview'">
-                                                <div class="frame-preview-overlay">
-                                                    <i class="fa-solid fa-magnifying-glass-plus"></i>
-                                                    <span>Zoom Detail</span>
-                                                </div>
-                                            </div>
-                                            <div class="frame-card-meta">
-                                                <div class="frame-card-title"><?php echo htmlspecialchars($f['name']); ?></div>
-                                                <div class="frame-card-tag">Tipe: <b><?php echo htmlspecialchars(ucfirst($f['type'])); ?></b></div>
-                                                <div class="frame-card-tag">Sesi Event: <b>
-                                                    <?php 
-                                                        $evtName = "Umum (Default)";
-                                                        foreach ($eventsList as $e) {
-                                                            if ($e['id'] === $f['event_id']) {
-                                                                $evtName = $e['name'];
-                                                                break;
-                                                            }
-                                                        }
-                                                        echo htmlspecialchars($evtName);
-                                                    ?></b>
-                                                </div>
-                                                <div class="frame-card-tag">Jumlah Slot: <b><?php echo count($f['slots']); ?> Foto</b></div>
-                                            </div>
-                                            <div class="frame-card-actions">
-                                                <button class="btn-secondary" onclick="editFrame(<?php echo htmlspecialchars(json_encode($f)); ?>)">
-                                                    <i class="fa-solid fa-pen-to-square"></i> Edit
-                                                </button>
-                                                <a href="admin.php?action=delete_frame&id=<?php echo urlencode($f['id']); ?>" class="btn-danger" style="background:#ef4444; color:white; display:flex; align-items:center; justify-content:center;" onclick="return confirm('Apakah Anda yakin ingin menghapus bingkai ini secara permanen?')">
-                                                    <i class="fa-solid fa-trash-can"></i> Hapus
-                                                </a>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px; text-align: center;">Preview</th>
+                                            <th>Nama Bingkai</th>
+                                            <th style="width: 120px;">Tipe</th>
+                                            <th>Sesi Event</th>
+                                            <th style="width: 120px;">Jumlah Slot</th>
+                                            <th style="width: 160px; text-align: right;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($framesList)): ?>
+                                            <tr>
+                                                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                                    <i class="fa-regular fa-image" style="font-size: 2.5rem; margin-bottom: 12px; color: #cbd5e1; display: block;"></i>
+                                                    <span style="font-weight: 600; display: block;">Belum ada bingkai kustom yang terdaftar.</span>
+                                                    <span style="font-size: 0.8rem; margin-top: 4px; display: block;">Klik tombol "Tambah Bingkai Baru" di atas untuk membuat bingkai.</span>
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($framesList as $f): ?>
+                                                <tr>
+                                                    <td style="text-align: center; vertical-align: middle;">
+                                                        <div class="frame-row-preview" onclick="openFrameZoom(<?php echo htmlspecialchars(json_encode($f)); ?>)">
+                                                            <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" alt="<?php echo htmlspecialchars($f['name']); ?>" onerror="this.src='https://placehold.co/60x75/121212/ffffff?text=No+Preview'">
+                                                            <div class="frame-row-preview-overlay">
+                                                                <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;"><?php echo htmlspecialchars($f['name']); ?></span>
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span style="font-size: 0.8rem; font-weight: 500; text-transform: capitalize; color: var(--text-muted);"><?php echo htmlspecialchars($f['type']); ?></span>
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span style="font-size: 0.8rem; font-weight: 500;">
+                                                            <?php 
+                                                                $evtName = "Umum (Default)";
+                                                                foreach ($eventsList as $e) {
+                                                                    if ($e['id'] === $f['event_id']) {
+                                                                        $evtName = $e['name'];
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                echo htmlspecialchars($evtName);
+                                                            ?>
+                                                        </span>
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span class="event-badge-code" style="font-size: 0.75rem; background-color: rgba(79, 70, 229, 0.1); color: var(--primary); font-weight: 600; padding: 4px 8px; border-radius: 6px;">
+                                                            <?php echo count($f['slots']); ?> Foto
+                                                        </span>
+                                                    </td>
+                                                    <td style="text-align: right; vertical-align: middle;">
+                                                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                                            <button class="btn-secondary" onclick="editFrame(<?php echo htmlspecialchars(json_encode($f)); ?>)" style="padding: 6px 12px; font-size: 0.8rem; height: 32px; display: inline-flex; align-items: center; gap: 6px;">
+                                                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                                                            </button>
+                                                            <a href="admin.php?action=delete_frame&id=<?php echo urlencode($f['id']); ?>" class="btn-danger" style="background:#ef4444; color:white; padding: 6px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;" onclick="return confirm('Apakah Anda yakin ingin menghapus bingkai ini secara permanen?')">
+                                                                <i class="fa-solid fa-trash-can"></i> Hapus
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -4193,10 +4343,7 @@ foreach ($weeklyStats as $date => $cnt) {
                                     
                                     <!-- Editor Settings Sidebar -->
                                     <div style="display: flex; flex-direction: column; gap: 16px;">
-                                        <div class="form-group">
-                                            <label>ID Bingkai (Kode Unik, Alphanumeric)</label>
-                                            <input type="text" id="editorFrameId" name="frame_id" class="form-input" placeholder="misal: wedding_rian_red" required style="background: white;">
-                                        </div>
+                                        <input type="hidden" id="editorFrameId" name="frame_id" value="">
                                         
                                         <div class="form-group">
                                             <label>Nama Bingkai</label>
@@ -4282,13 +4429,14 @@ foreach ($weeklyStats as $date => $cnt) {
                                                         <span>Tampilkan Nama Event</span>
                                                     </label>
                                                     
-                                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                                                    <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 6px; align-items: center;">
                                                         <div>
-                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Warna Hex</span>
-                                                            <input type="text" name="dynamic_name_color" id="dyn_name_color" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; height: 32px;" value="#000000">
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Warna Teks</span>
+                                                            <input type="color" id="dyn_name_color_picker" class="color-palette-picker" value="#000000" oninput="document.getElementById('dyn_name_color').value = this.value; renderDynamicDummies();">
+                                                            <input type="hidden" name="dynamic_name_color" id="dyn_name_color" value="#000000">
                                                         </div>
                                                         <div>
-                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Gaya</span>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Gaya</span>
                                                             <select name="dynamic_name_style" id="dyn_name_style" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; background: white; height: 32px;">
                                                                 <option value="bold">Bold</option>
                                                                 <option value="normal">Normal</option>
@@ -4312,13 +4460,14 @@ foreach ($weeklyStats as $date => $cnt) {
                                                         <span>Tampilkan Subtitle/Tanggal</span>
                                                     </label>
                                                     
-                                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                                                    <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 6px; align-items: center;">
                                                         <div>
-                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Warna Hex</span>
-                                                            <input type="text" name="dynamic_subtitle_color" id="dyn_subtitle_color" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; height: 32px;" value="#333333">
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Warna Teks</span>
+                                                            <input type="color" id="dyn_subtitle_color_picker" class="color-palette-picker" value="#333333" oninput="document.getElementById('dyn_subtitle_color').value = this.value; renderDynamicDummies();">
+                                                            <input type="hidden" name="dynamic_subtitle_color" id="dyn_subtitle_color" value="#333333">
                                                         </div>
                                                         <div>
-                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Gaya</span>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Gaya</span>
                                                             <select name="dynamic_subtitle_style" id="dyn_subtitle_style" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; background: white; height: 32px;">
                                                                 <option value="italic">Italic</option>
                                                                 <option value="normal">Normal</option>
@@ -4342,13 +4491,14 @@ foreach ($weeklyStats as $date => $cnt) {
                                                         <span>Tampilkan Hashtag Event</span>
                                                     </label>
                                                     
-                                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                                                    <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 6px; align-items: center;">
                                                         <div>
-                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Warna Hex</span>
-                                                            <input type="text" name="dynamic_hashtag_color" id="dyn_hashtag_color" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; height: 32px;" value="#000000">
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Warna Teks</span>
+                                                            <input type="color" id="dyn_hashtag_color_picker" class="color-palette-picker" value="#000000" oninput="document.getElementById('dyn_hashtag_color').value = this.value; renderDynamicDummies();">
+                                                            <input type="hidden" name="dynamic_hashtag_color" id="dyn_hashtag_color" value="#000000">
                                                         </div>
                                                         <div>
-                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Gaya</span>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 2px;">Gaya</span>
                                                             <select name="dynamic_hashtag_style" id="dyn_hashtag_style" class="form-input" style="padding: 4px 6px; font-size: 0.8rem; background: white; height: 32px;">
                                                                 <option value="bold">Bold</option>
                                                                 <option value="normal">Normal</option>
@@ -5167,8 +5317,20 @@ foreach ($weeklyStats as $date => $cnt) {
             
             document.getElementById('dyn_logo_enable').checked = false;
             document.getElementById('dyn_name_enable').checked = false;
+            document.getElementById('dyn_name_color').value = '#000000';
+            if (document.getElementById('dyn_name_color_picker')) {
+                document.getElementById('dyn_name_color_picker').value = '#000000';
+            }
             document.getElementById('dyn_subtitle_enable').checked = false;
+            document.getElementById('dyn_subtitle_color').value = '#333333';
+            if (document.getElementById('dyn_subtitle_color_picker')) {
+                document.getElementById('dyn_subtitle_color_picker').value = '#333333';
+            }
             document.getElementById('dyn_hashtag_enable').checked = false;
+            document.getElementById('dyn_hashtag_color').value = '#000000';
+            if (document.getElementById('dyn_hashtag_color_picker')) {
+                document.getElementById('dyn_hashtag_color_picker').value = '#000000';
+            }
 
             document.getElementById('layerModeGroup').style.display = 'none';
             document.getElementById('autoDetectHolesGroup').style.display = 'none';
@@ -6376,7 +6538,10 @@ function editFrame(frame) {
                     document.getElementById('dyn_name_x').value = nameEl.x || 300;
                     document.getElementById('dyn_name_y').value = nameEl.y || 1860;
                     document.getElementById('dyn_name_size').value = nameEl.font_size || 28;
-                    document.getElementById('dyn_name_color').value = nameEl.color || '#ffffff';
+                    document.getElementById('dyn_name_color').value = nameEl.color || '#000000';
+                    if (document.getElementById('dyn_name_color_picker')) {
+                        document.getElementById('dyn_name_color_picker').value = nameEl.color || '#000000';
+                    }
                     document.getElementById('dyn_name_style').value = nameEl.font_style || 'bold';
                 } else {
                     document.getElementById('dyn_name_enable').checked = false;
@@ -6387,7 +6552,10 @@ function editFrame(frame) {
                     document.getElementById('dyn_subtitle_x').value = subEl.x || 300;
                     document.getElementById('dyn_subtitle_y').value = subEl.y || 1900;
                     document.getElementById('dyn_subtitle_size').value = subEl.font_size || 20;
-                    document.getElementById('dyn_subtitle_color').value = subEl.color || '#cccccc';
+                    document.getElementById('dyn_subtitle_color').value = subEl.color || '#333333';
+                    if (document.getElementById('dyn_subtitle_color_picker')) {
+                        document.getElementById('dyn_subtitle_color_picker').value = subEl.color || '#333333';
+                    }
                     document.getElementById('dyn_subtitle_style').value = subEl.font_style || 'normal';
                 } else {
                     document.getElementById('dyn_subtitle_enable').checked = false;
@@ -6398,7 +6566,10 @@ function editFrame(frame) {
                     document.getElementById('dyn_hashtag_x').value = hashEl.x || 300;
                     document.getElementById('dyn_hashtag_y').value = hashEl.y || 1930;
                     document.getElementById('dyn_hashtag_size').value = hashEl.font_size || 16;
-                    document.getElementById('dyn_hashtag_color').value = hashEl.color || '#aaaaaa';
+                    document.getElementById('dyn_hashtag_color').value = hashEl.color || '#000000';
+                    if (document.getElementById('dyn_hashtag_color_picker')) {
+                        document.getElementById('dyn_hashtag_color_picker').value = hashEl.color || '#000000';
+                    }
                     document.getElementById('dyn_hashtag_style').value = hashEl.font_style || 'italic';
                 } else {
                     document.getElementById('dyn_hashtag_enable').checked = false;
@@ -6407,8 +6578,20 @@ function editFrame(frame) {
                 // Reset all dynamic fields inputs
                 document.getElementById('dyn_logo_enable').checked = false;
                 document.getElementById('dyn_name_enable').checked = false;
+                document.getElementById('dyn_name_color').value = '#000000';
+                if (document.getElementById('dyn_name_color_picker')) {
+                    document.getElementById('dyn_name_color_picker').value = '#000000';
+                }
                 document.getElementById('dyn_subtitle_enable').checked = false;
+                document.getElementById('dyn_subtitle_color').value = '#333333';
+                if (document.getElementById('dyn_subtitle_color_picker')) {
+                    document.getElementById('dyn_subtitle_color_picker').value = '#333333';
+                }
                 document.getElementById('dyn_hashtag_enable').checked = false;
+                document.getElementById('dyn_hashtag_color').value = '#000000';
+                if (document.getElementById('dyn_hashtag_color_picker')) {
+                    document.getElementById('dyn_hashtag_color_picker').value = '#000000';
+                }
             }
 
             // Allow not uploading a file when editing
@@ -6840,9 +7023,9 @@ function editFrame(frame) {
             const ids = [
                 'editorFrameIsDynamic',
                 'dyn_logo_enable', 'dyn_logo_x', 'dyn_logo_y', 'dyn_logo_w', 'dyn_logo_h',
-                'dyn_name_enable', 'dyn_name_x', 'dyn_name_y', 'dyn_name_size', 'dyn_name_color', 'dyn_name_style',
-                'dyn_subtitle_enable', 'dyn_subtitle_x', 'dyn_subtitle_y', 'dyn_subtitle_size', 'dyn_subtitle_color', 'dyn_subtitle_style',
-                'dyn_hashtag_enable', 'dyn_hashtag_x', 'dyn_hashtag_y', 'dyn_hashtag_size', 'dyn_hashtag_color', 'dyn_hashtag_style'
+                'dyn_name_enable', 'dyn_name_x', 'dyn_name_y', 'dyn_name_size', 'dyn_name_color', 'dyn_name_color_picker', 'dyn_name_style',
+                'dyn_subtitle_enable', 'dyn_subtitle_x', 'dyn_subtitle_y', 'dyn_subtitle_size', 'dyn_subtitle_color', 'dyn_subtitle_color_picker', 'dyn_subtitle_style',
+                'dyn_hashtag_enable', 'dyn_hashtag_x', 'dyn_hashtag_y', 'dyn_hashtag_size', 'dyn_hashtag_color', 'dyn_hashtag_color_picker', 'dyn_hashtag_style'
             ];
             ids.forEach(id => {
                 const el = document.getElementById(id);
