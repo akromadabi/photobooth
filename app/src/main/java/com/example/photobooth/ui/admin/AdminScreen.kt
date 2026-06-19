@@ -211,6 +211,8 @@ fun AdminScreen(
     
     var isSyncing by remember { mutableStateOf(false) }
     var isTestingPrint by remember { mutableStateOf(false) }
+    var isScanningPrinters by remember { mutableStateOf(false) }
+    var lastScanTime by remember { mutableStateOf("") }
     var packagesList by remember { mutableStateOf<List<PackageDto>>(emptyList()) }
     var selectedPackageId by remember { mutableStateOf("any") }
     var isPackageDropdownExpanded by remember { mutableStateOf(false) }
@@ -282,7 +284,9 @@ fun AdminScreen(
                     if (adapter != null && adapter.isEnabled) {
                         @SuppressLint("MissingPermission")
                         adapter.bondedDevices.forEach { device ->
-                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            if (isBluetoothDevicePrinter(device)) {
+                                bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -294,52 +298,64 @@ fun AdminScreen(
         }
     )
 
-    // Scan function
-    val scanPrinters = {
-        usbDevices.clear()
-        bluetoothDevices.clear()
-        // USB
-        val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
-        usbManager?.deviceList?.values?.forEach { device ->
-            var isPrinter = false
-            for (i in 0 until device.interfaceCount) {
-                val intr = device.getInterface(i)
-                if (intr.interfaceClass == 7) {
-                    isPrinter = true
-                    break
-                }
-                for (j in 0 until intr.endpointCount) {
-                    val ep = intr.getEndpoint(j)
-                    if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
-                        isPrinter = true
-                        break
+    // Scan function — runs on IO thread with loading state
+    val scanPrinters: () -> Unit = {
+        scope.launch {
+            isScanningPrinters = true
+            usbDevices.clear()
+            bluetoothDevices.clear()
+
+            // Simulasikan delay kecil agar UI sempat menampilkan spinner
+            withContext(Dispatchers.IO) { Thread.sleep(600) }
+
+            // USB — scan perangkat yang terhubung
+            val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
+            usbManager?.deviceList?.values?.forEach { device ->
+                var isPrinter = false
+                for (i in 0 until device.interfaceCount) {
+                    val intr = device.getInterface(i)
+                    if (intr.interfaceClass == 7) { isPrinter = true; break }
+                    for (j in 0 until intr.endpointCount) {
+                        val ep = intr.getEndpoint(j)
+                        if (ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK && ep.direction == UsbConstants.USB_DIR_OUT) {
+                            isPrinter = true; break
+                        }
                     }
+                    if (isPrinter) break
                 }
-                if (isPrinter) break
+                if (isPrinter) usbDevices.add(device)
             }
-            if (isPrinter) {
-                usbDevices.add(device)
-            }
-        }
-        
-        // Bluetooth
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val hasConnect = ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.BLUETOOTH_CONNECT
-            ) == PackageManager.PERMISSION_GRANTED
-            val hasScan = ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.BLUETOOTH_SCAN
-            ) == PackageManager.PERMISSION_GRANTED
-            
-            if (!hasConnect || !hasScan) {
-                requestBtPermissionsLauncher.launch(
-                    arrayOf(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_SCAN
+
+            // Bluetooth — scan perangkat yang sudah dipasangkan
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val hasConnect = ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.BLUETOOTH_CONNECT
+                ) == PackageManager.PERMISSION_GRANTED
+                val hasScan = ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.BLUETOOTH_SCAN
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (!hasConnect || !hasScan) {
+                    requestBtPermissionsLauncher.launch(
+                        arrayOf(
+                            android.Manifest.permission.BLUETOOTH_CONNECT,
+                            android.Manifest.permission.BLUETOOTH_SCAN
+                        )
                     )
-                )
+                } else {
+                    try {
+                        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                        val adapter = bluetoothManager?.adapter
+                        if (adapter != null && adapter.isEnabled) {
+                            @SuppressLint("MissingPermission")
+                            adapter.bondedDevices.forEach { device ->
+                                if (isBluetoothDevicePrinter(device)) {
+                                    bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                                }
+                            }
+                        }
+                    } catch (e: Exception) { e.printStackTrace() }
+                }
             } else {
                 try {
                     val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -347,26 +363,18 @@ fun AdminScreen(
                     if (adapter != null && adapter.isEnabled) {
                         @SuppressLint("MissingPermission")
                         adapter.bondedDevices.forEach { device ->
-                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            if (isBluetoothDevicePrinter(device)) {
+                                bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            }
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                } catch (e: Exception) { e.printStackTrace() }
             }
-        } else {
-            try {
-                val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-                val adapter = bluetoothManager?.adapter
-                if (adapter != null && adapter.isEnabled) {
-                    @SuppressLint("MissingPermission")
-                    adapter.bondedDevices.forEach { device ->
-                        bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+
+            // Catat waktu scan selesai
+            val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            lastScanTime = sdf.format(Date())
+            isScanningPrinters = false
         }
     }
 
@@ -459,7 +467,7 @@ fun AdminScreen(
                                 text = title,
                                 fontSize = 14.sp,
                                 fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedTab == index) Color.White else Gray
+                                color = if (selectedTab == index) White else Gray
                             )
                         }
                     )
@@ -1865,28 +1873,82 @@ fun AdminScreen(
 
                         val ThermalConnectionCard: @Composable () -> Unit = {
                             AdminCard(title = "Koneksi Printer Struk") {
+
+                                // ── Header: judul + tombol refresh ──────────────────────────
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Pilih Port Printer Thermal Terdeteksi:", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text("Port Printer Thermal Terdeteksi:", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     IconButton(
-                                        onClick = {
-                                            scanPrinters()
-                                            Toast.makeText(context, "Daftar printer diperbarui", Toast.LENGTH_SHORT).show()
-                                        }
+                                        onClick = { scanPrinters() },
+                                        enabled = !isScanningPrinters
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Pindai Ulang",
-                                            tint = Color(0xFFE63946)
+                                        if (isScanningPrinters) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                color = Color(0xFFE63946),
+                                                strokeWidth = 2.dp
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "Pindai Ulang",
+                                                tint = Color(0xFFE63946)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // ── Banner status scan ──────────────────────────────────────
+                                if (isScanningPrinters) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFF1A1A2E))
+                                            .border(1.dp, Color(0xFF3A3A5C), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = Color(0xFFE63946),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Text(
+                                            "Sedang memindai printer USB & Bluetooth yang terpasang...",
+                                            color = Color(0xFFAAAAAA),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                } else if (lastScanTime.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(7.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFF52B788))
+                                        )
+                                        Text(
+                                            "Daftar diperbarui pukul $lastScanTime · ${bluetoothDevices.size} BT, ${usbDevices.size} USB ditemukan",
+                                            color = Color(0xFF52B788),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
 
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // ── Dropdown pilih printer ──────────────────────────────────
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     OutlinedButton(
                                         onClick = { isPrinterPortDropdownExpanded = true },
@@ -1901,7 +1963,7 @@ fun AdminScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(text = selectedPrinterText, color = White, fontSize = 13.sp)
+                                            Text(text = selectedPrinterText, color = White, fontSize = 13.sp, modifier = Modifier.weight(1f))
                                             Text(text = "▼", color = Color(0xFFE63946), fontSize = 12.sp)
                                         }
                                     }
@@ -1915,14 +1977,41 @@ fun AdminScreen(
                                     ) {
                                         if (printerOptions.isEmpty()) {
                                             DropdownMenuItem(
-                                                text = { Text("Tidak ada printer terdeteksi", color = Gray) },
+                                                text = {
+                                                    Column {
+                                                        Text("Tidak ada printer terdeteksi", color = Gray)
+                                                        Text("Tekan ikon refresh di atas untuk memindai ulang", color = Gray, fontSize = 11.sp)
+                                                    }
+                                                },
                                                 onClick = { isPrinterPortDropdownExpanded = false }
                                             )
                                         } else {
                                             printerOptions.forEach { (addr, info) ->
                                                 val (dispName, type) = info
+                                                val isCurrentlyActive = addr == printerAddress
                                                 DropdownMenuItem(
-                                                    text = { Text("[$type] $dispName", color = White) },
+                                                    text = {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text("[$type] $dispName", color = White, fontSize = 13.sp)
+                                                                Text(addr.substringAfter(":"), color = Gray, fontSize = 10.sp)
+                                                            }
+                                                            if (isCurrentlyActive) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .clip(RoundedCornerShape(4.dp))
+                                                                        .background(Color(0xFF52B788))
+                                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                ) {
+                                                                    Text("AKTIF", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                                }
+                                                            }
+                                                        }
+                                                    },
                                                     onClick = {
                                                         printerAddress = addr
                                                         configManager.printerAddress = addr
@@ -1936,9 +2025,60 @@ fun AdminScreen(
                                     }
                                 }
 
-                                if (printerOptions.isEmpty() && usbDevices.isEmpty() && bluetoothDevices.isEmpty()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Tidak ada printer terdeteksi. Hubungkan printer struk menggunakan kabel USB OTG atau koneksi Bluetooth.", color = Gray, fontSize = 12.sp)
+                                // ── Badge status printer aktif ──────────────────────────────
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val isActivePrinterVisible = printerAddress.isNotEmpty() && printerOptions.any { it.first == printerAddress }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isActivePrinterVisible) Color(0xFF0D2B1A) else Color(0xFF2B0D0D)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isActivePrinterVisible) Color(0xFF52B788) else Color(0xFF8B2020),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isActivePrinterVisible) Color(0xFF52B788) else Color(0xFFE63946)
+                                            )
+                                    )
+                                    Column {
+                                        Text(
+                                            text = if (isActivePrinterVisible) "✓ Printer aktif terdeteksi dalam daftar scan"
+                                                   else if (printerAddress.isEmpty()) "Belum ada printer yang dipilih"
+                                                   else "⚠ Printer yang tersimpan tidak terdeteksi saat ini — coba pindai ulang atau pastikan Bluetooth/USB aktif",
+                                            color = if (isActivePrinterVisible) Color(0xFF52B788) else Color(0xFFE4A445),
+                                            fontSize = 11.sp,
+                                            lineHeight = 15.sp
+                                        )
+                                        if (printerAddress.isNotEmpty()) {
+                                            Text(
+                                                text = "Tersimpan: $printerAddress",
+                                                color = Gray,
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (printerOptions.isEmpty() && !isScanningPrinters) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        "Tidak ada printer terdeteksi. Pastikan printer sudah dipasangkan via Bluetooth atau kabel USB OTG terhubung, lalu tekan refresh.",
+                                        color = Gray,
+                                        fontSize = 12.sp,
+                                        lineHeight = 16.sp
+                                    )
                                 }
 
                                 HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 12.dp))
@@ -3589,4 +3729,35 @@ private fun isNetworkConnected(context: Context): Boolean {
         @Suppress("DEPRECATION")
         return networkInfo != null && networkInfo.isConnected
     }
+}
+
+@SuppressLint("MissingPermission")
+private fun isBluetoothDevicePrinter(device: android.bluetooth.BluetoothDevice): Boolean {
+    val name = device.name?.lowercase(Locale.getDefault()) ?: ""
+    
+    // 1. Check device class
+    val bluetoothClass = device.bluetoothClass
+    if (bluetoothClass != null) {
+        val majorClass = bluetoothClass.majorDeviceClass
+        val devClass = bluetoothClass.deviceClass
+        
+        if (majorClass == android.bluetooth.BluetoothClass.Device.Major.IMAGING ||
+            devClass == android.bluetooth.BluetoothClass.Device.IMAGING_PRINTER ||
+            devClass == 1664 // 0x0680
+        ) {
+            return true
+        }
+    }
+    
+    // 2. Check if name contains printer keywords
+    val keywords = listOf(
+        "print", "printer", "pos", "mpt", "pt-", "zj", "xp", "rp", "thermal",
+        "epson", "bixolon", "star", "sewoo", "hoin", "rongta", "goojprt",
+        "milestone", "innerprinter", "peripage", "mtp"
+    )
+    if (keywords.any { name.contains(it) }) {
+        return true
+    }
+    
+    return false
 }

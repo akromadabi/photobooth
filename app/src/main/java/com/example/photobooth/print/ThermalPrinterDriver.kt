@@ -253,72 +253,98 @@ class ThermalPrinterDriver : PrinterManager {
     }
 
     @SuppressLint("MissingPermission")
-    private fun printViaBluetooth(bitmap: Bitmap, macAddress: String, context: Context): PrintResult {
+    private suspend fun printViaBluetooth(bitmap: Bitmap, macAddress: String, context: Context): PrintResult = withContext(Dispatchers.IO) {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-            ?: return PrintResult.Error("Bluetooth tidak didukung perangkat ini")
+            ?: return@withContext PrintResult.Error("Bluetooth tidak didukung perangkat ini")
         val adapter = bluetoothManager.adapter
-            ?: return PrintResult.Error("Bluetooth mati atau tidak didukung")
-            
+            ?: return@withContext PrintResult.Error("Bluetooth mati atau tidak didukung")
+
         if (!adapter.isEnabled) {
-            return PrintResult.Error("Silakan aktifkan Bluetooth terlebih dahulu")
+            return@withContext PrintResult.Error("Silakan aktifkan Bluetooth terlebih dahulu")
         }
-        
+
         val device: BluetoothDevice = try {
             adapter.getRemoteDevice(macAddress)
         } catch (e: Exception) {
-            return PrintResult.Error("MAC Address printer tidak valid")
+            return@withContext PrintResult.Error("MAC Address printer tidak valid: ${e.message}")
         }
-        
+
+        // ── FIX KRITIS #1: Batalkan scan/discovery yang berjalan di background.
+        // Proses discovery Bluetooth aktif SANGAT mengganggu dan menyebabkan koneksi SPP
+        // gagal atau tidak stabil. Ini adalah penyebab utama "koneksi tidak stabil".
+        if (adapter.isDiscovering) {
+            adapter.cancelDiscovery()
+            // Beri waktu stack BT untuk benar-benar berhenti scanning
+            try { Thread.sleep(300) } catch (e: InterruptedException) { }
+        }
+
         var socket: BluetoothSocket? = null
-        return try {
+        var lastError = "Semua metode koneksi gagal"
+
+        // ── FIX KRITIS #2: Coba koneksi dengan 3 metode berbeda, masing-masing
+        // dilakukan di thread terpisah dengan timeout eksplisit (10 detik).
+        // Tanpa timeout, socket.connect() bisa hang selamanya dan memblokir UI.
+        val connectionMethods: List<() -> BluetoothSocket> = listOf(
+            // Metode 1: Insecure RFCOMM (bypass pairing, paling kompatibel)
+            { device.createInsecureRfcommSocketToServiceRecord(SPP_UUID) },
+            // Metode 2: Secure RFCOMM (butuh pairing tapi lebih stabil di beberapa chipset)
+            { device.createRfcommSocketToServiceRecord(SPP_UUID) },
+            // Metode 3: Refleksi langsung ke RFCOMM channel 1 (untuk printer lama)
+            { device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType).invoke(device, 1) as BluetoothSocket }
+        )
+
+        for ((index, method) in connectionMethods.withIndex()) {
+            if (socket?.isConnected == true) break
             try {
-                // 1. Try Insecure RFCOMM socket (standard for SPP printers to bypass PIN/pairing issues)
-                socket = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
-                socket.connect()
-            } catch (e: IOException) {
-                try {
-                    socket?.close()
-                } catch (ce: Exception) {}
-                
-                // 2. Try Secure RFCOMM socket
-                try {
-                    socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
-                    socket.connect()
-                } catch (e2: IOException) {
-                    try {
-                        socket?.close()
-                    } catch (ce: Exception) {}
-                    
-                    // 3. Fallback connection attempt using reflection on RFCOMM channel 1
-                    val m = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
-                    socket = m.invoke(device, 1) as BluetoothSocket
-                    socket.connect()
+                val candidate = method()
+                // Jalankan connect() di thread terpisah dengan timeout 10 detik
+                val connectThread = Thread {
+                    try { candidate.connect() } catch (ignored: Exception) {}
                 }
+                connectThread.start()
+                connectThread.join(10_000L) // tunggu maksimal 10 detik
+
+                if (candidate.isConnected) {
+                    socket = candidate
+                    break
+                } else {
+                    // Timeout atau gagal — tutup dan coba metode berikutnya
+                    lastError = "Metode ${index + 1} timeout atau gagal"
+                    try { candidate.close() } catch (ignored: Exception) {}
+                    // Jeda singkat sebelum mencoba koneksi berikutnya
+                    try { Thread.sleep(500) } catch (e: InterruptedException) { }
+                }
+            } catch (e: Exception) {
+                lastError = "Metode ${index + 1} error: ${e.message}"
+                try { socket?.close() } catch (ignored: Exception) {}
+                socket = null
+                try { Thread.sleep(500) } catch (e2: InterruptedException) { }
             }
-            
+        }
+
+        if (socket == null || !socket.isConnected) {
+            return@withContext PrintResult.Error("Gagal terhubung ke printer Bluetooth. $lastError")
+        }
+
+        return@withContext try {
             val outputStream = socket.outputStream
             val inputStream = socket.inputStream
 
-            // ── Step 1: Drain stale bytes from a previous session / partial print.
-            // Some BT printer chipsets leave leftover ACK or status bytes in the RX buffer
-            // that confuse the next job if not cleared.
+            // ── Step 1: Bersihkan buffer masukan dari sesi sebelumnya.
             try {
                 val available = inputStream.available()
-                if (available > 0) {
-                    inputStream.skip(available.toLong())
-                }
-            } catch (e: Exception) { /* ignore */ }
+                if (available > 0) inputStream.skip(available.toLong())
+            } catch (e: Exception) { /* abaikan */ }
 
-            // ── Step 2: Hard-reset the printer with ESC @ before every job.
-            // This clears any partial command state from the previous print session
-            // and is the primary fix for "second print shows raw code" bug.
+            // ── Step 2: Kirim ESC @ (hard-reset) sebelum setiap pekerjaan cetak.
+            // Ini membersihkan status perintah parsial dari sesi cetak sebelumnya —
+            // perbaikan utama untuk bug "cetak kedua menampilkan kode mentah".
             val resetCmd = byteArrayOf(0x1B, 0x40)
             outputStream.write(resetCmd)
             outputStream.flush()
-            // Give the printer time to process the reset before sending print data.
-            try { Thread.sleep(200) } catch (e: InterruptedException) { }
+            try { Thread.sleep(250) } catch (e: InterruptedException) { }
 
-            // ── Step 3: Generate and send the actual print payload.
+            // ── Step 3: Hasilkan data cetak sesuai mode protokol.
             val configManager = ConfigManager(context)
             val printData = if (configManager.thermalMode == "ESC_POS") {
                 generateEscPosData(bitmap, configManager)
@@ -326,9 +352,9 @@ class ThermalPrinterDriver : PrinterManager {
                 generateTsplData(bitmap, configManager)
             }
 
-            // ── Step 4: Stream data in small 512-byte chunks with 20ms inter-chunk delay.
-            // Smaller chunks + longer delay prevent buffer overrun on slower BT SPP
-            // printer chipsets, which was the root cause of stuttering/incomplete prints.
+            // ── Step 4: Kirim data dalam potongan kecil (chunk) dengan jeda antar-chunk.
+            // Potongan kecil 512 byte + jeda 30ms mencegah buffer overflow pada chipset
+            // printer BT SPP yang lambat — akar masalah cetakan terputus/tidak lengkap.
             val maxChunk = 512
             var sent = 0
             while (sent < printData.size) {
@@ -336,26 +362,19 @@ class ThermalPrinterDriver : PrinterManager {
                 outputStream.write(printData, sent, length)
                 outputStream.flush()
                 sent += length
-                try {
-                    Thread.sleep(20)
-                } catch (e: InterruptedException) { }
+                try { Thread.sleep(30) } catch (e: InterruptedException) { }
             }
 
-            // ── Step 5: Final wait — let the printer physically print and cut before
-            // we close the socket. Android's BT stack has its own internal TX buffer;
-            // closing too early causes the last commands (feed/cut) to be dropped.
-            // 5 seconds is a safe margin for a full photo-strip print job.
-            try {
-                Thread.sleep(5000)
-            } catch (e: InterruptedException) { }
+            // ── Step 5: Tunggu printer selesai mencetak dan memotong kertas secara fisik
+            // sebelum socket ditutup. Buffer TX internal Android bisa menyebabkan
+            // perintah terakhir (feed/cut) terpotong jika koneksi ditutup terlalu cepat.
+            try { Thread.sleep(6000) } catch (e: InterruptedException) { }
 
             PrintResult.Success
         } catch (e: IOException) {
-            PrintResult.Error("Koneksi Bluetooth ke printer gagal: ${e.message}")
+            PrintResult.Error("Error saat mengirim data cetak Bluetooth: ${e.message}")
         } finally {
-            try {
-                socket?.close()
-            } catch (e: Exception) {}
+            try { socket.close() } catch (e: Exception) {}
         }
     }
 

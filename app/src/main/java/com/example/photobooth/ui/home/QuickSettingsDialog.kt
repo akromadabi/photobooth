@@ -161,7 +161,9 @@ fun QuickSettingsDialog(
                     if (adapter != null && adapter.isEnabled) {
                         @SuppressLint("MissingPermission")
                         adapter.bondedDevices.forEach { device ->
-                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            if (isBluetoothDevicePrinter(device)) {
+                                bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -225,7 +227,9 @@ fun QuickSettingsDialog(
                     if (adapter != null && adapter.isEnabled) {
                         @SuppressLint("MissingPermission")
                         adapter.bondedDevices.forEach { device ->
-                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            if (isBluetoothDevicePrinter(device)) {
+                                bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -239,7 +243,9 @@ fun QuickSettingsDialog(
                 if (adapter != null && adapter.isEnabled) {
                     @SuppressLint("MissingPermission")
                     adapter.bondedDevices.forEach { device ->
-                        bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                        if (isBluetoothDevicePrinter(device)) {
+                            bluetoothDevices.add(Pair(device.name ?: "Unknown Printer", device.address))
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -895,4 +901,35 @@ fun QuickSettingsSection(
         )
         content()
     }
+}
+
+@SuppressLint("MissingPermission")
+private fun isBluetoothDevicePrinter(device: android.bluetooth.BluetoothDevice): Boolean {
+    val name = device.name?.lowercase(java.util.Locale.getDefault()) ?: ""
+    
+    // 1. Check device class
+    val bluetoothClass = device.bluetoothClass
+    if (bluetoothClass != null) {
+        val majorClass = bluetoothClass.majorDeviceClass
+        val devClass = bluetoothClass.deviceClass
+        
+        if (majorClass == android.bluetooth.BluetoothClass.Device.Major.IMAGING ||
+            devClass == android.bluetooth.BluetoothClass.Device.IMAGING_PRINTER ||
+            devClass == 1664 // 0x0680
+        ) {
+            return true
+        }
+    }
+    
+    // 2. Check if name contains printer keywords
+    val keywords = listOf(
+        "print", "printer", "pos", "mpt", "pt-", "zj", "xp", "rp", "thermal",
+        "epson", "bixolon", "star", "sewoo", "hoin", "rongta", "goojprt",
+        "milestone", "innerprinter", "peripage", "mtp"
+    )
+    if (keywords.any { name.contains(it) }) {
+        return true
+    }
+    
+    return false
 }
