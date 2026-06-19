@@ -914,8 +914,7 @@ private fun isBluetoothDevicePrinter(device: android.bluetooth.BluetoothDevice):
         val devClass = bluetoothClass.deviceClass
         
         if (majorClass == android.bluetooth.BluetoothClass.Device.Major.IMAGING ||
-            devClass == android.bluetooth.BluetoothClass.Device.IMAGING_PRINTER ||
-            devClass == 1664 // 0x0680
+            devClass == 1664 // 0x0680 (IMAGING_PRINTER)
         ) {
             return true
         }
