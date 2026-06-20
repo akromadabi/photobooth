@@ -24,6 +24,25 @@ if (file_exists($settingsFile)) {
     }
 }
 $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
+
+// Resolve general brand details in PHP for initial HTML load
+$neutralName = 'Jeprat Jepret';
+$neutralSlogan = 'All You need is special';
+
+$brandName = $neutralName;
+$brandSlogan = $neutralSlogan;
+
+if (!empty($configData['events'])) {
+    foreach ($configData['events'] as $evt) {
+        if ($evt['id'] === 'general' && !empty($evt['name']) && $evt['name'] !== 'Umum (Default)') {
+            $brandName = $evt['name'];
+        }
+    }
+}
+
+$brandNameWords = explode(' ', $brandName);
+$dagoText1 = $brandNameWords[0] ?? $neutralName;
+$dagoText2 = implode(' ', array_slice($brandNameWords, 1));
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -1516,6 +1535,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             background-color: white !important;
             color: var(--primary-red) !important;
             border-radius: 50px !important;
+            opacity: 1 !important;
         }
         .theme-neon_red .home-slogan {
             font-family: 'Outfit', sans-serif !important;
@@ -2996,6 +3016,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             animation: comicStartPulse 2s ease-in-out infinite !important;
             transition: transform 0.2s !important;
             cursor: pointer;
+            opacity: 1 !important;
         }
 
         .theme-comic_pop .btn-start:hover {
@@ -3707,6 +3728,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             box-shadow: 6px 6px 0px #000000 !important;
             animation: dagoPulse 2s infinite !important;
             letter-spacing: 1px !important;
+            opacity: 1 !important;
         }
 
         .theme-dago_orange .btn-start:hover {
@@ -4418,6 +4440,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             position: relative;
             overflow: visible;
             cursor: pointer;
+            opacity: 1 !important;
         }
         .theme-creative_dynamic .btn-start::after {
             content: '';
@@ -4837,10 +4860,11 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                             <!-- Brand Header -->
                             <div class="dago-brand-header">
                                 <div class="dago-brand-title-box">
-                                    <span class="dago-brand-main">Dago.</span>
-                                    <div class="dago-brand-sub">
-                                        <span class="dago-brand-sub1">RECEIPT PHOTOBOOTH</span>
-                                        <span class="dago-brand-sub2">SINCE 2020</span>
+                                    <img id="dagoBrandLogoImg" src="" alt="Logo" style="display: none; max-height: 45px; width: auto; object-fit: contain; margin-bottom: 5px;">
+                                    <span class="dago-brand-main" id="dagoBrandMainText"><?php echo htmlspecialchars($dagoText1) . (substr(strtolower($dagoText1), -1) === '.' ? '' : '.'); ?></span>
+                                    <div class="dago-brand-sub" id="dagoBrandSubWrapper">
+                                        <span class="dago-brand-sub1"><?php echo htmlspecialchars(strtoupper($dagoText2 ? $dagoText2 : 'RECEIPT PHOTOBOOTH')); ?></span>
+                                        <span class="dago-brand-sub2">EST. 2026</span>
                                     </div>
                                 </div>
                                 <div class="dago-brand-handwriting">This is your Receipt</div>
@@ -4854,8 +4878,9 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                                 <div class="dago-receipt-viewport">
                                     <div class="dago-receipt-paper" id="dagoReceiptPaper">
                                         <div class="dago-receipt-paper-header">
-                                            <div class="dago-receipt-paper-logo">Dago.</div>
-                                            <div class="dago-receipt-paper-title">DAILY NEWS</div>
+                                            <img id="dagoReceiptLogoImg" src="" alt="Logo" style="display: none; max-height: 35px; width: auto; object-fit: contain; filter: grayscale(1) contrast(2) brightness(0.9); margin: 0 auto 5px auto;">
+                                            <div class="dago-receipt-paper-logo" id="dagoReceiptPaperLogoText"><?php echo htmlspecialchars($dagoText1); ?></div>
+                                            <div class="dago-receipt-paper-title"><?php echo htmlspecialchars(strtoupper($dagoText2 ? $dagoText2 : 'DAILY NEWS')); ?></div>
                                             <div class="dago-receipt-paper-date" id="dagoReceiptDate">Sunday, 31 May 2026</div>
                                         </div>
                                         <div class="dago-receipt-paper-content">
@@ -5049,73 +5074,289 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 
         // Dynamic branding changes on HomeScreen logo texts
         function updateHomeScreenBranding() {
-            let eventName = "";
+            // ── 1. Resolve data source ────────────────────────────────────────
+            // Priority: specific active event > general service profile > neutral fallback
             let targetId = kioskMode === 'DEDICATED' ? activeEventId : currentSessionEventId;
-            
-            if (targetId && targetId !== 'general' && serverConfig.events) {
-                const match = serverConfig.events.find(e => e.id === targetId);
-                if (match) eventName = match.name;
-            }
-            
-            const p1 = document.getElementById('logoPart1');
-            const p2 = document.getElementById('logoPart2');
-            const slogan = document.getElementById('homeSlogan');
-            
-            let text1 = "Jeprat";
-            let text2 = "Jepret";
-            let sloganText = "All You need is special";
 
-            if (eventName) {
-                const words = eventName.split(' ');
-                const half = Math.ceil(words.length / 2);
-                text1 = words.slice(0, half).join(' ');
-                text2 = words.slice(half).join(' ');
-                sloganText = "⭐ Sesi Acara Eksklusif ⭐";
-            } else if (appTheme === 'COMIC_POP') {
-                text1 = "Jeprat";
-                text2 = "Jepret !!!";
-                sloganText = "PHOTOBOOTH!!!";
-            } else if (appTheme === 'DAGO_ORANGE') {
-                text1 = "Dago.";
-                text2 = "RECEIPT PHOTOBOOTH";
-                sloganText = "SINCE 2020";
-            } else if (appTheme === 'CREATIVE_DYNAMIC') {
-                text1 = "Jeprat";
-                text2 = "Jepret";
-                sloganText = "🌟 Creative Studio 🌟";
+            let brandSource = null;
+            if (serverConfig && serverConfig.events) {
+                // Try active specific event first
+                if (targetId && targetId !== 'general') {
+                    brandSource = serverConfig.events.find(e => e.id === targetId) || null;
+                }
+                // Fall back to general service profile
+                if (!brandSource) {
+                    brandSource = serverConfig.events.find(e => e.id === 'general') || null;
+                }
             }
 
+            // ── 2. Extract branding fields ──────────────────────────────────
+            const NEUTRAL_NAME   = 'Jeprat Jepret';
+            const NEUTRAL_SLOGAN = 'All You need is special';
+
+            const hasRealName = brandSource && brandSource.name
+                && brandSource.name !== 'Umum (Default)'
+                && brandSource.name !== NEUTRAL_NAME;
+
+            const rawName    = hasRealName ? brandSource.name : NEUTRAL_NAME;
+            const sloganText = (brandSource && brandSource.subtitle) ? brandSource.subtitle : NEUTRAL_SLOGAN;
+            const hashtagText   = (brandSource && brandSource.hashtag)       ? brandSource.hashtag       : '';
+            const dateText      = (brandSource && brandSource.event_date)    ? brandSource.event_date    : '';
+            const locationText  = (brandSource && brandSource.event_location)? brandSource.event_location: '';
+            const logoUrl       = (brandSource && brandSource.logo_url)      ? brandSource.logo_url      : '';
+
+            // Split name into two lines for text logo rendering (theme-aware)
+            const nameWords = rawName.split(' ');
+            let text1, text2;
             if (appTheme === 'DAGO_ORANGE') {
-                p1.innerHTML = `<span class="dago-logo-white">${text1}</span>`;
-                p2.innerHTML = `<span class="dago-logo-sub">${text2}</span>`;
-                slogan.innerHTML = `<span class="dago-logo-sub2">${sloganText}</span>`;
-            } else if (appTheme === 'COMIC_POP') {
-                const wrapComic = (txt, startIdx = 0) => {
-                    if (!txt) return "";
-                    const colors = ['txt-pink', 'txt-blue', 'txt-yellow', 'txt-white'];
-                    return txt.split(' ').map((word, idx) => {
-                        const cls = colors[(idx + startIdx) % colors.length];
-                        return `<span class="${cls}">${word}</span>`;
-                    }).join(' ');
-                };
-                p1.innerHTML = wrapComic(text1, 0);
-                p2.innerHTML = wrapComic(text2, 2);
-                slogan.innerText = eventName ? sloganText : "PHOTOBOOTH!!!";
-            } else if (appTheme === 'CREATIVE_DYNAMIC') {
-                const wrapChars = (txt, startIdx = 0) => {
-                    if (!txt) return "";
-                    return txt.split('').map((char, idx) => {
-                        if (char === ' ') return '&nbsp;';
-                        return `<span class="logo-char" style="--char-idx: ${idx + startIdx}">${char}</span>`;
-                    }).join('');
-                };
-                p1.innerHTML = wrapChars(text1, 0);
-                p2.innerHTML = wrapChars(text2, text1.length);
+                // DAGO style: first word = big title, rest = sub-bar
+                text1 = nameWords[0] || NEUTRAL_NAME;
+                text2 = nameWords.slice(1).join(' ') || '';
+            } else {
+                const half = Math.ceil(nameWords.length / 2);
+                text1 = nameWords.slice(0, half).join(' ');
+                text2 = nameWords.slice(half).join(' ');
+            }
+
+            // ── 3. Get DOM elements ──────────────────────────────────────────
+            const logoImg        = document.getElementById('homeEventLogoImg');
+            const logoTextWrapper= document.getElementById('homeLogoTextWrapper');
+            const p1             = document.getElementById('logoPart1');
+            const p2             = document.getElementById('logoPart2');
+            const slogan         = document.getElementById('homeSlogan');
+            const detailsBox     = document.getElementById('homeEventDetailsBox');
+            const hashtagEl      = document.getElementById('homeEventHashtag');
+            const dateEl         = document.getElementById('homeEventDate');
+            const locationEl     = document.getElementById('homeEventLocation');
+            const metaDot        = document.getElementById('homeEventMetaDot');
+
+            // ── 4. Render: Logo image OR text logo ──────────────────────────
+            if (logoUrl) {
+                // Show logo image, FORCE-HIDE text wrapper
+                // (use setProperty 'important' to beat any CSS animation or theme override)
+                logoImg.src = logoUrl;
+                logoImg.style.display = 'block';
+                logoTextWrapper.style.setProperty('display',    'none',   'important');
+                logoTextWrapper.style.setProperty('visibility', 'hidden', 'important');
+                logoTextWrapper.style.setProperty('opacity',    '0',      'important');
+                // Render slogan normally below the logo
                 slogan.innerText = sloganText;
             } else {
-                p1.innerText = text1;
-                p2.innerText = text2;
-                slogan.innerText = sloganText;
+                // No logo image — show styled text logo
+                logoImg.style.display = 'none';
+                logoImg.src = '';   // clear stale src
+                logoTextWrapper.style.removeProperty('display');
+                logoTextWrapper.style.removeProperty('visibility');
+                logoTextWrapper.style.removeProperty('opacity');
+                logoTextWrapper.style.display = 'block';
+
+                if (appTheme === 'DAGO_ORANGE') {
+                    p1.innerHTML = `<span class="dago-logo-white">${text1}</span>`;
+                    p2.innerHTML = text2
+                        ? `<span class="dago-logo-sub">${text2}</span>`
+                        : '';
+                    slogan.innerHTML = `<span class="dago-logo-sub2">${sloganText}</span>`;
+                } else if (appTheme === 'COMIC_POP') {
+                    const wrapComic = (txt, startIdx = 0) => {
+                        if (!txt) return '';
+                        const colors = ['txt-pink', 'txt-blue', 'txt-yellow', 'txt-white'];
+                        return txt.split(' ').map((word, idx) => {
+                            const cls = colors[(idx + startIdx) % colors.length];
+                            return `<span class="${cls}">${word}</span>`;
+                        }).join(' ');
+                    };
+                    p1.innerHTML = wrapComic(text1, 0);
+                    p2.innerHTML = wrapComic(text2, 2);
+                    slogan.innerText = sloganText;
+                } else if (appTheme === 'CREATIVE_DYNAMIC') {
+                    const wrapChars = (txt, startIdx = 0) => {
+                        if (!txt) return '';
+                        return txt.split('').map((char, idx) => {
+                            if (char === ' ') return '&nbsp;';
+                            return `<span class="logo-char" style="--char-idx: ${idx + startIdx}">${char}</span>`;
+                        }).join('');
+                    };
+                    p1.innerHTML = wrapChars(text1, 0);
+                    p2.innerHTML = wrapChars(text2, text1.length);
+                    slogan.innerText = sloganText;
+                } else {
+                    p1.innerText = text1;
+                    p2.innerText = text2;
+                    slogan.innerText = sloganText;
+                }
+            }
+
+            // ── 5. Render event details row (hashtag / date / location) ───────
+            if (hashtagText) {
+                hashtagEl.innerText = hashtagText;
+                hashtagEl.style.display = 'block';
+            } else {
+                hashtagEl.style.display = 'none';
+            }
+
+            if (dateText) {
+                dateEl.innerText = dateText;
+                dateEl.style.display = 'inline';
+            } else {
+                dateEl.style.display = 'none';
+            }
+
+            if (locationText) {
+                locationEl.innerText = locationText;
+                locationEl.style.display = 'inline';
+            } else {
+                locationEl.style.display = 'none';
+            }
+
+            metaDot.style.display = (dateText && locationText) ? 'inline' : 'none';
+            detailsBox.style.display = (hashtagText || dateText || locationText) ? 'flex' : 'none';
+
+            // ── 5.5 Update Dago Receipt Elements dynamically ───
+            const dagoBrandLogoImg        = document.getElementById('dagoBrandLogoImg');
+            const dagoBrandMainText       = document.getElementById('dagoBrandMainText');
+            const dagoBrandSubWrapper     = document.getElementById('dagoBrandSubWrapper');
+            const dagoBrandSub1           = document.querySelector('.dago-brand-sub1');
+            const dagoBrandSub2           = document.querySelector('.dago-brand-sub2');
+            
+            const dagoReceiptLogoImg      = document.getElementById('dagoReceiptLogoImg');
+            const dagoReceiptPaperLogoText= document.getElementById('dagoReceiptPaperLogoText');
+            const dagoReceiptPaperTitle   = document.querySelector('.dago-receipt-paper-title');
+            const dagoReceiptPaperFooter  = document.querySelector('.dago-receipt-paper-footer');
+
+            if (logoUrl) {
+                // Update brand header logo
+                if (dagoBrandLogoImg) {
+                    dagoBrandLogoImg.src = logoUrl;
+                    dagoBrandLogoImg.style.display = 'block';
+                }
+                if (dagoBrandMainText) dagoBrandMainText.style.display = 'none';
+                if (dagoBrandSubWrapper) dagoBrandSubWrapper.style.display = 'none';
+
+                // Update receipt paper logo
+                if (dagoReceiptLogoImg) {
+                    dagoReceiptLogoImg.src = logoUrl;
+                    dagoReceiptLogoImg.style.display = 'block';
+                }
+                if (dagoReceiptPaperLogoText) dagoReceiptPaperLogoText.style.display = 'none';
+            } else {
+                // Falls back to text logo
+                if (dagoBrandLogoImg) {
+                    dagoBrandLogoImg.style.display = 'none';
+                    dagoBrandLogoImg.src = '';
+                }
+                if (dagoBrandMainText) {
+                    dagoBrandMainText.style.display = 'inline';
+                    dagoBrandMainText.innerText = text1 + (text1.toLowerCase().endsWith('.') ? '' : '.');
+                }
+                if (dagoBrandSubWrapper) dagoBrandSubWrapper.style.display = 'block';
+                if (dagoBrandSub1) dagoBrandSub1.innerText = (text2 || sloganText || 'RECEIPT PHOTOBOOTH').toUpperCase();
+                if (dagoBrandSub2) dagoBrandSub2.innerText = hashtagText || 'EST. 2026';
+
+                if (dagoReceiptLogoImg) {
+                    dagoReceiptLogoImg.style.display = 'none';
+                    dagoReceiptLogoImg.src = '';
+                }
+                if (dagoReceiptPaperLogoText) {
+                    dagoReceiptPaperLogoText.style.display = 'block';
+                    dagoReceiptPaperLogoText.innerText = text1;
+                }
+            }
+
+            if (dagoReceiptPaperTitle) {
+                dagoReceiptPaperTitle.innerText = (text2 || sloganText || 'DAILY NEWS').toUpperCase();
+            }
+            if (dagoReceiptPaperFooter) {
+                if (hashtagText || locationText) {
+                    dagoReceiptPaperFooter.innerText = `Step into a charming receipt-themed photobooth and create timeless memories with us. ${hashtagText ? 'Use hashtag ' + hashtagText + '.' : ''} ${locationText ? 'Location: ' + locationText + '.' : ''}`;
+                } else {
+                    dagoReceiptPaperFooter.innerText = `Step into a charming receipt-themed photobooth and create timeless memories with your loved ones. Every photo becomes a unique keepsake worth saving.`;
+                }
+            }
+            
+            // ── 6. Inject Dynamic Color Styles (event primary/secondary color overrides) ───
+            let styleEl = document.getElementById('dynamicEventThemeStyles');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'dynamicEventThemeStyles';
+                document.head.appendChild(styleEl);
+            }
+
+            if (brandSource && brandSource.primary_color) {
+                const primary   = brandSource.primary_color;
+                const secondary = brandSource.secondary_color || '#ffffff';
+                styleEl.innerHTML = `
+                    .screen-container.theme-neon_red .screen-home {
+                        background-color: ${primary} !important;
+                    }
+                    .screen-container.theme-neon_red .btn-start {
+                        color: ${primary} !important;
+                    }
+                    .screen-container.theme-neon_red .status-bar {
+                        background-color: ${primary}df !important;
+                    }
+                    .screen-container.theme-neon_red .screen-header-back {
+                        background-color: ${primary} !important;
+                    }
+                    .screen-container.theme-cute_pastel .screen-home {
+                        border-color: ${primary} !important;
+                    }
+                    .screen-container.theme-cute_pastel .home-logo-part2 {
+                        color: ${primary} !important;
+                    }
+                    .screen-container.theme-cute_pastel .btn-start {
+                        background-color: ${secondary} !important;
+                        border-color: ${primary} !important;
+                        box-shadow: 0 6px 0 ${primary} !important;
+                        color: ${primary} !important;
+                    }
+                    .screen-container.theme-cute_nara .screen-home {
+                        background-color: ${secondary}f0 !important;
+                        border-color: ${primary} !important;
+                    }
+                    .screen-container.theme-cute_nara .btn-start {
+                        background-color: ${primary} !important;
+                        box-shadow: 0 4px 15px ${primary}60 !important;
+                    }
+                    .screen-container.theme-cute_nara .home-logo-part1 {
+                        color: ${primary} !important;
+                    }
+                    .screen-container.theme-luxury_gold .btn-start {
+                        background: linear-gradient(135deg, ${primary}, ${secondary}) !important;
+                        box-shadow: 0 4px 20px ${primary}50 !important;
+                    }
+                    .screen-container.theme-minimal_modern .btn-start {
+                        border-color: ${primary} !important;
+                        background: ${primary} !important;
+                    }
+                    .screen-container.theme-minimal_modern .home-logo-part1 {
+                        color: ${primary} !important;
+                    }
+                    .screen-container.theme-comic_pop .screen-home {
+                        background-color: ${secondary} !important;
+                    }
+                    .screen-container.theme-comic_pop .home-logo-box {
+                        background: ${primary} !important;
+                    }
+                    .screen-container.theme-comic_pop .btn-start {
+                        background-color: ${primary} !important;
+                    }
+                    .screen-container.theme-dago_orange {
+                        background: linear-gradient(135deg, ${primary}, ${secondary}) !important;
+                    }
+                    .screen-container.theme-dago_orange .btn-start {
+                        background: ${primary} !important;
+                        border-color: ${secondary} !important;
+                    }
+                    .screen-container.theme-creative_dynamic {
+                        background: linear-gradient(135deg, ${primary}, ${secondary}) !important;
+                    }
+                    .screen-container.theme-creative_dynamic .btn-start {
+                        background: ${primary} !important;
+                        box-shadow: 0 0 20px ${primary}80 !important;
+                    }
+                `;
+            } else {
+                styleEl.innerHTML = '';
             }
         }
 
@@ -5645,11 +5886,18 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             ctx.lineWidth = 2;
             ctx.strokeRect(8, 8, 622, 995);
 
-            // Header Brand
+            // Header Brand — use service name from config
+            const brandName = (function() {
+                if (serverConfig && serverConfig.events) {
+                    const g = serverConfig.events.find(e => e.id === 'general');
+                    if (g && g.name && g.name !== 'Umum (Default)') return g.name.toUpperCase();
+                }
+                return 'JEPRAT JEPRET';
+            })();
             ctx.fillStyle = '#ffffff';
             ctx.font = '900 28px Outfit, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('JEPRAT-JEPRET', 319, 60);
+            ctx.fillText(brandName, 319, 60);
 
             ctx.fillStyle = '#f7b801';
             ctx.font = '700 14px Outfit, sans-serif';
@@ -5682,7 +5930,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             // Verification text
             ctx.fillStyle = '#8d8d9f';
             ctx.font = '400 13px Outfit, sans-serif';
-            ctx.fillText('Verified AI generated character by Jeprat-jepret Kiosk', 319, 740);
+            ctx.fillText('Verified AI generated character by ' + brandName + ' Kiosk', 319, 740);
 
             // Load and Draw QR Code linking to verification page
             const protocol = window.location.protocol;

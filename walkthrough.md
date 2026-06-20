@@ -189,3 +189,16 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
 * Menaikkan `versionName` ke `"1.25.2"` dan `versionCode` ke `38` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
 * Menjalankan build Gradle secara bersih untuk memperbarui file pembaruan `backend/update.json`, menyalin APK terbaru `backend/app-debug.apk`, dan mencadangkan salinannya ke root: `app-debug_v1.25.2.apk`.
 
+---
+
+## Update: Standardisasi Branding Event Dinamis & Pembersihan Placeholder "Dago"
+
+### 1. Perubahan Nilai Fallback Kiosk (Default Brand)
+* **Branding Default**: Mengubah default fallback nama brand pada Kiosk dari `"Studio Foto"` menjadi `"Jeprat Jepret"`, dan slogan default dari `"Abadikan Momenmu"` menjadi `"All You need is special"`.
+* **Kesesuaian di JavaScript**: Memperbarui konstanta `NEUTRAL_NAME` dan `NEUTRAL_SLOGAN` di dalam fungsi `updateHomeScreenBranding()` pada file [kiosk_sim.php](file:///c:/laragon/www/photobooth/backend/kiosk_sim.php) agar ketika event yang aktif adalah event umum/default (`general`), branding secara otomatis bernilai `"Jeprat Jepret"` dengan tagline yang sesuai.
+* **Canvas Karakter Kartu**: Mengganti fallback nama brand teks statis `"STUDIO FOTO"` pada fungsi verifikasi kartu karakter AI di [kiosk_sim.php](file:///c:/laragon/www/photobooth/backend/kiosk_sim.php) menjadi pencarian dinamis dari event umum di server (`brandName`), dan jika kosong otomatis mengarah ke `"JEPRAT JEPRET"`.
+
+### 2. Integrasi Dinamis Layout Struk & Header Brand Dago Orange
+* **Penyelesaian HTML Statis**: Menghapus teks statis `"Dago."`, `"RECEIPT PHOTOBOOTH"`, `"SINCE 2020"`, dan `"DAILY NEWS"` yang sebelumnya mengunci tampilan struk di halaman share/cetak struk simulator.
+* **Injeksi Data Awal via PHP**: Menambahkan blok pendeteksi info event general di awal [kiosk_sim.php](file:///c:/laragon/www/photobooth/backend/kiosk_sim.php) untuk mem-parsing nama brand umum secara dinamis saat halaman pertama kali dimuat di browser.
+* **Output Variabel**: Menghubungkan variabel PHP tersebut ke dalam markup HTML di elemen header logo (`dagoBrandMainText`), sub-header (`dago-brand-sub1`), logo kertas struk (`dagoReceiptPaperLogoText`), dan judul struk (`dagoReceiptPaperTitle`). Dengan demikian, cetakan struk simulator sekarang tampil dinamis berdasarkan data event yang sedang dipilih/aktif.

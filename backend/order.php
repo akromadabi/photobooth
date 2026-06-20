@@ -31,6 +31,63 @@ function saveQueueState($file, $state) {
     file_put_contents($file, json_encode($state, JSON_PRETTY_PRINT));
 }
 
+// Helper to check if event rental duration is currently active
+function isRentalActive($evt) {
+    if (!isset($evt['billing_type']) || $evt['billing_type'] !== 'RENTAL_DURATION') {
+        return false;
+    }
+    $start = $evt['rental_start_time'] ?? '';
+    $end = $evt['rental_end_time'] ?? '';
+    if (!$start || !$end) {
+        return false;
+    }
+    $now = time();
+    $startTime = strtotime($start);
+    $endTime = strtotime($end);
+    return ($now >= $startTime && $now <= $endTime);
+}
+
+// Load configurations first
+$packages = [];
+if (file_exists($packagesFile)) {
+    $packages = json_decode(file_get_contents($packagesFile), true);
+}
+
+$config = ['events' => [], 'frames' => []];
+if (file_exists($configPath)) {
+    $config = json_decode(file_get_contents($configPath), true);
+}
+
+// Resolve active/unlocked event from session or GET
+$eventCode = '';
+$eventId = '';
+$resolvedEvent = null;
+$isFreeActive = false;
+
+if (isset($_GET['event_code']) && !empty($_GET['event_code'])) {
+    $eventCode = strtoupper(trim($_GET['event_code']));
+    $_SESSION['event_code'] = $eventCode;
+} elseif (isset($_SESSION['event_code'])) {
+    $eventCode = $_SESSION['event_code'];
+}
+
+if (!empty($eventCode)) {
+    if (isset($config['events'])) {
+        foreach ($config['events'] as $evt) {
+            if (isset($evt['code']) && strtoupper($evt['code']) === strtoupper($eventCode)) {
+                $resolvedEvent = $evt;
+                $eventId = $evt['id'];
+                $_SESSION['event_id'] = $eventId;
+                break;
+            }
+        }
+    }
+}
+
+if ($resolvedEvent) {
+    $isFreeActive = isRentalActive($resolvedEvent);
+}
+
 // 1. Handle Order creation (Form POST)
 if (isset($_POST['action']) && $_POST['action'] === 'create_order') {
     $packageId = isset($_POST['package_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['package_id']) : '';
@@ -48,32 +105,59 @@ if (isset($_POST['action']) && $_POST['action'] === 'create_order') {
         $nextQueue = $maxQueue + 1;
         $sessionId = bin2hex(random_bytes(8));
         
-        // Add new unpaid item to queue list
-        $state['queue_list'][] = [
+        $selectedEventId = $_POST['event_id'] ?? ($eventId ?? '');
+        $matchedEvt = null;
+        if ($selectedEventId && isset($config['events'])) {
+            foreach ($config['events'] as $evt) {
+                if ($evt['id'] === $selectedEventId) {
+                    $matchedEvt = $evt;
+                    break;
+                }
+            }
+        }
+        
+        $isFree = $matchedEvt && isRentalActive($matchedEvt);
+        $status = $isFree ? 'WAITING' : 'UNPAID';
+        
+        $newQueueItem = [
             "queue_number" => $nextQueue,
             "session_id" => $sessionId,
-            "status" => "UNPAID",
+            "status" => $status,
             "package_id" => $packageId,
             "timestamp" => time()
         ];
         
+        if ($selectedEventId) {
+            $newQueueItem['event_id'] = $selectedEventId;
+        }
+        
+        if ($isFree) {
+            $activeExists = false;
+            foreach ($state['queue_list'] as $q) {
+                if ($q['status'] === 'ACTIVE' || $q['status'] === 'CAPTURING') {
+                    $activeExists = true;
+                    break;
+                }
+            }
+            
+            if (!$activeExists) {
+                $newQueueItem['status'] = 'ACTIVE';
+                $state['active_queue_number'] = $nextQueue;
+                $state['active_session_id'] = $sessionId;
+            }
+        }
+        
+        $state['queue_list'][] = $newQueueItem;
         saveQueueState($queueFile, $state);
         
-        // Redirect to payment gateway simulator
-        header("Location: payment_gateway.php?order_id=$sessionId&package_id=$packageId");
-        exit;
+        if ($isFree) {
+            header("Location: order.php?session_id=$sessionId");
+            exit;
+        } else {
+            header("Location: payment_gateway.php?order_id=$sessionId&package_id=$packageId");
+            exit;
+        }
     }
-}
-
-// 2. Load configurations
-$packages = [];
-if (file_exists($packagesFile)) {
-    $packages = json_decode(file_get_contents($packagesFile), true);
-}
-
-$config = ['events' => [], 'frames' => []];
-if (file_exists($configPath)) {
-    $config = json_decode(file_get_contents($configPath), true);
 }
 
 // Check if we are in Remote Controller mode (?session_id=...)
@@ -736,11 +820,36 @@ if ($isRemoteMode) {
     <?php if (!$isRemoteMode): ?>
         <!-- CATALOG SCREEN -->
         <div class="catalog-container">
-            <div class="section-title">Pilih Paket Foto:</div>
+            
+            <!-- Event Verification Form -->
+            <div class="event-code-box" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 24px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Punya Kode Akses Event?</span>
+                <form action="order.php" method="GET" style="display: flex; gap: 10px; width: 100%;">
+                    <input type="text" name="event_code" placeholder="Masukkan Kode Event (misal: BUDI17)" value="<?php echo htmlspecialchars($eventCode); ?>" style="flex: 1; padding: 12px 14px; background: #0c0c0f; border: 1px solid var(--border-color); border-radius: 12px; color: white; text-transform: uppercase; font-family: inherit; font-size: 0.9rem; outline: none;">
+                    <button type="submit" style="width: auto; padding: 12px 20px; margin: 0; background-color: var(--primary-gold); color: black; border: none; font-weight: 700; border-radius: 12px; cursor: pointer;">Verifikasi</button>
+                </form>
+                <?php if (!empty($eventCode)): ?>
+                    <?php if ($resolvedEvent): ?>
+                        <div style="font-size: 0.85rem; color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                            <i class="fa-solid fa-circle-check"></i> Event Terkunci: <?php echo htmlspecialchars($resolvedEvent['name']); ?>
+                            <?php if ($isFreeActive): ?>
+                                 <span style="color: var(--primary-gold);">(Gratis / Free Play Aktif!)</span>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div style="font-size: 0.85rem; color: var(--primary-red); font-weight: 600; display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                            <i class="fa-solid fa-circle-xmark"></i> Kode Event tidak valid atau sudah kedaluwarsa.
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+
+            <div class="section-title" style="margin-top: 10px;">Pilih Paket Foto:</div>
             
             <form action="order.php" method="POST">
                 <input type="hidden" name="action" value="create_order">
                 <input type="hidden" id="selectedPackageInput" name="package_id" value="">
+                <input type="hidden" name="event_id" value="<?php echo htmlspecialchars($eventId); ?>">
                 
                 <div style="display: flex; flex-direction: column; gap: 16px;">
                     <?php foreach ($packages as $pkg): 
@@ -760,7 +869,13 @@ if ($isRemoteMode) {
                         <div class="package-card" onclick="selectPackage('<?php echo htmlspecialchars($pkg['id']); ?>', this)">
                             <div class="package-header">
                                 <div class="package-name"><?php echo htmlspecialchars($pkg['name']); ?></div>
-                                <div class="package-price">Rp <?php echo number_format($pkg['price'], 0, ',', '.'); ?></div>
+                                <div class="package-price">
+                                    <?php if ($isFreeActive): ?>
+                                        <span style="color: #10b981; font-weight: 800;">GRATIS</span>
+                                    <?php else: ?>
+                                        Rp <?php echo number_format($pkg['price'], 0, ',', '.'); ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="features-list">
                                 <div class="feature-item <?php echo $pkg['features']['print']?'feature-active':'feature-inactive'; ?>">

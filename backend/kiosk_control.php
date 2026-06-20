@@ -70,7 +70,8 @@ switch ($action) {
             'command' => isset($foundItem['command']) ? $foundItem['command'] : '',
             'frame_id' => isset($foundItem['frame_id']) ? $foundItem['frame_id'] : '',
             'layout' => isset($foundItem['layout']) ? $foundItem['layout'] : '',
-            'package_id' => $foundItem['package_id']
+            'package_id' => $foundItem['package_id'],
+            'event_id' => isset($foundItem['event_id']) ? $foundItem['event_id'] : 'general'
         ]);
         break;
         
@@ -139,7 +140,8 @@ switch ($action) {
                     'command' => isset($activeSession['command']) ? $activeSession['command'] : '',
                     'frame_id' => isset($activeSession['frame_id']) ? $activeSession['frame_id'] : '',
                     'layout' => isset($activeSession['layout']) ? $activeSession['layout'] : '',
-                    'package_id' => $activeSession['package_id']
+                    'package_id' => $activeSession['package_id'],
+                    'event_id' => isset($activeSession['event_id']) ? $activeSession['event_id'] : 'general'
                 ]);
                 break;
             }

@@ -599,11 +599,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_packages') {
 
 // Action: Save Event
 if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
-    $eventId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['event_id']);
     $eventName = trim($_POST['event_name']);
     $eventCode = strtoupper(trim($_POST['event_code']));
+    $eventId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['event_id'] ?? '');
     $eventSubtitle = trim($_POST['event_subtitle'] ?? '');
     $eventHashtag = trim($_POST['event_hashtag'] ?? '');
+    $eventDate = trim($_POST['event_date'] ?? '');
+    $eventLocation = trim($_POST['event_location'] ?? '');
     $primaryColor = trim($_POST['primary_color'] ?? '#e63946');
     $secondaryColor = trim($_POST['secondary_color'] ?? '#ffffff');
     
@@ -611,6 +613,35 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
     $config = ['events' => [], 'frames' => []];
     if (file_exists($configPath)) {
         $config = json_decode(file_get_contents($configPath), true);
+    }
+    
+    // Auto-generate Event ID if empty (not editing)
+    if (empty($eventId)) {
+        // Generate slug from event_name
+        $eventId = preg_replace('/[^a-z0-9_-]/', '', strtolower(str_replace(' ', '_', $eventName)));
+        if (empty($eventId)) {
+            $eventId = 'event_' . time();
+        }
+        
+        // Collision check
+        $baseId = $eventId;
+        $counter = 1;
+        $exists = true;
+        while ($exists) {
+            $exists = false;
+            if (isset($config['events'])) {
+                foreach ($config['events'] as $evt) {
+                    if ($evt['id'] === $eventId) {
+                        $exists = true;
+                        break;
+                    }
+                }
+            }
+            if ($exists) {
+                $eventId = $baseId . '_' . $counter;
+                $counter++;
+            }
+        }
     }
     
     $eventIndex = -1;
@@ -647,6 +678,24 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
         }
     }
     
+    $billingType = trim($_POST['billing_type'] ?? 'PAY_PER_SESSION');
+    $rentalStartTime = trim($_POST['rental_start_time'] ?? '');
+    $rentalEndTime = trim($_POST['rental_end_time'] ?? '');
+    $limitPrintsPerSession = intval($_POST['limit_prints_per_session'] ?? 1);
+    
+    if ($rentalStartTime) {
+        $rentalStartTime = str_replace('T', ' ', $rentalStartTime);
+        if (strlen($rentalStartTime) === 16) {
+            $rentalStartTime .= ':00';
+        }
+    }
+    if ($rentalEndTime) {
+        $rentalEndTime = str_replace('T', ' ', $rentalEndTime);
+        if (strlen($rentalEndTime) === 16) {
+            $rentalEndTime .= ':00';
+        }
+    }
+
     $newEvent = [
         'id' => $eventId,
         'name' => $eventName,
@@ -655,7 +704,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
         'hashtag' => $eventHashtag,
         'logo_url' => $logoUrl,
         'primary_color' => $primaryColor,
-        'secondary_color' => $secondaryColor
+        'secondary_color' => $secondaryColor,
+        'event_date' => $eventDate,
+        'event_location' => $eventLocation,
+        'billing_type' => $billingType,
+        'rental_start_time' => $rentalStartTime,
+        'rental_end_time' => $rentalEndTime,
+        'limit_prints_per_session' => $limitPrintsPerSession
     ];
     
     if ($eventIndex !== -1) {
@@ -1445,7 +1500,6 @@ foreach ($weeklyStats as $date => $cnt) {
             }
         }
 
-        /* Card Section styling */
         .card-section {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -1453,13 +1507,6 @@ foreach ($weeklyStats as $date => $cnt) {
             padding: 28px;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
             margin-bottom: 24px;
-            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .card-section:hover {
-            transform: translateY(-4px) scale(1.005);
-            border-color: rgba(79, 70, 229, 0.25);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
         }
 
         .card-header {
@@ -1885,6 +1932,8 @@ foreach ($weeklyStats as $date => $cnt) {
             border-radius: 24px;
             max-width: 780px;
             width: 100%;
+            max-height: calc(100vh - 48px);
+            overflow-y: auto;
             padding: 32px;
             display: flex;
             flex-direction: column;
@@ -2131,11 +2180,6 @@ foreach ($weeklyStats as $date => $cnt) {
             flex-direction: column;
             align-items: center;
             position: relative;
-            transition: all 0.2s;
-        }
-        .frame-card-admin:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-            transform: translateY(-1.5px);
         }
         .frame-card-preview-admin {
             width: 100%;
@@ -2154,10 +2198,6 @@ foreach ($weeklyStats as $date => $cnt) {
             max-width: 100%;
             object-fit: contain;
             filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.15));
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .frame-card-preview-admin:hover img {
-            transform: scale(1.05);
         }
         .frame-card-meta {
             width: 100%;
@@ -2570,7 +2610,6 @@ foreach ($weeklyStats as $date => $cnt) {
             gap: 8px;
             color: #ffffff;
             opacity: 0;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(4px);
             border-radius: 10px;
             z-index: 10;
@@ -2580,12 +2619,7 @@ foreach ($weeklyStats as $date => $cnt) {
         }
         .frame-preview-overlay i {
             font-size: 1.6rem;
-            transform: scale(0.85);
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
             color: #ffffff;
-        }
-        .frame-card-preview-admin:hover .frame-preview-overlay i {
-            transform: scale(1);
         }
         .frame-preview-overlay span {
             font-size: 0.75rem;
@@ -4317,78 +4351,55 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </button>
                             </div>
                             
-                            <div class="table-responsive">
-                                <table class="custom-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 80px; text-align: center;">Preview</th>
-                                            <th>Nama Bingkai</th>
-                                            <th style="width: 120px;">Tipe</th>
-                                            <th>Sesi Event</th>
-                                            <th style="width: 120px;">Jumlah Slot</th>
-                                            <th style="width: 160px; text-align: right;">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (empty($framesList)): ?>
-                                            <tr>
-                                                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                                                    <i class="fa-regular fa-image" style="font-size: 2.5rem; margin-bottom: 12px; color: #cbd5e1; display: block;"></i>
-                                                    <span style="font-weight: 600; display: block;">Belum ada bingkai kustom yang terdaftar.</span>
-                                                    <span style="font-size: 0.8rem; margin-top: 4px; display: block;">Klik tombol "Tambah Bingkai Baru" di atas untuk membuat bingkai.</span>
-                                                </td>
-                                            </tr>
-                                        <?php else: ?>
-                                            <?php foreach ($framesList as $f): ?>
-                                                <tr>
-                                                    <td style="text-align: center; vertical-align: middle;">
-                                                        <div class="frame-row-preview" onclick="openFrameZoom(<?php echo htmlspecialchars(json_encode($f)); ?>)">
-                                                            <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" alt="<?php echo htmlspecialchars($f['name']); ?>" onerror="this.src='https://placehold.co/60x75/121212/ffffff?text=No+Preview'">
-                                                            <div class="frame-row-preview-overlay">
-                                                                <i class="fa-solid fa-magnifying-glass-plus"></i>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td style="vertical-align: middle;">
-                                                        <span style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;"><?php echo htmlspecialchars($f['name']); ?></span>
-                                                    </td>
-                                                    <td style="vertical-align: middle;">
-                                                        <span style="font-size: 0.8rem; font-weight: 500; text-transform: capitalize; color: var(--text-muted);"><?php echo htmlspecialchars($f['type']); ?></span>
-                                                    </td>
-                                                    <td style="vertical-align: middle;">
-                                                        <span style="font-size: 0.8rem; font-weight: 500;">
-                                                            <?php 
-                                                                $evtName = "Umum (Default)";
-                                                                foreach ($eventsList as $e) {
-                                                                    if ($e['id'] === $f['event_id']) {
-                                                                        $evtName = $e['name'];
-                                                                        break;
-                                                                    }
-                                                                }
-                                                                echo htmlspecialchars($evtName);
-                                                            ?>
-                                                        </span>
-                                                    </td>
-                                                    <td style="vertical-align: middle;">
-                                                        <span class="event-badge-code" style="font-size: 0.75rem; background-color: rgba(79, 70, 229, 0.1); color: var(--primary); font-weight: 600; padding: 4px 8px; border-radius: 6px;">
-                                                            <?php echo count($f['slots']); ?> Foto
-                                                        </span>
-                                                    </td>
-                                                    <td style="text-align: right; vertical-align: middle;">
-                                                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                                                            <button class="btn-secondary" onclick="editFrame(<?php echo htmlspecialchars(json_encode($f)); ?>)" style="padding: 6px 12px; font-size: 0.8rem; height: 32px; display: inline-flex; align-items: center; gap: 6px;">
-                                                                <i class="fa-solid fa-pen-to-square"></i> Edit
-                                                            </button>
-                                                            <a href="admin.php?action=delete_frame&id=<?php echo urlencode($f['id']); ?>" class="btn-danger" style="background:#ef4444; color:white; padding: 6px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;" onclick="return confirm('Apakah Anda yakin ingin menghapus bingkai ini secara permanen?')">
-                                                                <i class="fa-solid fa-trash-can"></i> Hapus
-                                                            </a>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                            <div class="frames-grid">
+                                <?php if (empty($framesList)): ?>
+                                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 60px 40px;">
+                                        <i class="fa-regular fa-image" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 12px; display: block;"></i>
+                                        <span style="font-weight: 600; display: block;">Belum ada bingkai kustom yang terdaftar.</span>
+                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Klik tombol di atas untuk membuat bingkai pertamamu!</p>
+                                    </div>
+                                <?php else: ?>
+                                    <?php foreach ($framesList as $f): ?>
+                                        <div class="frame-card-admin" data-frame="<?php echo htmlspecialchars(json_encode($f)); ?>">
+                                            <div class="frame-card-preview-admin" onclick="openFrameZoom(<?php echo htmlspecialchars(json_encode($f)); ?>)">
+                                                <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" alt="<?php echo htmlspecialchars($f['name']); ?>" onerror="this.src='https://placehold.co/150x180/121212/ffffff?text=No+Preview'">
+                                                <div class="frame-preview-overlay">
+                                                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                                    <span>Zoom Detail</span>
+                                                </div>
+                                            </div>
+                                            <div class="frame-card-meta">
+                                                <div class="frame-card-title"><?php echo htmlspecialchars($f['name']); ?></div>
+                                                <div class="frame-card-tag">Tipe: <b><?php echo htmlspecialchars(ucfirst($f['type'])); ?></b></div>
+                                                <div class="frame-card-tag">Sesi Event: <b>
+                                                    <?php 
+                                                        $evtName = "Umum (Default)";
+                                                        foreach ($eventsList as $e) {
+                                                            if ($e['id'] === $f['event_id']) {
+                                                                $evtName = $e['name'];
+                                                                break;
+                                                            }
+                                                        }
+                                                        echo htmlspecialchars($evtName);
+                                                    ?></b>
+                                                </div>
+                                                <div class="frame-card-tag" style="margin-top: 4px;">
+                                                    <span class="event-badge-code" style="font-size: 0.75rem; background-color: rgba(79, 70, 229, 0.1); color: var(--primary); font-weight: 600; padding: 4px 8px; border-radius: 6px;">
+                                                        <?php echo count($f['slots']); ?> Foto
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="frame-card-actions">
+                                                <button class="btn-secondary" onclick="editFrame(<?php echo htmlspecialchars(json_encode($f)); ?>)">
+                                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                                </button>
+                                                <a href="admin.php?action=delete_frame&id=<?php echo urlencode($f['id']); ?>" class="btn-danger" style="background:#ef4444; color:white; display:flex; align-items:center; justify-content:center;" onclick="return confirm('Apakah Anda yakin ingin menghapus bingkai ini secara permanen?')">
+                                                    <i class="fa-solid fa-trash-can"></i> Hapus
+                                                </a>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -4723,16 +4734,27 @@ foreach ($weeklyStats as $date => $cnt) {
                                                     <div style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; vertical-align: middle;">
                                                         <?php if (!empty($evt['logo_url']) && file_exists(__DIR__ . '/' . $evt['logo_url'])): ?>
                                                             <img src="<?php echo htmlspecialchars($evt['logo_url']); ?>?v=<?php echo time(); ?>" style="width: 100%; height: 100%; object-fit: contain;">
+                                                        <?php elseif ($evt['id'] === 'general'): ?>
+                                                            <i class="fa-solid fa-store" style="color: #94a3b8; font-size: 1.2rem;"></i>
                                                         <?php else: ?>
                                                             <i class="fa-solid fa-calendar-days" style="color: #cbd5e1; font-size: 1.2rem;"></i>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;"><?php echo htmlspecialchars($evt['name']); ?></span>
+                                                    <?php if ($evt['id'] === 'general'): ?>
+                                                        <span style="font-weight: 700; color: var(--text-main); font-size: 0.85rem;"><?php echo htmlspecialchars($evt['name']); ?></span>
+                                                        <span style="font-size: 0.68rem; background: #f1f5f9; border: 1px solid #e2e8f0; color: #64748b; padding: 1px 6px; border-radius: 10px; margin-left: 6px;">Profil Default</span>
+                                                    <?php else: ?>
+                                                        <span style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;"><?php echo htmlspecialchars($evt['name']); ?></span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="event-badge-code" style="font-size: 0.75rem;"><?php echo htmlspecialchars($evt['code']); ?></span>
+                                                    <?php if ($evt['id'] === 'general'): ?>
+                                                        <span style="font-size: 0.72rem; color: #94a3b8; font-style: italic;">— (tidak pakai kode)</span>
+                                                    <?php else: ?>
+                                                        <span class="event-badge-code" style="font-size: 0.75rem;"><?php echo htmlspecialchars($evt['code']); ?></span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php if (!empty($evt['subtitle'])): ?>
@@ -4909,34 +4931,42 @@ foreach ($weeklyStats as $date => $cnt) {
                 <input type="hidden" name="action" value="save_event">
                 <input type="hidden" id="eventIsEditing" value="0">
                 
+                <input type="hidden" id="event_id" name="event_id" value="">
+                <span id="eventIdNote" style="display:none;"></span>
+                
                 <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="form-group">
-                            <label for="event_id">ID Event (Kode Unik, Alphanumeric)</label>
-                            <input type="text" id="event_id" name="event_id" class="form-input" placeholder="misal: ultah_budi_17" required style="background: white;">
-                            <span id="eventIdNote" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">ID unik sistem, tidak boleh mengandung spasi.</span>
-                        </div>
                         <div class="form-group">
                             <label for="event_name">Nama Event</label>
                             <input type="text" id="event_name" name="event_name" class="form-input" placeholder="misal: Sweet Seventeen Budi" required style="background: white;">
                         </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
                             <label for="event_code">Kode Akses Kiosk (Event Code)</label>
                             <input type="text" id="event_code" name="event_code" class="form-input" placeholder="misal: BUDI17" required style="background: white; text-transform: uppercase;">
                             <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Input di Kiosk Home Screen untuk masuk.</span>
                         </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
-                            <label for="event_subtitle">Subtitle / Tanggal Event (Opsional)</label>
-                            <input type="text" id="event_subtitle" name="event_subtitle" class="form-input" placeholder="misal: 26 Juni 2026" style="background: white;">
+                            <label for="event_subtitle">Sub Judul / Tagline Jasa atau Event</label>
+                            <input type="text" id="event_subtitle" name="event_subtitle" class="form-input" placeholder="misal: Weddingnya Budi & Cinta" style="background: white;">
+                        </div>
+                        <div class="form-group">
+                            <label for="event_hashtag">Hashtag Event (Opsional)</label>
+                            <input type="text" id="event_hashtag" name="event_hashtag" class="form-input" placeholder="misal: #BudiSweet17" style="background: white;">
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="event_hashtag">Hashtag Event (Opsional)</label>
-                        <input type="text" id="event_hashtag" name="event_hashtag" class="form-input" placeholder="misal: #BudiSweet17" style="background: white;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="event_date">Tanggal Event (Opsional)</label>
+                            <input type="text" id="event_date" name="event_date" class="form-input" placeholder="misal: 20 Juni 2026" style="background: white;">
+                        </div>
+                        <div class="form-group">
+                            <label for="event_location">Lokasi Event (Opsional)</label>
+                            <input type="text" id="event_location" name="event_location" class="form-input" placeholder="misal: Hotel Hilton, Bandung" style="background: white;">
+                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; align-items: start;">
@@ -4966,6 +4996,34 @@ foreach ($weeklyStats as $date => $cnt) {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="event_billing_type">Tipe Billing Event</label>
+                            <select id="event_billing_type" name="billing_type" class="form-input" style="background: white;" onchange="toggleBillingFields()">
+                                <option value="PAY_PER_SESSION">Bayar Mandiri per Sesi</option>
+                                <option value="RENTAL_DURATION">Sewa Durasi (Free Play / Unlimited)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="rentalDurationFields" style="display: none; flex-direction: column; gap: 16px; border: 1px dashed var(--border-color); padding: 16px; border-radius: 12px; background: rgba(0,0,0,0.02);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label for="event_rental_start_time">Waktu Mulai Sewa</label>
+                                <input type="datetime-local" id="event_rental_start_time" name="rental_start_time" class="form-input" style="background: white;">
+                            </div>
+                            <div class="form-group">
+                                <label for="event_rental_end_time">Waktu Selesai Sewa</label>
+                                <input type="datetime-local" id="event_rental_end_time" name="rental_end_time" class="form-input" style="background: white;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="max-width: 50%;">
+                            <label for="event_limit_prints_per_session">Batas Cetak per Sesi Foto</label>
+                            <input type="number" id="event_limit_prints_per_session" name="limit_prints_per_session" class="form-input" value="1" min="1" style="background: white;">
+                            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Mencegah spam print per sesi tamu.</span>
                         </div>
                     </div>
                     
@@ -5006,6 +5064,12 @@ foreach ($weeklyStats as $date => $cnt) {
                 if (selectedBottomItem) selectedBottomItem.classList.add('active');
                 if (selectedSheetItem) selectedSheetItem.classList.add('active');
                 selectedTabPane.classList.add('active');
+                
+                if (tabId === 'frames') {
+                    requestAnimationFrame(() => {
+                        initListFrameOverlays();
+                    });
+                }
                 
                 // Set Header title
                 let titleText = "";
@@ -5172,6 +5236,170 @@ foreach ($weeklyStats as $date => $cnt) {
         function closeDetails() {
             modal.classList.remove('active');
         }
+
+        // List Frame Overlays (draw dynamic overlays on list view card previews)
+        function renderListFrameOverlay(cardEl) {
+            const frameDataStr = cardEl.getAttribute('data-frame');
+            if (!frameDataStr) return;
+            let frame;
+            try {
+                frame = JSON.parse(frameDataStr);
+            } catch(e) {
+                return;
+            }
+            if (!frame.is_dynamic || !frame.dynamic_elements) return;
+
+            const imgEl = cardEl.querySelector('.frame-card-preview-admin img');
+            const previewContainer = cardEl.querySelector('.frame-card-preview-admin');
+            if (!imgEl || !previewContainer) return;
+
+            const naturalW = imgEl.naturalWidth;
+            const naturalH = imgEl.naturalHeight;
+
+            // Get exact layout bounding boxes
+            const imgRect = imgEl.getBoundingClientRect();
+            const containerRect = previewContainer.getBoundingClientRect();
+
+            const renderedW = imgRect.width;
+            const renderedH = imgRect.height;
+            const imgLeft = imgRect.left - containerRect.left;
+            const imgTop = imgRect.top - containerRect.top;
+
+            if (!naturalW || !naturalH || !renderedW || !renderedH) return;
+
+            const scaleX = renderedW / naturalW;
+            const scaleY = renderedH / naturalH;
+
+            let overlayContainer = previewContainer.querySelector('.card-overlay-container');
+            if (!overlayContainer) {
+                overlayContainer = document.createElement('div');
+                overlayContainer.className = 'card-overlay-container';
+                overlayContainer.style.position = 'absolute';
+                previewContainer.appendChild(overlayContainer);
+            }
+            
+            overlayContainer.style.left = imgLeft + 'px';
+            overlayContainer.style.top = imgTop + 'px';
+            overlayContainer.style.width = renderedW + 'px';
+            overlayContainer.style.height = renderedH + 'px';
+            overlayContainer.style.pointerEvents = 'none';
+            overlayContainer.style.zIndex = 5;
+            overlayContainer.innerHTML = '';
+
+            const de = frame.dynamic_elements;
+
+            // 1. Logo Dummy
+            if (de.logo) {
+                const logoX = parseFloat(de.logo.x) || 0;
+                const logoY = parseFloat(de.logo.y) || 0;
+                const logoW = parseFloat(de.logo.width) || 100;
+                const logoH = parseFloat(de.logo.height) || 100;
+
+                const logoDiv = document.createElement('div');
+                logoDiv.style.position = 'absolute';
+                logoDiv.style.left = Math.round(logoX * scaleX) + 'px';
+                logoDiv.style.top = Math.round(logoY * scaleY) + 'px';
+                logoDiv.style.width = Math.round(logoW * scaleX) + 'px';
+                logoDiv.style.height = Math.round(logoH * scaleY) + 'px';
+                logoDiv.style.border = '1px dashed #0ea5e9';
+                logoDiv.style.background = 'rgba(14, 165, 233, 0.12)';
+                logoDiv.style.color = '#0284c7';
+                logoDiv.style.display = 'flex';
+                logoDiv.style.alignItems = 'center';
+                logoDiv.style.justifyContent = 'center';
+                logoDiv.style.boxSizing = 'border-box';
+                
+                const fontSize = Math.max(4, Math.round(7 * scaleY));
+                logoDiv.innerHTML = `<div style="font-size: ${fontSize}px; font-weight: 800; text-transform: uppercase;">Logo</div>`;
+                overlayContainer.appendChild(logoDiv);
+            }
+
+            // 2. Text Dummies
+            if (de.texts && de.texts.length > 0) {
+                de.texts.forEach(text => {
+                    const textX = parseFloat(text.x) || 0;
+                    const textY = parseFloat(text.y) || 0;
+                    const textSize = parseFloat(text.font_size) || 20;
+                    const textColor = text.color || '#000000';
+                    const textStyle = text.font_style || 'normal';
+
+                    let label = 'Teks';
+                    let dummyText = '[TEKS]';
+                    let accentColor = '#6d28d9';
+                    let bgColor = 'rgba(139, 92, 246, 0.12)';
+                    let borderColor = '#8b5cf6';
+
+                    if (text.type === 'event_name') {
+                        label = 'Nama';
+                        dummyText = '[NAMA]';
+                        accentColor = '#6d28d9';
+                        bgColor = 'rgba(139, 92, 246, 0.12)';
+                        borderColor = '#8b5cf6';
+                    } else if (text.type === 'event_subtitle') {
+                        label = 'Sub';
+                        dummyText = '[SUBTITLE]';
+                        accentColor = '#be185d';
+                        bgColor = 'rgba(236, 72, 153, 0.12)';
+                        borderColor = '#ec4899';
+                    } else if (text.type === 'event_hashtag') {
+                        label = 'Hash';
+                        dummyText = '[HASH]';
+                        accentColor = '#c2410c';
+                        bgColor = 'rgba(249, 115, 22, 0.12)';
+                        borderColor = '#f97316';
+                    }
+
+                    const textDiv = document.createElement('div');
+                    textDiv.style.position = 'absolute';
+                    textDiv.style.left = Math.round(textX * scaleX) + 'px';
+                    textDiv.style.top = Math.round(textY * scaleY) + 'px';
+                    textDiv.style.transform = 'translateX(-50%)';
+                    textDiv.style.border = `1px dashed ${borderColor}`;
+                    textDiv.style.background = bgColor;
+                    textDiv.style.padding = '1px 3px';
+                    textDiv.style.borderRadius = '3px';
+                    textDiv.style.whiteSpace = 'nowrap';
+                    textDiv.style.textAlign = 'center';
+                    textDiv.style.boxSizing = 'border-box';
+
+                    let fontStyleStr = '';
+                    let fontWeightStr = 'normal';
+                    if (textStyle === 'bold' || textStyle === 'bold_italic') fontWeightStr = 'bold';
+                    if (textStyle === 'italic' || textStyle === 'bold_italic') fontStyleStr = 'italic';
+
+                    const previewFontSize = Math.max(4, Math.round(textSize * scaleY * 0.8));
+                    const labelFontSize = Math.max(3, Math.round(5 * scaleY));
+
+                    textDiv.innerHTML = `
+                        <div style="font-size: ${labelFontSize}px; font-weight: 800; color: ${accentColor}; text-transform: uppercase; margin-bottom: 0px; line-height: 1;">${label}</div>
+                        <div style="font-size: ${previewFontSize}px; color: ${textColor}; font-weight: ${fontWeightStr}; font-style: ${fontStyleStr}; font-family: 'Outfit', sans-serif; line-height: 1;">${dummyText}</div>
+                    `;
+                    overlayContainer.appendChild(textDiv);
+                });
+            }
+        }
+
+        function initListFrameOverlays() {
+            const cards = document.querySelectorAll('.frame-card-admin');
+            cards.forEach(card => {
+                const img = card.querySelector('.frame-card-preview-admin img');
+                if (img) {
+                    if (img.complete) {
+                        renderListFrameOverlay(card);
+                    } else {
+                        img.onload = function() {
+                            renderListFrameOverlay(card);
+                        };
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initListFrameOverlays);
+        window.addEventListener('resize', () => {
+            const cards = document.querySelectorAll('.frame-card-admin');
+            cards.forEach(renderListFrameOverlay);
+        });
 
         // Zoom Frame Modal Handlers
         let currentFrame = null;
@@ -5526,6 +5754,7 @@ foreach ($weeklyStats as $date => $cnt) {
         function hideFrameEditor() {
             document.getElementById('frameEditorView').style.display = 'none';
             document.getElementById('framesListView').style.display = 'block';
+            initListFrameOverlays();
         }
 
         function clearSlots() {
@@ -6836,14 +7065,35 @@ function editFrame(frame) {
         }
 
         function editEvent(evt) {
-            document.getElementById('eventFormTitle').innerHTML = '<i class="fa-solid fa-calendar-minus" style="color: var(--primary);"></i> <span>Edit Event: ' + evt.name + '</span>';
+            const isGeneral = evt.id === 'general';
+
+            document.getElementById('eventFormTitle').innerHTML = isGeneral
+                ? '<i class="fa-solid fa-store" style="color: var(--primary);"></i> <span>Edit Profil Jasa / Layanan Umum</span>'
+                : '<i class="fa-solid fa-calendar-minus" style="color: var(--primary);"></i> <span>Edit Event: ' + evt.name + '</span>';
+
             document.getElementById('event_id').value = evt.id;
             document.getElementById('event_id').readOnly = true; // Protect key modification
-            document.getElementById('eventIdNote').innerText = "ID Event tidak dapat diubah setelah dibuat.";
+            document.getElementById('eventIdNote').innerText = isGeneral
+                ? "Profil jasa default (ditampilkan saat tidak ada event aktif)."
+                : "ID Event tidak dapat diubah setelah dibuat.";
+
             document.getElementById('event_name').value = evt.name;
-            document.getElementById('event_code').value = evt.code;
+            document.getElementById('event_code').value = evt.code || '';
             document.getElementById('event_subtitle').value = evt.subtitle || '';
             document.getElementById('event_hashtag').value = evt.hashtag || '';
+            document.getElementById('event_date').value = evt.event_date || '';
+            document.getElementById('event_location').value = evt.event_location || '';
+            
+            // Hide event_code field for 'general' — it doesn't use an access code
+            const codeGroup = document.getElementById('event_code').closest('.form-group');
+            if (isGeneral) {
+                codeGroup.style.display = 'none';
+                document.getElementById('event_code').removeAttribute('required');
+                document.getElementById('event_code').value = 'UMUM'; // keep placeholder value
+            } else {
+                codeGroup.style.display = '';
+                document.getElementById('event_code').setAttribute('required', 'required');
+            }
             
             document.getElementById('primary_color').value = evt.primary_color || '#e63946';
             document.getElementById('primaryColorPicker').value = evt.primary_color || '#e63946';
@@ -6857,6 +7107,16 @@ function editFrame(frame) {
                 document.getElementById('eventLogoPreviewContainer').style.display = 'none';
             }
             
+            document.getElementById('event_billing_type').value = evt.billing_type || 'PAY_PER_SESSION';
+            let startVal = evt.rental_start_time || '';
+            let endVal = evt.rental_end_time || '';
+            if (startVal) startVal = startVal.replace(' ', 'T').substring(0, 16);
+            if (endVal) endVal = endVal.replace(' ', 'T').substring(0, 16);
+            document.getElementById('event_rental_start_time').value = startVal;
+            document.getElementById('event_rental_end_time').value = endVal;
+            document.getElementById('event_limit_prints_per_session').value = evt.limit_prints_per_session !== undefined ? evt.limit_prints_per_session : 1;
+            toggleBillingFields();
+
             document.getElementById('eventIsEditing').value = '1';
             
             // Show modal
@@ -6873,14 +7133,41 @@ function editFrame(frame) {
             document.getElementById('event_code').value = '';
             document.getElementById('event_subtitle').value = '';
             document.getElementById('event_hashtag').value = '';
+            document.getElementById('event_date').value = '';
+            document.getElementById('event_location').value = '';
+            
+            // Always restore code field when resetting
+            const codeGroup = document.getElementById('event_code').closest('.form-group');
+            codeGroup.style.display = '';
+            document.getElementById('event_code').setAttribute('required', 'required');
             
             document.getElementById('primary_color').value = '#e63946';
             document.getElementById('primaryColorPicker').value = '#e63946';
             document.getElementById('secondary_color').value = '#ffffff';
             document.getElementById('secondaryColorPicker').value = '#ffffff';
             
+            document.getElementById('event_billing_type').value = 'PAY_PER_SESSION';
+            document.getElementById('event_rental_start_time').value = '';
+            document.getElementById('event_rental_end_time').value = '';
+            document.getElementById('event_limit_prints_per_session').value = '1';
+            toggleBillingFields();
+
             document.getElementById('eventLogoPreviewContainer').style.display = 'none';
             document.getElementById('eventIsEditing').value = '0';
+        }
+
+        function toggleBillingFields() {
+            const billingType = document.getElementById('event_billing_type').value;
+            const fieldsContainer = document.getElementById('rentalDurationFields');
+            if (billingType === 'RENTAL_DURATION') {
+                fieldsContainer.style.display = 'flex';
+                document.getElementById('event_rental_start_time').setAttribute('required', 'required');
+                document.getElementById('event_rental_end_time').setAttribute('required', 'required');
+            } else {
+                fieldsContainer.style.display = 'none';
+                document.getElementById('event_rental_start_time').removeAttribute('required');
+                document.getElementById('event_rental_end_time').removeAttribute('required');
+            }
         }
 
         function openEventModal() {

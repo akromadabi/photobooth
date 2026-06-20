@@ -43,7 +43,8 @@ data class KioskCommandResponse(
     val command: String? = null,
     val frame_id: String? = null,
     val layout: String? = null,
-    val package_id: String? = null
+    val package_id: String? = null,
+    val event_id: String? = null
 )
 
 @Keep

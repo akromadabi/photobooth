@@ -4,7 +4,11 @@
         {
             "id": "general",
             "name": "Umum (Default)",
-            "code": "UMUM"
+            "code": "UMUM",
+            "billing_type": "PAY_PER_SESSION",
+            "rental_start_time": "",
+            "rental_end_time": "",
+            "limit_prints_per_session": 1
         },
         {
             "id": "wedding_rian_ani",
@@ -14,7 +18,13 @@
             "hashtag": "#contohhastag #contohhastag222",
             "logo_url": "frames\/logos\/logo_wedding_rian_ani.png",
             "primary_color": "#e63946",
-            "secondary_color": "#ffffff"
+            "secondary_color": "#ffffff",
+            "event_date": "20 Juni 2026",
+            "event_location": "Gedung Serbaguna Bandung",
+            "billing_type": "PAY_PER_SESSION",
+            "rental_start_time": "",
+            "rental_end_time": "",
+            "limit_prints_per_session": 1
         },
         {
             "id": "ipb_event",
@@ -24,7 +34,13 @@
             "hashtag": "DEPARTEMEN IMPIAN\nFAKULTAS YANG DIKEJAR-KEJAR\nINSTITUT PERJUANGAN BANGET\nBOGOR\n2026",
             "logo_url": "frames\/logos\/logo_ipb.png",
             "primary_color": "#005b41",
-            "secondary_color": "#ffffff"
+            "secondary_color": "#ffffff",
+            "event_date": "25-28 Agustus 2026",
+            "event_location": "Kampus IPB Dramaga, Bogor",
+            "billing_type": "PAY_PER_SESSION",
+            "rental_start_time": "",
+            "rental_end_time": "",
+            "limit_prints_per_session": 1
         }
     ],
     "frames": [
