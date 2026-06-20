@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 
 enum class AppThemeType {
-    NEON_RED, CUTE_PASTEL, LUXURY_GOLD, MINIMAL_MODERN, CUTE_NARA
+    NEON_RED, CUTE_PASTEL, LUXURY_GOLD, MINIMAL_MODERN, CUTE_NARA, CREATIVE_DYNAMIC
 }
 
 data class AppThemeColors(
@@ -109,6 +109,22 @@ val CuteNaraColors = AppThemeColors(
     fontFamily = FontFamily.SansSerif
 )
 
+val CreativeDynamicColors = AppThemeColors(
+    type = AppThemeType.CREATIVE_DYNAMIC,
+    name = "Creative Dynamic (Glowing)",
+    isDark = true,
+    background = Color(0xFF0F0B1E), // Deep space violet
+    onBackground = Color(0xFFF1E9FF),
+    primary = Color(0xFFA855F7), // Vibrant purple
+    accentColor = Color(0xFFEC4899), // Vibrant pink
+    cardBackground = Color(0xFF18122B),
+    onCardBackground = Color.White,
+    border = Color(0xFFD946EF), // Fuchsia
+    buttonBackground = Color(0xFFEC4899),
+    buttonContent = Color.White,
+    fontFamily = FontFamily.SansSerif
+)
+
 val LocalAppThemeColors = staticCompositionLocalOf { NeonRedColors }
 
 object AppTheme {
@@ -131,6 +147,7 @@ fun PhotoboothTheme(
     "LUXURY_GOLD" -> LuxuryGoldColors
     "MINIMAL_MODERN" -> MinimalModernColors
     "CUTE_NARA" -> CuteNaraColors
+    "CREATIVE_DYNAMIC" -> CreativeDynamicColors
     else -> NeonRedColors
   }
 

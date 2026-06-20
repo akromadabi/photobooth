@@ -809,7 +809,8 @@ fun AdminScreen(
                             Pair("CUTE_PASTEL", "Cute Pastel (Wood)"),
                             Pair("CUTE_NARA", "Cute Nara (Pinky Flower)"),
                             Pair("LUXURY_GOLD", "Luxury Gold (Wedding)"),
-                            Pair("MINIMAL_MODERN", "Minimal Modern (Clean & Creative)")
+                            Pair("MINIMAL_MODERN", "Minimal Modern (Clean & Creative)"),
+                            Pair("CREATIVE_DYNAMIC", "Creative Dynamic (Glowing)")
                         )
                         val activeThemeName = themeList.firstOrNull { it.first == activeThemeState }?.second ?: activeThemeState
                         

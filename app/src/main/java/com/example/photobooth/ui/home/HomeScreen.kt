@@ -15,6 +15,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.animateColor
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -418,6 +419,20 @@ fun HomeScreen(
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
                     historyList = historyList,
+                    onStartClick = {
+                        val finalEventId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
+                        onStartClick(finalEventId)
+                    },
+                    isMultiEventMode = configManager.kioskMode == "MULTI_EVENT",
+                    onTicketClick = { showEventCodeDialog = true },
+                    onCameraClick = onCameraClickLambda
+                )
+                AppThemeType.CREATIVE_DYNAMIC -> CreativeDynamicHomeLayout(
+                    resolvedEventName = resolvedEventName,
+                    onLogoClick = onLogoClick,
+                    isLandscape = isLandscape,
+                    historyList = historyList,
+                    buttonScale = buttonScale,
                     onStartClick = {
                         val finalEventId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
                         onStartClick(finalEventId)
@@ -2834,6 +2849,428 @@ fun MinimalModernHomeLayout(
         }
 
         // Event code button if multi-event mode
+        if (isMultiEventMode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 24.dp, start = if (isLandscape) 80.dp else 24.dp)
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0x1AFFFFFF))
+                    .border(BorderStroke(1.dp, Color(0x33FFFFFF)), RoundedCornerShape(22.dp))
+                    .clickable { onTicketClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "🎟️", fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun FloatingParticle(
+    modifier: Modifier = Modifier,
+    driftRadius: Float = 40f,
+    scale: Float = 1f,
+    durationMs: Int = 5000,
+    content: @Composable () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "particle")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMs, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "angle"
+    )
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMs / 2, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMs * 2, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    val dx = (Math.sin(angle.toDouble()) * driftRadius).toFloat()
+    val dy = (Math.cos(angle.toDouble()) * driftRadius).toFloat()
+
+    Box(
+        modifier = modifier
+            .offset(x = dx.dp, y = dy.dp)
+            .graphicsLayer {
+                rotationZ = rotation
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+            }
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun CreativeDynamicHomeLayout(
+    resolvedEventName: String?,
+    onLogoClick: () -> Unit,
+    isLandscape: Boolean,
+    historyList: List<String>,
+    buttonScale: Float,
+    onStartClick: () -> Unit,
+    isMultiEventMode: Boolean,
+    onTicketClick: () -> Unit,
+    onCameraClick: () -> Unit
+) {
+    val themeColors = AppTheme.colors
+    val infiniteTransition = rememberInfiniteTransition(label = "bg_anim")
+    val animatedOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(10000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "offset"
+    )
+
+    val gradientBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF0F0B1E),
+            Color(0xFF241442),
+            Color(0xFF1B072B),
+            Color(0xFF0D061A)
+        ),
+        start = Offset(animatedOffset, 0f),
+        end = Offset(animatedOffset + 800f, 1200f)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(gradientBrush)
+    ) {
+        // Floating particles / shapes in background
+        FloatingParticle(
+            modifier = Modifier.align(Alignment.TopStart).offset(x = 100.dp, y = 120.dp),
+            driftRadius = 30f,
+            scale = 1.2f,
+            durationMs = 6000
+        ) {
+            Text(text = "✨", fontSize = 24.sp)
+        }
+
+        FloatingParticle(
+            modifier = Modifier.align(Alignment.TopEnd).offset(x = (-120).dp, y = 160.dp),
+            driftRadius = 50f,
+            scale = 0.8f,
+            durationMs = 8000
+        ) {
+            Text(text = "🌟", fontSize = 20.sp)
+        }
+
+        FloatingParticle(
+            modifier = Modifier.align(Alignment.CenterStart).offset(x = 80.dp, y = (-100).dp),
+            driftRadius = 40f,
+            scale = 1f,
+            durationMs = 7000
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .border(2.dp, Color(0xFFD946EF), CircleShape)
+            )
+        }
+
+        FloatingParticle(
+            modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-150).dp, y = (-200).dp),
+            driftRadius = 35f,
+            scale = 1.1f,
+            durationMs = 5500
+        ) {
+            Text(text = "💫", fontSize = 22.sp)
+        }
+
+        FloatingParticle(
+            modifier = Modifier.align(Alignment.BottomStart).offset(x = 120.dp, y = (-120).dp),
+            driftRadius = 45f,
+            scale = 0.9f,
+            durationMs = 9000
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .background(Color(0xFFEC4899), CircleShape)
+            )
+        }
+
+        // Photo Preview Container (Top Left)
+        Box(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(top = 16.dp, start = 16.dp)
+                .size(110.dp)
+                .align(Alignment.TopStart)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onLogoClick
+                )
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF1E1538))
+                .border(BorderStroke(3.dp, Color(0xFFD946EF)), RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (historyList.isNotEmpty()) {
+                AsyncImage(
+                    model = historyList.first(),
+                    contentDescription = "Latest Kiosk Photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF120C24)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "Camera placeholder",
+                        tint = Color(0xFFA855F7),
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+        }
+
+        // Main Content (Center)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(if (isLandscape) 0.55f else 0.85f)
+                .align(if (isLandscape) Alignment.CenterStart else Alignment.Center)
+                .padding(start = if (isLandscape) 150.dp else 16.dp, end = if (isLandscape) 0.dp else 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Dynamic Wavy Text
+            val titleText = resolvedEventName ?: "CREATIVE CLICK"
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                titleText.forEachIndexed { index, char ->
+                    val charDelay = index * 60
+                    val charAnim = rememberInfiniteTransition(label = "char_$index")
+                    val yOffset by charAnim.animateFloat(
+                        initialValue = 0f,
+                        targetValue = -12f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(700, delayMillis = charDelay, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "y_$index"
+                    )
+                    val colorAnim by charAnim.animateColor(
+                        initialValue = Color(0xFFA855F7),
+                        targetValue = Color(0xFFEC4899),
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1400, delayMillis = charDelay, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                    Text(
+                        text = char.toString(),
+                        color = colorAnim,
+                        fontSize = if (isLandscape) 42.sp else 34.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.SansSerif,
+                        modifier = Modifier.graphicsLayer {
+                            translationY = yOffset
+                        },
+                        style = LocalTextStyle.current.copy(
+                            shadow = Shadow(
+                                color = Color(0xFFD946EF),
+                                offset = Offset(2f, 4f),
+                                blurRadius = 2f
+                            )
+                        )
+                    )
+                }
+            }
+
+            // Slogan/Subtitle
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        rotationZ = 2f
+                    }
+                    .background(Color(0xFF1E1B4B), RoundedCornerShape(50.dp))
+                    .border(BorderStroke(2.dp, Color(0xFFA855F7)), RoundedCornerShape(50.dp))
+                    .padding(horizontal = 20.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "🌟 Creative Studio 🌟",
+                    color = Color(0xFFE9D5FF),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Pulse Start Button
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(width = 280.dp, height = 100.dp)
+            ) {
+                val infiniteGlow = rememberInfiniteTransition(label = "glow")
+                val glowScale by infiniteGlow.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.35f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1500, easing = EaseOutQuad),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "glowScale"
+                )
+                val glowAlpha by infiniteGlow.animateFloat(
+                    initialValue = 0.7f,
+                    targetValue = 0f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1500, easing = EaseOutQuad),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "glowAlpha"
+                )
+
+                // Expanding Glow ring
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .height(60.dp)
+                        .graphicsLayer {
+                            scaleX = glowScale
+                            scaleY = glowScale
+                            alpha = glowAlpha
+                        }
+                        .background(Color(0xFFEC4899).copy(alpha = 0.5f), RoundedCornerShape(30.dp))
+                )
+
+                Button(
+                    onClick = onStartClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFA855F7),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(30.dp),
+                    border = BorderStroke(3.dp, Color(0xFFD946EF)),
+                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp),
+                    modifier = Modifier
+                        .height(60.dp)
+                        .width(240.dp)
+                        .graphicsLayer {
+                            val pulse = 1f + 0.05f * (buttonScale - 1f)
+                            scaleX = pulse
+                            scaleY = pulse
+                            shadowElevation = 12f
+                        }
+                ) {
+                    Text(
+                        text = "TAP TO START ➔",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.SansSerif,
+                        style = LocalTextStyle.current.copy(
+                            shadow = Shadow(
+                                color = Color(0xFFEC4899),
+                                offset = Offset(1f, 2f),
+                                blurRadius = 2f
+                            )
+                        )
+                    )
+                }
+            }
+        }
+
+        // Bottom Social handles
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .background(Color(0xFF1E1538), RoundedCornerShape(20.dp))
+                    .border(BorderStroke(2.dp, Color(0xFFA855F7)), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(text = "📸", fontSize = 14.sp)
+                Text(
+                    text = "@photobooth.creative",
+                    color = Color(0xFFF1E9FF),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFFEC4899), RoundedCornerShape(20.dp))
+                    .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "Tap Screen to Play ⚡",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        // Quick Settings trigger button
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(
+                    bottom = if (isMultiEventMode) 80.dp else 24.dp,
+                    start = if (isLandscape) 80.dp else 24.dp
+                )
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color(0x1AFFFFFF))
+                .border(BorderStroke(1.dp, Color(0x33FFFFFF)), CircleShape)
+                .clickable { onCameraClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Quick Settings Trigger",
+                tint = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
         if (isMultiEventMode) {
             Box(
                 modifier = Modifier

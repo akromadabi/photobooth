@@ -3439,6 +3439,1104 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             font-family: 'Luckiest Guy', 'Bangers', sans-serif !important;
             box-shadow: 3px 3px 0 #000 !important;
         }
+
+        /* ------------------------------------------------------------- */
+        /* DAGO ORANGE PREMIUM THEME (DAGO_ORANGE) OVERRIDES */
+        /* ------------------------------------------------------------- */
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Montserrat:wght@700;800;900&display=swap');
+
+        /* Theme Base Styling */
+        .theme-dago_orange {
+            background: linear-gradient(135deg, #FF6F00 0%, #FF3D00 100%) !important;
+            background-color: #FF5E00 !important;
+            font-family: 'Montserrat', 'Outfit', sans-serif !important;
+        }
+
+        .theme-dago_orange .kiosk-screen {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+            background-image: radial-gradient(rgba(0,0,0,0.12) 15%, transparent 16%) !important;
+            background-size: 20px 20px !important;
+            color: #ffffff !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Screen Header Back overrides */
+        .theme-dago_orange .screen-header-back {
+            background-color: rgba(0,0,0,0.2) !important;
+            border-bottom: 2px solid #000000 !important;
+            padding: 12px 20px !important;
+        }
+
+        .theme-dago_orange .screen-title {
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.3) !important;
+            font-size: 1.3rem !important;
+        }
+
+        .theme-dago_orange .btn-back {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #000000 !important;
+            border-radius: 8px !important;
+            font-weight: 800 !important;
+            box-shadow: 2px 2px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .btn-back:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px #000000 !important;
+        }
+
+        /* Layout & Frame Selection Overrides */
+        .theme-dago_orange .layout-card, 
+        .theme-dago_orange .frame-card {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            border: 3px solid #000000 !important;
+            border-radius: 16px !important;
+            box-shadow: 5px 5px 0px #000000 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .theme-dago_orange .layout-card:hover,
+        .theme-dago_orange .frame-card:hover {
+            transform: translate(-3px, -3px) !important;
+            box-shadow: 8px 8px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .layout-icon {
+            color: #ea580c !important;
+            font-size: 2.2rem !important;
+        }
+
+        .theme-dago_orange .layout-name,
+        .theme-dago_orange .frame-card-name {
+            font-weight: 800 !important;
+            color: #000000 !important;
+        }
+
+        .theme-dago_orange .layout-desc {
+            color: #555555 !important;
+            font-size: 0.8rem !important;
+        }
+
+        /* Camera Screen Overrides */
+        .theme-dago_orange .camera-slots-bar {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            border-left: 3px solid #000000 !important;
+        }
+        
+        .tablet-device.phone-mode .theme-dago_orange .camera-slots-bar {
+            border-left: none !important;
+            border-top: 3px solid #000000 !important;
+        }
+
+        .theme-dago_orange .camera-slots-bar .section-title {
+            color: #000000 !important;
+            font-weight: 800 !important;
+        }
+
+        .theme-dago_orange .camera-rec-badge {
+            background-color: #e11d48 !important;
+            border: 2px solid #000000 !important;
+            box-shadow: 2px 2px 0px #000000 !important;
+            font-weight: 800 !important;
+        }
+
+        .theme-dago_orange .capture-slot-box {
+            border: 2px solid #000000 !important;
+            box-shadow: 3px 3px 0px #000000 !important;
+            background-color: #f3f4f6 !important;
+        }
+
+        .theme-dago_orange .capture-slot-box.active {
+            border-color: #ea580c !important;
+            box-shadow: 3px 3px 0px #ea580c !important;
+        }
+
+        .theme-dago_orange .camera-trigger-btn,
+        .theme-dago_orange .camera-trigger-btn-floating {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 3px solid #000000 !important;
+            border-radius: 12px !important;
+            font-weight: 900 !important;
+            box-shadow: 4px 4px 0px #000000 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+        }
+
+        .theme-dago_orange .camera-trigger-btn:hover,
+        .theme-dago_orange .camera-trigger-btn-floating:hover {
+            transform: translate(-2px, -2px) !important;
+            box-shadow: 6px 6px 0px #000000 !important;
+        }
+
+        /* Preview / Doodle Screen Overrides */
+        .theme-dago_orange .preview-controllers {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            border-left: 3px solid #000000 !important;
+        }
+        
+        .tablet-device.phone-mode .theme-dago_orange .preview-controllers {
+            border-left: none !important;
+            border-top: 3px solid #000000 !important;
+        }
+
+        .theme-dago_orange .doodle-tools .section-title {
+            color: #000000 !important;
+            font-weight: 800 !important;
+        }
+
+        .theme-dago_orange .color-circle {
+            border: 2px solid #000000 !important;
+            box-shadow: 2px 2px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .color-circle.active {
+            transform: scale(1.15) !important;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
+            border-width: 3px !important;
+        }
+
+        .theme-dago_orange .btn-confirm {
+            background-color: #0000FF !important;
+            color: #ffffff !important;
+            border: 3px solid #000000 !important;
+            border-radius: 12px !important;
+            font-weight: 900 !important;
+            box-shadow: 4px 4px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .btn-confirm:hover {
+            transform: translate(-2px, -2px) !important;
+            box-shadow: 6px 6px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .btn-retake {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 3px solid #000000 !important;
+            border-radius: 12px !important;
+            font-weight: 900 !important;
+            box-shadow: 4px 4px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .btn-retake:hover {
+            transform: translate(-2px, -2px) !important;
+            box-shadow: 6px 6px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .btn-clear-canvas {
+            background-color: #f3f4f6 !important;
+            color: #111111 !important;
+            border: 2px solid #000000 !important;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+        }
+
+        /* Home Screen Overrides */
+        .theme-dago_orange .screen-home {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 40px !important;
+            gap: 20px !important;
+        }
+
+        .theme-dago_orange .home-logo-box {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 5px !important;
+            margin-top: 20px !important;
+            animation: dagoLogoFloat 4s ease-in-out infinite alternate !important;
+            cursor: pointer;
+        }
+
+        @keyframes dagoLogoFloat {
+            0% { transform: translateY(0px) rotate(-1deg); }
+            50% { transform: translateY(-8px) rotate(1deg); }
+            100% { transform: translateY(0px) rotate(-1deg); }
+        }
+
+        .theme-dago_orange .dago-logo-white {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: clamp(3.2rem, 7vw, 5.5rem) !important;
+            font-weight: 900 !important;
+            color: #ffffff !important;
+            letter-spacing: -2px !important;
+            text-shadow: 4px 4px 0px #000000 !important;
+        }
+
+        .theme-dago_orange .dago-logo-sub {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: clamp(0.9rem, 2vw, 1.4rem) !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            letter-spacing: 3px !important;
+            text-transform: uppercase !important;
+            background-color: #000000 !important;
+            padding: 4px 12px !important;
+            border-radius: 4px !important;
+        }
+
+        .theme-dago_orange .dago-logo-sub2 {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: clamp(0.75rem, 1.5vw, 1rem) !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            letter-spacing: 2px !important;
+            opacity: 0.9;
+        }
+
+        .theme-dago_orange .btn-start {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 4px solid #000000 !important;
+            border-radius: 50px !important;
+            font-size: 2.2rem !important;
+            font-weight: 900 !important;
+            padding: 16px 60px !important;
+            box-shadow: 6px 6px 0px #000000 !important;
+            animation: dagoPulse 2s infinite !important;
+            letter-spacing: 1px !important;
+        }
+
+        .theme-dago_orange .btn-start:hover {
+            transform: translate(-3px, -3px) !important;
+            box-shadow: 9px 9px 0px #000000 !important;
+            animation-play-state: paused !important;
+        }
+
+        @keyframes dagoPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+
+        .theme-dago_orange .home-slogan {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            border: 2px solid #ffffff !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            padding: 6px 16px !important;
+            border-radius: 20px !important;
+            font-size: 0.9rem !important;
+            margin-top: 10px !important;
+            text-transform: uppercase !important;
+        }
+
+        .theme-dago_orange .home-strip-container {
+            border: 3px solid #000000 !important;
+            box-shadow: 4px 4px 0px #000000 !important;
+            background-color: #ffffff !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* CUSTOM DAGO SHARE SCREEN LAYOUT CSS */
+        /* ------------------------------------------------------------- */
+        .dago-share-layout {
+            display: none;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .theme-dago_orange .default-share-layout {
+            display: none !important;
+        }
+
+        .theme-dago_orange .dago-share-layout {
+            display: grid !important;
+            grid-template-columns: 1.15fr 1fr;
+            grid-template-rows: auto auto auto;
+            align-items: center;
+            justify-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 10px 30px;
+            gap: 10px;
+        }
+
+        /* Emojis */
+        .dago-emojis {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            font-size: 1.8rem;
+            animation: dagoEmojiBounce 2s infinite alternate;
+            z-index: 10;
+        }
+
+        @keyframes dagoEmojiBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-5px) scale(1.1); }
+        }
+
+        /* Splat close button */
+        .dago-splat-top {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            width: 55px;
+            height: 55px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dago-splat-top svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(2px 2px 0px #000);
+            transition: transform 0.2s;
+        }
+
+        .dago-splat-top:hover svg {
+            transform: scale(1.1) rotate(15deg);
+        }
+
+        .dago-splat-close {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #ffffff;
+            line-height: 1;
+            margin-top: -2px;
+        }
+
+        /* Brand Header */
+        .dago-brand-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px !important;
+            margin-bottom: 0;
+            text-align: center;
+            z-index: 2;
+            grid-column: 2;
+            grid-row: 1;
+            align-self: start !important;
+        }
+
+        .dago-brand-title-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dago-brand-main {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -1.5px;
+            text-shadow: 3px 3px 0px #000;
+        }
+
+        .dago-brand-sub {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1;
+            background-color: #000;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #fff;
+        }
+
+        .dago-brand-sub1 {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .dago-brand-sub2 {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #ff9100;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .dago-brand-handwriting {
+            font-family: 'Caveat', cursive !important;
+            font-size: 2rem;
+            color: #000000;
+            transform: rotate(-3deg);
+            margin-top: -8px;
+            animation: dagoHandwritingWiggle 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes dagoHandwritingWiggle {
+            0% { transform: rotate(-5deg); }
+            100% { transform: rotate(-1deg); }
+        }
+
+        /* Printer Slot & Receipt Viewport */
+        .dago-printer-slot-wrapper {
+            position: relative;
+            width: 290px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+            grid-column: 1;
+            grid-row: 1 / span 3;
+            justify-self: center;
+            height: 380px;
+            align-self: start !important;
+            margin-top: 40px !important;
+        }
+
+        .dago-printer-slot {
+            width: 100%;
+            height: 28px;
+            background: linear-gradient(to bottom, #eaeaea 0%, #c5c5c5 30%, #9e9e9e 70%, #707070 100%) !important;
+            border-radius: 6px;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.8), 0 6px 12px rgba(0,0,0,0.4);
+            border: 3px solid #5a5a5a;
+            position: relative;
+            z-index: 10;
+        }
+
+        .dago-printer-slot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            right: 15px;
+            height: 6px;
+            background-color: #1a1a1a;
+            border-radius: 3px;
+            transform: translateY(-50%);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .dago-printer-led {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #22c55e;
+            animation: dagoLedPulse 1s infinite alternate;
+            z-index: 12;
+        }
+
+        @keyframes dagoLedPulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* Receipt Viewport & Paper */
+        .dago-receipt-viewport {
+            width: 260px;
+            height: 350px;
+            overflow: hidden;
+            position: relative;
+            margin-top: -12px;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            z-index: 5;
+        }
+
+        .dago-receipt-paper {
+            width: 100%;
+            background-color: #ffffff;
+            color: #111111;
+            padding: 16px 16px 25px 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border-left: 2px solid #000;
+            border-right: 2px solid #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            transform: translateY(0);
+            position: relative;
+        }
+
+        /* Slide Down Print Animation */
+        .dago-receipt-paper.printing {
+            animation: dagoPrintSlideDown 4s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+        }
+
+        @keyframes dagoPrintSlideDown {
+            0% { transform: translateY(-88%); opacity: 0.6; }
+            15% { transform: translateY(-60%); opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Receipt Paper Details */
+        .dago-receipt-paper-header {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 2px dashed #000000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .dago-receipt-paper-logo {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #000;
+            letter-spacing: -0.5px;
+        }
+
+        .dago-receipt-paper-title {
+            font-family: 'Playfair Display', serif !important;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-top: 2px;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            width: 100%;
+            text-align: center;
+            padding: 2px 0;
+        }
+
+        .dago-receipt-paper-date {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #444;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .dago-receipt-paper-content {
+            width: 140px;
+            height: 200px;
+            background-color: #f3f4f6;
+            border: 2px solid #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 6px 0;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.15);
+        }
+
+        .dago-receipt-paper-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .dago-receipt-paper-footer {
+            font-size: 0.55rem;
+            color: #333;
+            text-align: center;
+            line-height: 1.3;
+            margin-top: 10px;
+            border-top: 1px dashed #000;
+            padding-top: 8px;
+        }
+
+        .dago-receipt-zigzag {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background-image: linear-gradient(-45deg, transparent 5px, #ffffff 5px), linear-gradient(45deg, transparent 5px, #ffffff 5px);
+            background-size: 10px 10px;
+            background-repeat: repeat-x;
+            z-index: 10;
+        }
+
+        /* Download Toast overlay */
+        .dago-download-toast {
+            font-family: 'Caveat', cursive !important;
+            font-size: 1.4rem;
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 0;
+            text-shadow: 2px 2px 0px #000;
+            animation: dagoToastPulse 1.5s infinite alternate;
+            grid-column: 2;
+            grid-row: 2;
+            align-self: start !important;
+        }
+
+        @keyframes dagoToastPulse {
+            0% { transform: scale(0.96); opacity: 0.9; }
+            100% { transform: scale(1.04); opacity: 1; }
+        }
+
+        /* Bottom Controls Row */
+        .dago-bottom-controls {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 420px;
+            z-index: 2;
+            margin-top: 10px !important;
+            grid-column: 2;
+            grid-row: 3;
+            align-self: start !important;
+        }
+
+        .dago-actions-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dago-qr-column {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dago-qr-card {
+            background-color: #ffffff;
+            border: 3px solid #000000;
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 4px 4px 0px #000000;
+            width: 130px;
+        }
+
+        .dago-qr-card canvas {
+            width: 100px !important;
+            height: 100px !important;
+        }
+
+        .dago-qr-label {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 0.65rem;
+            font-weight: 900;
+            color: #000;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Dago Buttons */
+        .dago-btn {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 0.85rem;
+            font-weight: 800;
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dago-btn-print {
+            background-color: #ffffff;
+            color: #000000;
+            border: 3px solid #000000;
+            box-shadow: 3px 3px 0px #000000;
+        }
+
+        .dago-btn-print:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px #000000;
+        }
+
+        .dago-btn-retake {
+            background-color: #ffffff;
+            color: #000000;
+            border: 3px solid #000000;
+            box-shadow: 3px 3px 0px #000000;
+        }
+
+        .dago-btn-retake:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px #000000;
+        }
+
+        .dago-btn-finish {
+            background-color: #0000FF;
+            color: #ffffff;
+            border: 3px solid #000000;
+            box-shadow: 3px 3px 0px #000000;
+            font-weight: 900;
+        }
+
+        .dago-btn-finish:hover {
+            background-color: #1a1aff;
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px #000000;
+        }
+
+        .dago-demo-btn {
+            display: inline-block !important;
+            margin-top: 15px !important;
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid #ffffff !important;
+            border-radius: 20px !important;
+            font-size: 0.85rem !important;
+            font-weight: 800 !important;
+            padding: 8px 24px !important;
+            cursor: pointer !important;
+            box-shadow: 2px 2px 0px #000000 !important;
+            transition: all 0.2s !important;
+            font-family: 'Outfit', sans-serif !important;
+            z-index: 20;
+            position: relative;
+        }
+        .dago-demo-btn:hover {
+            transform: translate(-1px, -1px) !important;
+            box-shadow: 3px 3px 0px #000000 !important;
+            background-color: #111111 !important;
+        }
+
+        /* Responsiveness in Phone Mode (Tall Bezel) */
+        .tablet-device.phone-mode .dago-share-layout {
+            padding: 10px 10px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            overflow-y: auto !important;
+            gap: 10px !important;
+        }
+
+        .tablet-device.phone-mode .dago-emojis {
+            font-size: 1.4rem;
+            top: 15px;
+            left: 15px;
+        }
+
+        .tablet-device.phone-mode .dago-splat-top {
+            top: 5px;
+            right: 15px;
+            width: 45px;
+            height: 45px;
+        }
+
+        .tablet-device.phone-mode .dago-brand-header {
+            grid-column: unset !important;
+            grid-row: unset !important;
+            order: 1 !important;
+            margin-bottom: 5px !important;
+        }
+
+        .tablet-device.phone-mode .dago-brand-main {
+            font-size: 2.2rem;
+        }
+
+        .tablet-device.phone-mode .dago-brand-handwriting {
+            font-size: 1.6rem;
+            margin-top: -6px;
+        }
+
+        .tablet-device.phone-mode .dago-printer-slot-wrapper {
+            grid-column: unset !important;
+            grid-row: unset !important;
+            width: 250px !important;
+            height: auto !important;
+            order: 2 !important;
+        }
+
+        .tablet-device.phone-mode .dago-receipt-viewport {
+            width: 230px;
+            height: 250px !important;
+        }
+
+        .tablet-device.phone-mode .dago-receipt-paper {
+            padding: 12px 12px 20px 12px;
+        }
+
+        .tablet-device.phone-mode .dago-receipt-paper-logo {
+            font-size: 1.1rem;
+        }
+
+        .tablet-device.phone-mode .dago-receipt-paper-title {
+            font-size: 1rem;
+        }
+
+        .tablet-device.phone-mode .dago-download-toast {
+            grid-column: unset !important;
+            grid-row: unset !important;
+            order: 3 !important;
+        }
+
+        .tablet-device.phone-mode .dago-bottom-controls {
+            grid-column: unset !important;
+            grid-row: unset !important;
+            order: 4 !important;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            max-width: 260px;
+            margin-top: 10px;
+        }
+
+        .tablet-device.phone-mode .dago-qr-column {
+            order: -1; /* QR Code on top in mobile */
+        }
+
+        .tablet-device.phone-mode .dago-qr-card {
+            width: 100%;
+            flex-direction: row;
+            justify-content: center;
+            gap: 15px;
+            padding: 8px;
+        }
+
+        .tablet-device.phone-mode .dago-qr-card canvas {
+            width: 70px !important;
+            height: 70px !important;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* CREATIVE DYNAMIC THEME (CREATIVE_DYNAMIC) OVERRIDES */
+        /* ------------------------------------------------------------- */
+        .theme-creative_dynamic {
+            background: linear-gradient(135deg, #0f0b1e, #241442, #1b072b, #0d061a) !important;
+            background-size: 400% 400% !important;
+            animation: creativeBgShift 15s ease infinite !important;
+            position: relative;
+            overflow: hidden;
+        }
+        @keyframes creativeBgShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .theme-creative_dynamic .kiosk-screen {
+            background: transparent !important;
+            box-shadow: none !important;
+            position: relative;
+        }
+
+        .creative-particles {
+            display: none;
+        }
+        .theme-creative_dynamic .creative-particles {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .theme-creative_dynamic .particle {
+            position: absolute;
+            color: rgba(255,255,255,0.4);
+            font-size: 1.5rem;
+            animation: creativeDrift 8s infinite ease-in-out;
+        }
+        .theme-creative_dynamic .particle:nth-child(1) { top: 15%; left: 15%; animation-duration: 8s; animation-delay: 0s; }
+        .theme-creative_dynamic .particle:nth-child(2) { top: 25%; right: 20%; animation-duration: 11s; animation-delay: -2s; font-size: 1.8rem; }
+        .theme-creative_dynamic .particle:nth-child(3) { bottom: 30%; left: 20%; animation-duration: 9s; animation-delay: -4s; }
+        .theme-creative_dynamic .particle:nth-child(4) { bottom: 15%; right: 15%; animation-duration: 13s; animation-delay: -1s; font-size: 2rem; }
+        .theme-creative_dynamic .particle:nth-child(5) { top: 50%; left: 50%; animation-duration: 10s; animation-delay: -3s; }
+        @keyframes creativeDrift {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+            50% { transform: translate(15px, -25px) rotate(180deg); opacity: 0.7; }
+            100% { transform: translate(0, 0) rotate(360deg); opacity: 0.3; }
+        }
+
+        .theme-creative_dynamic .logo-char {
+            display: inline-block;
+            animation: creativeWaveBounce 1.5s infinite ease-in-out;
+            animation-delay: calc(var(--char-idx) * 0.06s);
+            background: linear-gradient(45deg, #a855f7, #ec4899, #d946ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(217, 70, 239, 0.4);
+        }
+        @keyframes creativeWaveBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .theme-creative_dynamic .home-logo-box {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            margin-top: 40px !important;
+            z-index: 10 !important;
+        }
+        .theme-creative_dynamic .home-slogan {
+            background: #1e1b4b !important;
+            border: 2px solid #a855f7 !important;
+            border-radius: 50px !important;
+            padding: 8px 24px !important;
+            color: #e9d5ff !important;
+            font-weight: 700 !important;
+            font-size: 0.9rem !important;
+            letter-spacing: 1px !important;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3) !important;
+            margin-top: 15px !important;
+            display: inline-block !important;
+            animation: creativeSloganPulse 3s infinite ease-in-out !important;
+        }
+        @keyframes creativeSloganPulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.03); opacity: 1; }
+        }
+        .theme-creative_dynamic .btn-start {
+            background: #a855f7 !important;
+            color: #ffffff !important;
+            border: 3px solid #d946ef !important;
+            border-radius: 50px !important;
+            font-size: 1.8rem !important;
+            font-weight: 900 !important;
+            padding: 15px 45px !important;
+            box-shadow: 0 0 20px rgba(217, 70, 239, 0.5) !important;
+            transition: all 0.3s ease !important;
+            position: relative;
+            overflow: visible;
+            cursor: pointer;
+        }
+        .theme-creative_dynamic .btn-start::after {
+            content: '';
+            position: absolute;
+            top: -6px; left: -6px; right: -6px; bottom: -6px;
+            border: 3px solid #ec4899;
+            border-radius: 50px;
+            opacity: 0;
+            animation: creativeBtnRing 2s infinite ease-out;
+            pointer-events: none;
+        }
+        @keyframes creativeBtnRing {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            100% { transform: scale(1.25); opacity: 0; }
+        }
+        .theme-creative_dynamic .btn-start:hover {
+            transform: translateY(-3px) scale(1.05) !important;
+            box-shadow: 0 0 30px rgba(217, 70, 239, 0.8) !important;
+        }
+
+        .theme-creative_dynamic .screen-header-back {
+            background: #18122b !important;
+            border-bottom: 2px solid #d946ef !important;
+        }
+        .theme-creative_dynamic .screen-title {
+            color: #f1e9ff !important;
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
+        }
+        .theme-creative_dynamic .btn-back {
+            background: #ec4899 !important;
+            color: #ffffff !important;
+            border: 2px solid #ffffff !important;
+            border-radius: 50% !important;
+        }
+        .theme-creative_dynamic .layout-card,
+        .theme-creative_dynamic .frame-card {
+            background: #18122b !important;
+            border: 2px solid #241442 !important;
+            color: #f1e9ff !important;
+            transition: all 0.3s ease !important;
+        }
+        .theme-creative_dynamic .layout-card:hover,
+        .theme-creative_dynamic .frame-card:hover {
+            border-color: #d946ef !important;
+            box-shadow: 0 0 15px rgba(217, 70, 239, 0.4) !important;
+            transform: translateY(-5px) !important;
+        }
+        .theme-creative_dynamic .layout-icon {
+            color: #a855f7 !important;
+        }
+        .theme-creative_dynamic .camera-slots-bar {
+            background: #18122b !important;
+            border: 2px solid #d946ef !important;
+        }
+        .theme-creative_dynamic .capture-slot-box {
+            background: #0d061a !important;
+            border: 2px solid #241442 !important;
+        }
+        .theme-creative_dynamic .capture-slot-box.active {
+            border-color: #a855f7 !important;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.6) !important;
+        }
+        .theme-creative_dynamic .capture-slot-box.captured {
+            border-color: #ec4899 !important;
+        }
+        .theme-creative_dynamic .camera-trigger-btn {
+            background: radial-gradient(circle, #ec4899 0%, #a855f7 100%) !important;
+            border: 4px solid #ffffff !important;
+            box-shadow: 0 0 20px rgba(217, 70, 239, 0.6) !important;
+        }
+        .theme-creative_dynamic .camera-trigger-btn:active {
+            transform: scale(0.9) !important;
+        }
+        .theme-creative_dynamic .btn-confirm {
+            background: #a855f7 !important;
+            color: #ffffff !important;
+            border-radius: 12px !important;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4) !important;
+        }
+        .theme-creative_dynamic .btn-retake {
+            background: #18122b !important;
+            color: #f1e9ff !important;
+            border: 2px solid #d946ef !important;
+            border-radius: 12px !important;
+        }
+        .theme-creative_dynamic .share-info-panel {
+            background: #18122b !important;
+            border: 2px solid #d946ef !important;
+            color: #f1e9ff !important;
+        }
+        .theme-creative_dynamic .btn-open-portal {
+            background: #ec4899 !important;
+            color: white !important;
+            border-radius: 12px !important;
+        }
+        .theme-creative_dynamic .btn-finish {
+            background: #a855f7 !important;
+            color: white !important;
+            border-radius: 12px !important;
+        }
+        .theme-creative_dynamic .sim-dialog {
+            background: #18122b !important;
+            border: 2px solid #d946ef !important;
+            color: #f1e9ff !important;
+        }
+        .theme-creative_dynamic .sim-dialog-input {
+            background: #0d061a !important;
+            border: 1px solid #241442 !important;
+            color: #f1e9ff !important;
+        }
+        .theme-creative_dynamic .btn-dialog-confirm {
+            background: #a855f7 !important;
+            color: white !important;
+        }
+        .theme-creative_dynamic .btn-dialog-cancel {
+            background: #18122b !important;
+            color: #f1e9ff !important;
+            border: 1px solid #241442 !important;
+        }
     </style>
 </head>
 <body>
@@ -3480,6 +4578,21 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                         echo '<option value="">Tidak ada event kustom</option>';
                     }
                     ?>
+                </select>
+            </div>
+
+            <!-- Active Theme Configuration -->
+            <div class="section-box">
+                <div class="section-title">Pilih Tema Kiosk (Real-time)</div>
+                <select id="kioskThemeSelect" onchange="onThemeSelectChange()">
+                    <option value="NEON_RED" <?php echo ($appTheme === 'NEON_RED') ? 'selected' : ''; ?>>Neon Red</option>
+                    <option value="CUTE_PASTEL" <?php echo ($appTheme === 'CUTE_PASTEL') ? 'selected' : ''; ?>>Cute Pastel</option>
+                    <option value="CUTE_NARA" <?php echo ($appTheme === 'CUTE_NARA') ? 'selected' : ''; ?>>Cute Nara (Pinky Flower)</option>
+                    <option value="LUXURY_GOLD" <?php echo ($appTheme === 'LUXURY_GOLD') ? 'selected' : ''; ?>>Luxury Gold</option>
+                    <option value="MINIMAL_MODERN" <?php echo ($appTheme === 'MINIMAL_MODERN') ? 'selected' : ''; ?>>Minimal Modern</option>
+                    <option value="COMIC_POP" <?php echo ($appTheme === 'COMIC_POP') ? 'selected' : ''; ?>>Comic Pop-Art</option>
+                    <option value="DAGO_ORANGE" <?php echo ($appTheme === 'DAGO_ORANGE') ? 'selected' : ''; ?>>Dago Orange Kiosk</option>
+                    <option value="CREATIVE_DYNAMIC" <?php echo ($appTheme === 'CREATIVE_DYNAMIC') ? 'selected' : ''; ?>>Creative Dynamic (Glowing)</option>
                 </select>
             </div>
 
@@ -3537,6 +4650,14 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 
                     <!-- SCREEN 1: HOME SCREEN -->
                     <div class="kiosk-screen screen-home active" id="screenHome">
+                        <!-- Floating Particles for CREATIVE_DYNAMIC -->
+                        <div class="creative-particles">
+                            <span class="particle">✨</span>
+                            <span class="particle">🌟</span>
+                            <span class="particle">💫</span>
+                            <span class="particle">✨</span>
+                            <span class="particle">🌟</span>
+                        </div>
                         <div class="home-logo-box" onclick="handleLogoTaps()">
                             <div class="home-logo-part1" id="logoPart1">Jeprat</div>
                             <div class="home-logo-part2" id="logoPart2">Jepret</div>
@@ -3546,6 +4667,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                         <div class="home-center">
                             <button class="btn-start" onclick="startSession()">START</button>
                             <div class="home-slogan" id="homeSlogan">All You need is special</div>
+                            <button class="dago-demo-btn" onclick="testPrinterAnimation()">⚡ Test Printer Animation</button>
                         </div>
 
                         <!-- Scrolling Tilted History Strip -->
@@ -3682,19 +4804,94 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
 
                     <!-- SCREEN 6: SHARE AND PRINT SCREEN -->
                     <div class="kiosk-screen screen-share" id="screenShare">
-                        <div class="share-strip-view">
-                            <img id="finalStitchedImage" src="" alt="Stitched Photo Strip">
+                        <!-- Default Share Layout (for other themes) -->
+                        <div class="default-share-layout">
+                            <div class="share-strip-view">
+                                <img id="finalStitchedImage" src="" alt="Stitched Photo Strip">
+                            </div>
+                            <div class="share-info-panel">
+                                <h2 style="font-weight: 800; font-size: 1.1rem; color: white;">🎉 FOTO ANDA SIAP DIUNDUH!</h2>
+                                <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; max-width: 240px;">Pindai QR code di bawah ini menggunakan ponsel Anda untuk mengunduh foto dan video timelapse langsung.</p>
+                                
+                                <div class="share-qr-container">
+                                    <canvas id="shareQrCanvas"></canvas>
+                                </div>
+
+                                <a href="" target="_blank" class="btn-open-portal" id="btnOpenWebPortal">Buka Portal Download</a>
+                                <button class="btn-finish" onclick="resetToHomeScreen()">Selesai & Sesi Baru ↺</button>
+                            </div>
                         </div>
-                        <div class="share-info-panel">
-                            <h2 style="font-weight: 800; font-size: 1.1rem; color: white;">🎉 FOTO ANDA SIAP DIUNDUH!</h2>
-                            <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; max-width: 240px;">Pindai QR code di bawah ini menggunakan ponsel Anda untuk mengunduh foto dan video timelapse langsung.</p>
-                            
-                            <div class="share-qr-container">
-                                <canvas id="shareQrCanvas"></canvas>
+
+                        <!-- Dago Kiosk Share Layout (for theme-dago_orange) -->
+                        <div class="dago-share-layout">
+                            <!-- Emojis top-left -->
+                            <div class="dago-emojis">🤩🤩🤩</div>
+                            <!-- Splat top-right -->
+                            <div class="dago-splat-top">
+                                <svg viewBox="0 0 100 100">
+                                    <path d="M50 0 C60 20, 80 10, 75 35 C95 30, 90 55, 75 60 C85 80, 65 80, 50 100 C35 80, 15 80, 25 60 C10 55, 5 30, 25 35 C20 10, 40 20, 50 0 Z" fill="#0b1cc4"></path>
+                                </svg>
+                                <span class="dago-splat-close" onclick="resetToHomeScreen()">×</span>
                             </div>
 
-                            <a href="" target="_blank" class="btn-open-portal" id="btnOpenWebPortal">Buka Portal Download</a>
-                            <button class="btn-finish" onclick="resetToHomeScreen()">Selesai & Sesi Baru ↺</button>
+                            <!-- Brand Header -->
+                            <div class="dago-brand-header">
+                                <div class="dago-brand-title-box">
+                                    <span class="dago-brand-main">Dago.</span>
+                                    <div class="dago-brand-sub">
+                                        <span class="dago-brand-sub1">RECEIPT PHOTOBOOTH</span>
+                                        <span class="dago-brand-sub2">SINCE 2020</span>
+                                    </div>
+                                </div>
+                                <div class="dago-brand-handwriting">This is your Receipt</div>
+                            </div>
+
+                            <!-- Printer Slot and Receipt Paper Viewport -->
+                            <div class="dago-printer-slot-wrapper">
+                                <div class="dago-printer-slot">
+                                    <div class="dago-printer-led"></div>
+                                </div>
+                                <div class="dago-receipt-viewport">
+                                    <div class="dago-receipt-paper" id="dagoReceiptPaper">
+                                        <div class="dago-receipt-paper-header">
+                                            <div class="dago-receipt-paper-logo">Dago.</div>
+                                            <div class="dago-receipt-paper-title">DAILY NEWS</div>
+                                            <div class="dago-receipt-paper-date" id="dagoReceiptDate">Sunday, 31 May 2026</div>
+                                        </div>
+                                        <div class="dago-receipt-paper-content">
+                                            <img id="dagoReceiptImage" src="" alt="Dynamic Strip Photo">
+                                        </div>
+                                        <div class="dago-receipt-paper-footer">
+                                            Step into a charming receipt-themed photobooth and create timeless memories with your loved ones. Whether you're with your partner, friends, or family, every photo becomes a unique keepsake worth saving.
+                                        </div>
+                                        <div class="dago-receipt-zigzag"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subtext: soft file can be downloaded -->
+                            <div class="dago-download-toast">soft filenya bisa di download 😉</div>
+
+                            <!-- Bottom Controls & QR Code Row -->
+                            <div class="dago-bottom-controls">
+                                <div class="dago-actions-column">
+                                    <button class="dago-btn dago-btn-print" onclick="retriggerDagoPrint()">
+                                        <i class="fa-solid fa-print"></i> PRINT RECEIPT
+                                    </button>
+                                    <button class="dago-btn dago-btn-retake" onclick="retakeSession()">
+                                        <i class="fa-solid fa-camera-rotate"></i> RETAKE!
+                                    </button>
+                                    <button class="dago-btn dago-btn-finish" onclick="resetToHomeScreen()">
+                                        FINISH SESSION
+                                    </button>
+                                </div>
+                                <div class="dago-qr-column">
+                                    <div class="dago-qr-card">
+                                        <canvas id="dagoShareQrCanvas"></canvas>
+                                        <div class="dago-qr-label">SCAN HERE!</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -3767,7 +4964,7 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
         // Server Configuration Injected from PHP
         const serverConfig = <?php echo json_encode($configData); ?>;
         const packagesList = <?php echo json_encode($packagesList); ?>;
-        const appTheme = '<?php echo $appTheme; ?>';
+        let appTheme = '<?php echo $appTheme; ?>';
         
         // Local variables
         let kioskMode = 'MULTI_EVENT'; // 'MULTI_EVENT' or 'DEDICATED'
@@ -3814,42 +5011,8 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             // Initial logo rendering
             updateHomeScreenBranding();
 
-            // Comic Pop UI setup
-            if (appTheme === 'COMIC_POP') {
-                const home = document.getElementById('screenHome');
-                
-                const bubbleLeft = document.createElement('div');
-                bubbleLeft.className = 'comic-bubble-left';
-                bubbleLeft.onclick = () => { alert("KABOOM! Ayo foto bareng teman-temanmu!"); };
-                home.appendChild(bubbleLeft);
-                
-                const bubbleRight = document.createElement('div');
-                bubbleRight.className = 'comic-bubble-right';
-                bubbleRight.onclick = () => { alert("POW! Abadikan momen serumu di sini!"); };
-                home.appendChild(bubbleRight);
-                
-                // Add animated stars in left and right columns
-                const starLeft = document.createElement('div');
-                starLeft.className = 'comic-star-decor decor-star1';
-                starLeft.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='#fff300' stroke='#000' stroke-width='6'/></svg>`;
-                home.appendChild(starLeft);
-                
-                const starRight = document.createElement('div');
-                starRight.className = 'comic-star-decor decor-star2';
-                starRight.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='#00ffff' stroke='#000' stroke-width='6'/></svg>`;
-                home.appendChild(starRight);
-                
-                // Add a pulsing POW bubble in the center area
-                const powBubble = document.createElement('div');
-                powBubble.className = 'comic-bubble-pow';
-                home.appendChild(powBubble);
-                
-                // Custom start button HTML
-                const btnStart = document.querySelector('.btn-start');
-                if (btnStart) {
-                    btnStart.innerHTML = '<div class="comic-start-inner"><i class="fa-solid fa-camera"></i></div><span class="comic-start-text">Photo</span>';
-                }
-            }
+            // Apply theme accessories
+            applyThemeUIAccessories(appTheme);
         });
 
         // Set Kiosk Mode
@@ -3912,9 +5075,21 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                 text1 = "Jeprat";
                 text2 = "Jepret !!!";
                 sloganText = "PHOTOBOOTH!!!";
+            } else if (appTheme === 'DAGO_ORANGE') {
+                text1 = "Dago.";
+                text2 = "RECEIPT PHOTOBOOTH";
+                sloganText = "SINCE 2020";
+            } else if (appTheme === 'CREATIVE_DYNAMIC') {
+                text1 = "Jeprat";
+                text2 = "Jepret";
+                sloganText = "🌟 Creative Studio 🌟";
             }
 
-            if (appTheme === 'COMIC_POP') {
+            if (appTheme === 'DAGO_ORANGE') {
+                p1.innerHTML = `<span class="dago-logo-white">${text1}</span>`;
+                p2.innerHTML = `<span class="dago-logo-sub">${text2}</span>`;
+                slogan.innerHTML = `<span class="dago-logo-sub2">${sloganText}</span>`;
+            } else if (appTheme === 'COMIC_POP') {
                 const wrapComic = (txt, startIdx = 0) => {
                     if (!txt) return "";
                     const colors = ['txt-pink', 'txt-blue', 'txt-yellow', 'txt-white'];
@@ -3926,6 +5101,17 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                 p1.innerHTML = wrapComic(text1, 0);
                 p2.innerHTML = wrapComic(text2, 2);
                 slogan.innerText = eventName ? sloganText : "PHOTOBOOTH!!!";
+            } else if (appTheme === 'CREATIVE_DYNAMIC') {
+                const wrapChars = (txt, startIdx = 0) => {
+                    if (!txt) return "";
+                    return txt.split('').map((char, idx) => {
+                        if (char === ' ') return '&nbsp;';
+                        return `<span class="logo-char" style="--char-idx: ${idx + startIdx}">${char}</span>`;
+                    }).join('');
+                };
+                p1.innerHTML = wrapChars(text1, 0);
+                p2.innerHTML = wrapChars(text2, text1.length);
+                slogan.innerText = sloganText;
             } else {
                 p1.innerText = text1;
                 p2.innerText = text2;
@@ -4573,18 +5759,68 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                             size: 160
                         });
 
+                        new QRious({
+                            element: document.getElementById('dagoShareQrCanvas'),
+                            value: data.download_url,
+                            size: 120
+                        });
+
                         document.getElementById('btnOpenWebPortal').href = data.download_url;
                         
                         console.log("Uploaded successfully!", data);
 
-                        // Handle printing simulation based on print flow setting
-                        if (activePackage && activePackage.print_flow === 'ID_CARD') {
-                            const photoImg = new Image();
-                            photoImg.src = dataUrl;
-                            photoImg.onload = () => {
-                                generateIdCardCanvas(photoImg, data.session_id, (idCardDataUrl, verifyUrl) => {
-                                    document.getElementById('printingPaperImg').src = idCardDataUrl;
-                                    document.getElementById('finalStitchedImage').src = idCardDataUrl;
+                        if (appTheme === 'DAGO_ORANGE') {
+                            // Dago Orange Print Flow (inline animation + audio whirr, bypasses printerModal)
+                            document.getElementById('dagoReceiptImage').src = dataUrl;
+                            
+                            // Format date dynamically
+                            const dateOpt = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+                            document.getElementById('dagoReceiptDate').innerText = new Date().toLocaleDateString('en-GB', dateOpt);
+                            
+                            navigateScreen('screenShare');
+                            triggerDagoPrintingAnimation();
+                            playPrinterSound();
+                        } else {
+                            // Handle printing simulation based on print flow setting
+                            if (activePackage && activePackage.print_flow === 'ID_CARD') {
+                                const photoImg = new Image();
+                                photoImg.src = dataUrl;
+                                photoImg.onload = () => {
+                                    generateIdCardCanvas(photoImg, data.session_id, (idCardDataUrl, verifyUrl) => {
+                                        document.getElementById('printingPaperImg').src = idCardDataUrl;
+                                        document.getElementById('finalStitchedImage').src = idCardDataUrl;
+                                        document.getElementById('printerModal').style.display = 'flex';
+                                        
+                                        // Reset paper animation height
+                                        const paper = document.getElementById('printingPaper');
+                                        paper.style.animation = 'none';
+                                        paper.offsetHeight; // trigger reflow
+                                        paper.style.animation = null;
+                                    });
+                                };
+                            } else {
+                                // Standard Receipt or Color Print sizing mapping
+                                let printWidth = activePackage ? activePackage.print_width_mm : 58;
+                                let printHeight = activePackage ? activePackage.print_height_mm : 200;
+                                
+                                const printCanvas = document.createElement('canvas');
+                                printCanvas.width = printWidth * 4;
+                                printCanvas.height = printHeight * 4;
+                                const printCtx = printCanvas.getContext('2d');
+                                
+                                const photoImg = new Image();
+                                photoImg.src = dataUrl;
+                                photoImg.onload = () => {
+                                    const ratio = printCanvas.width / photoImg.width;
+                                    const drawH = photoImg.height * ratio;
+                                    printCtx.fillStyle = '#ffffff';
+                                    printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+                                    printCtx.drawImage(photoImg, 0, 0, printCanvas.width, drawH);
+                                    
+                                    const printDataUrl = printCanvas.toDataURL('image/png');
+                                    
+                                    document.getElementById('printingPaperImg').src = printDataUrl;
+                                    document.getElementById('finalStitchedImage').src = printDataUrl;
                                     document.getElementById('printerModal').style.display = 'flex';
                                     
                                     // Reset paper animation height
@@ -4592,39 +5828,8 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
                                     paper.style.animation = 'none';
                                     paper.offsetHeight; // trigger reflow
                                     paper.style.animation = null;
-                                });
-                            };
-                        } else {
-                            // Standard Receipt or Color Print sizing mapping
-                            let printWidth = activePackage ? activePackage.print_width_mm : 58;
-                            let printHeight = activePackage ? activePackage.print_height_mm : 200;
-                            
-                            const printCanvas = document.createElement('canvas');
-                            printCanvas.width = printWidth * 4;
-                            printCanvas.height = printHeight * 4;
-                            const printCtx = printCanvas.getContext('2d');
-                            
-                            const photoImg = new Image();
-                            photoImg.src = dataUrl;
-                            photoImg.onload = () => {
-                                const ratio = printCanvas.width / photoImg.width;
-                                const drawH = photoImg.height * ratio;
-                                printCtx.fillStyle = '#ffffff';
-                                printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
-                                printCtx.drawImage(photoImg, 0, 0, printCanvas.width, drawH);
-                                
-                                const printDataUrl = printCanvas.toDataURL('image/png');
-                                
-                                document.getElementById('printingPaperImg').src = printDataUrl;
-                                document.getElementById('finalStitchedImage').src = printDataUrl;
-                                document.getElementById('printerModal').style.display = 'flex';
-                                
-                                // Reset paper animation height
-                                const paper = document.getElementById('printingPaper');
-                                paper.style.animation = 'none';
-                                paper.offsetHeight; // trigger reflow
-                                paper.style.animation = null;
-                            };
+                                };
+                            }
                         }
                     } else {
                         alert("❌ Gagal mengunggah foto ke server: " + data.message);
@@ -4648,6 +5853,205 @@ $appTheme = isset($settings['app_theme']) ? $settings['app_theme'] : 'NEON_RED';
             }
             updateHomeScreenBranding();
             navigateScreen('screenHome');
+        }
+
+        function triggerDagoPrintingAnimation() {
+            const paper = document.getElementById('dagoReceiptPaper');
+            if (paper) {
+                paper.classList.remove('printing');
+                paper.offsetHeight; // trigger reflow
+                paper.classList.add('printing');
+            }
+        }
+
+        function playPrinterSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = audioCtx.sampleRate * 3.5; // 3.5 seconds
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                // Synthesize white noise for paper sliding
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                
+                // Filter noise to small whirr range
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(950, audioCtx.currentTime);
+                filter.Q.setValueAtTime(2.2, audioCtx.currentTime);
+                
+                // Low-frequency oscillator to simulate step motor gear whirr
+                const gearMotor = audioCtx.createOscillator();
+                gearMotor.type = 'sawtooth';
+                gearMotor.frequency.setValueAtTime(55, audioCtx.currentTime); // Hz
+                
+                const gearGain = audioCtx.createGain();
+                gearGain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+                
+                // Modulate filter frequency with gearMotor to create step-like resonance
+                const modGain = audioCtx.createGain();
+                modGain.gain.setValueAtTime(250, audioCtx.currentTime);
+                gearMotor.connect(modGain);
+                modGain.connect(filter.frequency);
+                
+                // Volume envelope
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.4);
+                
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                gearMotor.connect(gearGain);
+                gearGain.connect(audioCtx.destination);
+                
+                gearMotor.start();
+                noise.start();
+                
+                setTimeout(() => {
+                    try {
+                        noise.stop();
+                        gearMotor.stop();
+                        audioCtx.close();
+                    } catch(e){}
+                }, 3500);
+            } catch (e) {
+                console.error("Synthesizer error", e);
+            }
+        }
+
+        function retriggerDagoPrint() {
+            triggerDagoPrintingAnimation();
+            playPrinterSound();
+        }
+
+        function testPrinterAnimation() {
+            // Format date dynamically
+            const dateOpt = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const formattedDate = new Date().toLocaleDateString('en-GB', dateOpt);
+            
+            if (appTheme === 'DAGO_ORANGE') {
+                // Dago Orange Print Flow (inline animation + audio whirr, bypasses printerModal)
+                document.getElementById('dagoReceiptImage').src = '../logo.png';
+                document.getElementById('dagoReceiptDate').innerText = formattedDate;
+                
+                new QRious({
+                    element: document.getElementById('dagoShareQrCanvas'),
+                    value: window.location.href,
+                    size: 120
+                });
+                
+                navigateScreen('screenShare');
+                triggerDagoPrintingAnimation();
+                playPrinterSound();
+            } else {
+                // Standard Theme Print Flow (opens printerModal, plays audio whirr, then shows screenShare)
+                document.getElementById('printingPaperImg').src = '../logo.png';
+                document.getElementById('finalStitchedImage').src = '../logo.png';
+                
+                new QRious({
+                    element: document.getElementById('shareQrCanvas'),
+                    value: window.location.href,
+                    size: 160
+                });
+                
+                document.getElementById('btnOpenWebPortal').href = window.location.href;
+                
+                // Open printer modal
+                document.getElementById('printerModal').style.display = 'flex';
+                
+                // Reset paper animation height
+                const paper = document.getElementById('printingPaper');
+                if (paper) {
+                    paper.style.animation = 'none';
+                    paper.offsetHeight; // trigger reflow
+                    paper.style.animation = null;
+                }
+                
+                // Play whirring sound
+                playPrinterSound();
+            }
+        }
+
+        function applyThemeUIAccessories(theme) {
+            const home = document.getElementById('screenHome');
+            if (!home) return;
+
+            // 1. Remove existing comic pop decorations
+            const oldComics = home.querySelectorAll('.comic-bubble-left, .comic-bubble-right, .comic-star-decor, .comic-bubble-pow');
+            oldComics.forEach(el => el.remove());
+
+            // 2. Reset or configure start button
+            const btnStart = document.querySelector('.btn-start');
+            if (btnStart) {
+                if (theme === 'COMIC_POP') {
+                    btnStart.innerHTML = '<div class="comic-start-inner"><i class="fa-solid fa-camera"></i></div><span class="comic-start-text">Photo</span>';
+                } else {
+                    btnStart.innerHTML = 'START';
+                }
+            }
+
+            // 3. Add Comic Pop decorations if active
+            if (theme === 'COMIC_POP') {
+                const bubbleLeft = document.createElement('div');
+                bubbleLeft.className = 'comic-bubble-left';
+                bubbleLeft.onclick = () => { alert("KABOOM! Ayo foto bareng teman-temanmu!"); };
+                home.appendChild(bubbleLeft);
+                
+                const bubbleRight = document.createElement('div');
+                bubbleRight.className = 'comic-bubble-right';
+                bubbleRight.onclick = () => { alert("POW! Abadikan momen serumu di sini!"); };
+                home.appendChild(bubbleRight);
+                
+                const starLeft = document.createElement('div');
+                starLeft.className = 'comic-star-decor decor-star1';
+                starLeft.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='#fff300' stroke='#000' stroke-width='6'/></svg>`;
+                home.appendChild(starLeft);
+                
+                const starRight = document.createElement('div');
+                starRight.className = 'comic-star-decor decor-star2';
+                starRight.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='#00ffff' stroke='#000' stroke-width='6'/></svg>`;
+                home.appendChild(starRight);
+                
+                const powBubble = document.createElement('div');
+                powBubble.className = 'comic-bubble-pow';
+                home.appendChild(powBubble);
+            }
+        }
+
+        function onThemeSelectChange() {
+            const select = document.getElementById('kioskThemeSelect');
+            if (!select) return;
+            const theme = select.value;
+            
+            // 1. Update appTheme globally
+            appTheme = theme;
+            
+            // 2. Remove all theme-xxx classes from the screen-container using browser-safe split/filter
+            const container = document.querySelector('.screen-container');
+            if (container) {
+                const classes = container.className.split(' ');
+                const cleanClasses = classes.filter(cls => !cls.startsWith('theme-'));
+                cleanClasses.push('theme-' + theme.toLowerCase());
+                container.className = cleanClasses.join(' ');
+            }
+            
+            // 3. Update home screen branding
+            updateHomeScreenBranding();
+            
+            // 4. Reload frames for layout if currently on screenFrame
+            if (document.getElementById('screenFrame').classList.contains('active')) {
+                loadFramesForLayout();
+            }
+            
+            // 5. Apply dynamic theme-specific accessories
+            applyThemeUIAccessories(theme);
         }
 
         // Kiosk general screen navigator helper

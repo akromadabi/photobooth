@@ -1124,6 +1124,7 @@ foreach ($weeklyStats as $date => $cnt) {
         }
         body {
             font-family: 'Outfit', sans-serif;
+            font-size: 14px;
             background-color: var(--bg-main);
             background-size: 40px 40px;
             background-image: 
@@ -1146,12 +1147,12 @@ foreach ($weeklyStats as $date => $cnt) {
 
         /* Sidebar Styling */
         .sidebar {
-            width: 280px;
+            width: 240px;
             background-color: var(--bg-sidebar);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 32px 24px;
+            padding: 24px 16px;
             position: fixed;
             height: 100vh;
             left: 0;
@@ -1241,7 +1242,7 @@ foreach ($weeklyStats as $date => $cnt) {
 
         /* Main Content wrapper */
         .main-wrapper {
-            margin-left: 280px;
+            margin-left: 240px;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -1297,17 +1298,16 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .user-profile .avatar {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background-color: var(--primary-light);
-            color: var(--primary);
+            background-color: #f1f5f9;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 0.9rem;
-            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.08);
+            font-size: 0.85rem;
+            color: var(--text-main);
         }
 
         .profile-info {
@@ -1329,7 +1329,7 @@ foreach ($weeklyStats as $date => $cnt) {
 
         /* Content Body */
         .content-body {
-            padding: 40px;
+            padding: clamp(16px, 2vw, 24px);
             flex: 1;
             max-width: 1400px;
             width: 100%;
@@ -1365,8 +1365,8 @@ foreach ($weeklyStats as $date => $cnt) {
         /* Metrics grid */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
             margin-bottom: 28px;
         }
 
@@ -1374,28 +1374,32 @@ foreach ($weeklyStats as $date => $cnt) {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 20px 24px;
+            padding: 24px;
             display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 140px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.01), 0 1px 2px -1px rgba(0, 0, 0, 0.01);
             transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .metric-card:hover {
             transform: translateY(-4px) scale(1.01);
-            border-color: rgba(79, 70, 229, 0.25);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+            border-color: rgba(79, 70, 229, 0.2);
+            box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
 
         .metric-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
         .metric-icon.indigo { background-color: var(--primary-light); color: var(--primary); }
@@ -1403,14 +1407,8 @@ foreach ($weeklyStats as $date => $cnt) {
         .metric-icon.rose { background-color: var(--danger-light); color: var(--danger-dark); }
         .metric-icon.amber { background-color: var(--warning-light); color: var(--warning-dark); }
 
-        .metric-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
         .metric-label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -1418,10 +1416,19 @@ foreach ($weeklyStats as $date => $cnt) {
         }
 
         .metric-value {
-            font-size: 1.35rem;
-            font-weight: 800;
+            font-size: 1.6rem;
+            font-weight: 700;
             color: var(--text-main);
-            letter-spacing: -0.3px;
+            line-height: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .metric-card-bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
         }
 
         /* Split layout for dynamic status widget on Dashboard */
@@ -2629,6 +2636,37 @@ foreach ($weeklyStats as $date => $cnt) {
             position: absolute;
             transition: all 0.1s ease;
         }
+        .zoom-overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .zoom-dynamic-logo {
+            position: absolute;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-family: 'Outfit', sans-serif;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .zoom-dynamic-text {
+            position: absolute;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
         /* Ensure input fields fit container to prevent overflow */
         .form-input, .form-select {
@@ -3110,15 +3148,26 @@ foreach ($weeklyStats as $date => $cnt) {
                     <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 2px;">Kiosk Controller</div>
                 </div>
             </div>
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" style="overflow-y: auto;">
+                <div class="sidebar-nav-group-title" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 15px 0 8px 12px;">Monitoring</div>
                 <a href="#" class="nav-item active" data-tab="dashboard">
                     <span class="nav-icon"><i class="fa-solid fa-chart-simple"></i></span> Dashboard
                 </a>
-                <a href="#" class="nav-item" data-tab="settings">
-                    <span class="nav-icon"><i class="fa-solid fa-sliders"></i></span> Kiosk Settings
-                </a>
                 <a href="#" class="nav-item" data-tab="queue">
                     <span class="nav-icon"><i class="fa-solid fa-hourglass-half"></i></span> Kiosk Queue
+                </a>
+
+                <div class="sidebar-nav-group-title" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 20px 0 8px 12px;">Visual & Event</div>
+                <a href="#" class="nav-item" data-tab="frames">
+                    <span class="nav-icon"><i class="fa-solid fa-image"></i></span> Bingkai Kiosk
+                </a>
+                <a href="#" class="nav-item" data-tab="events">
+                    <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Manajemen Event
+                </a>
+
+                <div class="sidebar-nav-group-title" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 20px 0 8px 12px;">Konfigurasi Kiosk</div>
+                <a href="#" class="nav-item" data-tab="settings">
+                    <span class="nav-icon"><i class="fa-solid fa-sliders"></i></span> Kiosk Settings
                 </a>
                 <a href="#" class="nav-item" data-tab="packages">
                     <span class="nav-icon"><i class="fa-solid fa-box-archive"></i></span> Manage Packages
@@ -3126,16 +3175,17 @@ foreach ($weeklyStats as $date => $cnt) {
                 <a href="#" class="nav-item" data-tab="coupons">
                     <span class="nav-icon"><i class="fa-solid fa-ticket"></i></span> Kelola Kupon
                 </a>
-                <a href="#" class="nav-item" data-tab="frames">
-                    <span class="nav-icon"><i class="fa-solid fa-image"></i></span> Bingkai Kiosk
-                </a>
-                <a href="#" class="nav-item" data-tab="events">
-                    <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Manajemen Event
-                </a>
             </nav>
-            <div class="sidebar-footer">
-                <a href="admin.php?action=logout" class="nav-item logout-link">
-                    <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout Portal
+            <div class="sidebar-footer" style="padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">AD</div>
+                    <div style="display: flex; flex-direction: column;">
+                        <div style="font-weight: 700; font-size: 0.8rem; color: var(--text-main); line-height: 1.2;">Administrator</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">Super Admin</div>
+                    </div>
+                </div>
+                <a href="admin.php?action=logout" style="color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s; text-decoration: none;" onmouseover="this.style.color='var(--danger)'; this.style.background='var(--danger-light)';" onmouseout="this.style.color='var(--text-muted)'; this.style.background='transparent';">
+                    <i class="fa-solid fa-right-from-bracket"></i>
                 </a>
             </div>
         </aside>
@@ -3143,19 +3193,18 @@ foreach ($weeklyStats as $date => $cnt) {
         <!-- Main Workspace -->
         <div class="main-wrapper">
             <!-- Top Sticky Header -->
-            <header class="top-header">
+            <header class="top-header" style="background: transparent; border-bottom: none; backdrop-filter: none; padding: 16px 32px 8px 32px;">
                 <div class="header-left">
-                    <h1 class="page-title">Dashboard</h1>
+                    <h1 class="page-title" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px;">Dashboard</h1>
                 </div>
-                <div class="header-right">
-                    <span class="current-time"><i class="fa-regular fa-calendar-days"></i> &nbsp;<?php echo date('d M Y, H:i'); ?></span>
-                    <div class="user-profile">
-                        <div class="avatar">AD</div>
-                        <div class="profile-info">
-                            <div class="profile-name">Administrator</div>
-                            <div class="profile-role">Super Admin</div>
-                        </div>
+                <div class="header-right" style="gap: 16px; align-items: center;">
+                    <div style="display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(79, 70, 229, 0.2); background: rgba(79, 70, 229, 0.05); color: var(--primary); font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary); display: inline-block;"></span>
+                        Role: Super Admin
                     </div>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Admin: Administrator</span>
+                    <a href="#" style="color: var(--text-muted); font-size: 1.15rem; transition: color 0.2s; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: #ffffff; border: 1px solid var(--border-color);"><i class="fa-regular fa-bell"></i></a>
+                    <div class="avatar" style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);">AD</div>
                 </div>
             </header>
 
@@ -3172,38 +3221,71 @@ foreach ($weeklyStats as $date => $cnt) {
                             <span>Selected photo session permanently removed from disk!</span>
                         </div>
                     <?php endif; ?>
-                    <!-- Upper Metrics Row (Horizontal Cards) -->
+                    <!-- Premium Gradient Banner (Undangan Digital Style) -->
+                    <div class="dashboard-banner" style="background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); border-radius: 14px; padding: 16px 24px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.08); position: relative; overflow: hidden;">
+                        <div style="position: absolute; right: -20px; bottom: -20px; font-size: 6rem; color: rgba(255,255,255,0.04); pointer-events: none;"><i class="fa-solid fa-chart-line"></i></div>
+                        <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
+                            <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; backdrop-filter: blur(10px);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <div>
+                                <h2 style="font-weight: 700; font-size: 1.15rem; letter-spacing: -0.3px; margin-bottom: 2px;">Dashboard Kiosk Controller</h2>
+                                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.85); font-weight: 500;">Sistem Monitoring & Kelola Visual Event Photo Booth Creative Studio</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; position: relative; z-index: 1;">
+                            <span style="background: rgba(255,255,255,0.15); font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 14px; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-camera"></i> <?php echo $photosCount; ?> Sesi</span>
+                            <span style="background: rgba(255,255,255,0.15); font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 14px; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-calendar-days"></i> <?php echo count($eventsList); ?> Event</span>
+                            <span style="background: rgba(255,255,255,0.15); font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 14px; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-image"></i> <?php echo count($framesList); ?> Bingkai</span>
+                        </div>
+                    </div>
+
+                    <!-- Upper Metrics Row (Vertical Cards with Bottom Indicator Bars) -->
                     <div class="metrics-grid">
                         <div class="metric-card">
-                            <div class="metric-icon indigo"><i class="fa-solid fa-camera"></i></div>
-                            <div class="metric-info">
-                                <div class="metric-label">Total Sesi Foto</div>
-                                <div class="metric-value"><?php echo $photosCount; ?> Sesi</div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                <span class="metric-label">Total Sesi Foto</span>
+                                <div class="metric-icon indigo"><i class="fa-solid fa-camera"></i></div>
                             </div>
+                            <div style="margin-top: 12px;">
+                                <div class="metric-value"><?php echo $photosCount; ?> Sesi</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-weight: 500;">Semua sesi foto terdaftar</div>
+                            </div>
+                            <div class="metric-card-bottom-bar" style="background: var(--primary);"></div>
                         </div>
                         
                         <div class="metric-card">
-                            <div class="metric-icon emerald"><i class="fa-solid fa-bolt"></i></div>
-                            <div class="metric-info">
-                                <div class="metric-label">Sesi Hari Ini</div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                <span class="metric-label">Sesi Hari Ini</span>
+                                <div class="metric-icon emerald"><i class="fa-solid fa-bolt"></i></div>
+                            </div>
+                            <div style="margin-top: 12px;">
                                 <div class="metric-value"><?php echo $todayPhotosCount; ?> Sesi</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-weight: 500;">Sesi baru pada hari ini</div>
                             </div>
+                            <div class="metric-card-bottom-bar" style="background: var(--success);"></div>
                         </div>
 
                         <div class="metric-card">
-                            <div class="metric-icon rose"><i class="fa-solid fa-floppy-disk"></i></div>
-                            <div class="metric-info">
-                                <div class="metric-label">Memori Terpakai</div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                <span class="metric-label">Memori Terpakai</span>
+                                <div class="metric-icon rose"><i class="fa-solid fa-floppy-disk"></i></div>
+                            </div>
+                            <div style="margin-top: 12px;">
                                 <div class="metric-value"><?php echo $formattedSize; ?></div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-weight: 500;">Penyimpanan direktori foto</div>
                             </div>
+                            <div class="metric-card-bottom-bar" style="background: var(--danger);"></div>
                         </div>
 
                         <div class="metric-card">
-                            <div class="metric-icon amber"><i class="fa-solid fa-print"></i></div>
-                            <div class="metric-info">
-                                <div class="metric-label">Printer Aktif</div>
-                                <div class="metric-value"><?php echo htmlspecialchars($settings['printer_type']); ?></div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                <span class="metric-label">Printer Aktif</span>
+                                <div class="metric-icon amber"><i class="fa-solid fa-print"></i></div>
                             </div>
+                            <div style="margin-top: 12px;">
+                                <div class="metric-value"><?php echo htmlspecialchars($settings['printer_type']); ?></div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-weight: 500;">Perangkat printer kiosk aktif</div>
+                            </div>
+                            <div class="metric-card-bottom-bar" style="background: var(--warning);"></div>
                         </div>
                     </div>
                     <div class="dashboard-row">
@@ -3334,6 +3416,8 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <option value="LUXURY_GOLD" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'LUXURY_GOLD') ? 'selected' : ''; ?>>Luxury Gold</option>
                                         <option value="MINIMAL_MODERN" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'MINIMAL_MODERN') ? 'selected' : ''; ?>>Minimal Modern</option>
                                         <option value="COMIC_POP" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'COMIC_POP') ? 'selected' : ''; ?>>Comic Pop-Art</option>
+                                        <option value="DAGO_ORANGE" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'DAGO_ORANGE') ? 'selected' : ''; ?>>Dago Orange Kiosk</option>
+                                        <option value="CREATIVE_DYNAMIC" <?php echo (isset($settings['app_theme']) && $settings['app_theme'] === 'CREATIVE_DYNAMIC') ? 'selected' : ''; ?>>Creative Dynamic (Glowing)</option>
                                     </select>
                                 </div>
 
@@ -5248,6 +5332,108 @@ foreach ($weeklyStats as $date => $cnt) {
             } else {
                 bgContainer.classList.add('checkerboard');
             }
+
+            // Draw dynamic overlay elements on top of the frame
+            if (bgContainer.parentElement) {
+                let overlayContainer = bgContainer.parentElement.querySelector('.zoom-overlay-container');
+                if (!overlayContainer) {
+                    overlayContainer = document.createElement('div');
+                    overlayContainer.className = 'zoom-overlay-container';
+                    bgContainer.parentElement.appendChild(overlayContainer);
+                }
+                overlayContainer.innerHTML = '';
+
+                if (frame.is_dynamic && frame.dynamic_elements) {
+                    const de = frame.dynamic_elements;
+
+                    // 1. Logo Dummy
+                    if (de.logo) {
+                        const logoX = parseFloat(de.logo.x) || 0;
+                        const logoY = parseFloat(de.logo.y) || 0;
+                        const logoW = parseFloat(de.logo.width) || 100;
+                        const logoH = parseFloat(de.logo.height) || 100;
+
+                        const logoDiv = document.createElement('div');
+                        logoDiv.className = 'zoom-dynamic-logo';
+                        logoDiv.style.left = Math.round(logoX * scaleX) + 'px';
+                        logoDiv.style.top = Math.round(logoY * scaleY) + 'px';
+                        logoDiv.style.width = Math.round(logoW * scaleX) + 'px';
+                        logoDiv.style.height = Math.round(logoH * scaleY) + 'px';
+                        logoDiv.style.border = '1.5px dashed #0ea5e9';
+                        logoDiv.style.background = 'rgba(14, 165, 233, 0.12)';
+                        logoDiv.style.color = '#0284c7';
+                        
+                        const fontSize = Math.max(6, Math.round(9 * scaleY));
+                        logoDiv.innerHTML = `
+                            <div style="font-size: ${fontSize}px; font-weight: 800; text-transform: uppercase;">Logo</div>
+                        `;
+                        overlayContainer.appendChild(logoDiv);
+                    }
+
+                    // 2. Text Dummies
+                    if (de.texts && de.texts.length > 0) {
+                        de.texts.forEach(text => {
+                            const textX = parseFloat(text.x) || 0;
+                            const textY = parseFloat(text.y) || 0;
+                            const textSize = parseFloat(text.font_size) || 20;
+                            const textColor = text.color || '#000000';
+                            const textStyle = text.font_style || 'normal';
+
+                            let label = 'Teks';
+                            let dummyText = '[TEKS EVENT]';
+                            let accentColor = '#6d28d9';
+                            let bgColor = 'rgba(139, 92, 246, 0.12)';
+                            let borderColor = '#8b5cf6';
+
+                            if (text.type === 'event_name') {
+                                label = 'Nama Event';
+                                dummyText = '[NAMA EVENT]';
+                                accentColor = '#6d28d9';
+                                bgColor = 'rgba(139, 92, 246, 0.12)';
+                                borderColor = '#8b5cf6';
+                            } else if (text.type === 'event_subtitle') {
+                                label = 'Subtitle';
+                                dummyText = '[SUBTITLE / TANGGAL]';
+                                accentColor = '#be185d';
+                                bgColor = 'rgba(236, 72, 153, 0.12)';
+                                borderColor = '#ec4899';
+                            } else if (text.type === 'event_hashtag') {
+                                label = 'Hashtag';
+                                dummyText = '[HASHTAG EVENT]';
+                                accentColor = '#c2410c';
+                                bgColor = 'rgba(249, 115, 22, 0.12)';
+                                borderColor = '#f97316';
+                            }
+
+                            const textDiv = document.createElement('div');
+                            textDiv.className = 'zoom-dynamic-text';
+                            textDiv.style.left = Math.round(textX * scaleX) + 'px';
+                            textDiv.style.top = Math.round(textY * scaleY) + 'px';
+                            textDiv.style.transform = 'translateX(-50%)';
+                            textDiv.style.border = `1.5px dashed ${borderColor}`;
+                            textDiv.style.background = bgColor;
+                            textDiv.style.padding = '2px 6px';
+                            textDiv.style.borderRadius = '4px';
+                            textDiv.style.whiteSpace = 'nowrap';
+                            textDiv.style.textAlign = 'center';
+
+                            let fontStyleStr = '';
+                            let fontWeightStr = 'normal';
+                            if (textStyle === 'bold' || textStyle === 'bold_italic') fontWeightStr = 'bold';
+                            if (textStyle === 'italic' || textStyle === 'bold_italic') fontStyleStr = 'italic';
+
+                            const previewFontSize = Math.round(textSize * scaleY);
+                            const labelFontSize = Math.max(5, Math.round(7 * scaleY));
+
+                            textDiv.innerHTML = `
+                                <div style="font-size: ${labelFontSize}px; font-weight: 800; color: ${accentColor}; text-transform: uppercase; margin-bottom: 1px; pointer-events: none;">${label}</div>
+                                <div style="font-size: ${previewFontSize}px; color: ${textColor}; font-weight: ${fontWeightStr}; font-style: ${fontStyleStr}; font-family: 'Outfit', sans-serif; line-height: 1.1; pointer-events: none;">${dummyText}</div>
+                            `;
+                            overlayContainer.appendChild(textDiv);
+                        });
+                    }
+                }
+            }
         }
 
         window.onclick = function(event) {
@@ -7122,12 +7308,35 @@ function editFrame(frame) {
                     activeTab = 'frames';
                 } else if (status === 'coupon_created' || status === 'bulk_created' || status === 'coupon_error' || status === 'coupon_deleted') {
                     activeTab = 'coupons';
+                } else if (status === 'event_saved' || status === 'event_deleted') {
+                    activeTab = 'events';
                 } else {
                     activeTab = localStorage.getItem('active_admin_tab') || 'dashboard';
                 }
             }
             
             switchTab(activeTab);
+
+            // Clear status query parameter from URL to prevent showing alert again on refresh
+            if (window.history.replaceState) {
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('status')) {
+                    url.searchParams.delete('status');
+                    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+                }
+            }
+
+            // Auto close alerts after 4 seconds
+            setTimeout(() => {
+                document.querySelectorAll('.alert-status').forEach(alert => {
+                    alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease, margin 0.5s ease, padding 0.5s ease, height 0.5s ease';
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        alert.style.display = 'none';
+                    }, 500);
+                });
+            }, 4000);
         });
     </script>
 
