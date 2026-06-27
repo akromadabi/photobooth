@@ -4,7 +4,7 @@
     "total_shots": 4,
     "printer_type": "NONE",
     "use_biometric": true,
-    "payment_mode": "dummy",
+    "payment_mode": "midtrans",
     "midtrans_server_key": "",
     "midtrans_client_key": "",
     "midtrans_sandbox_server_key": "",
@@ -16,7 +16,7 @@
     "app_theme": "DAGO_ORANGE",
     "coupon_promo_text": "PROMO & KABAR GEMBIRA!\r\nDapatkan promo gratis 1 kali foto setiap hari ulang tahunmu dengan download Aplikasi Kami di Play Store\/App Store.\r\nFollow IG kita: @creativephotostudio",
     "thermal_contrast": 1.2,
-    "thermal_brightness": 10.0,
+    "thermal_brightness": 10,
     "thermal_sharpness": 0.4,
     "thermal_denoise": true
 }

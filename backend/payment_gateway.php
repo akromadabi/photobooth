@@ -369,22 +369,21 @@ if ($orderQueueItem['status'] !== 'UNPAID') {
     exit;
 }
 
-$midtransToken = '';
-$midtransRedirectUrl = '';
+$midtransQrUrl = '';
 $midtransError = '';
 
 if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'UNPAID') {
-    if (isset($orderQueueItem['midtrans_token']) && $orderQueueItem['midtrans_token']) {
-        $midtransToken = $orderQueueItem['midtrans_token'];
-        $midtransRedirectUrl = $orderQueueItem['midtrans_redirect_url'];
+    if (isset($orderQueueItem['midtrans_qr_url']) && $orderQueueItem['midtrans_qr_url']) {
+        $midtransQrUrl = $orderQueueItem['midtrans_qr_url'];
     } else {
         $serverKey = $settings['midtrans_server_key'];
         $isProduction = $settings['midtrans_environment'] === 'production';
-        $snapUrl = $isProduction 
-            ? "https://app.midtrans.com/snap/v1/transactions" 
-            : "https://app.sandbox.midtrans.com/snap/v1/transactions";
+        $chargeUrl = $isProduction 
+            ? "https://api.midtrans.com/v2/charge" 
+            : "https://api.sandbox.midtrans.com/v2/charge";
 
         $payload = [
+            "payment_type" => "qris",
             "transaction_details" => [
                 "order_id" => $orderId,
                 "gross_amount" => intval($selectedPackage['price'])
@@ -397,12 +396,12 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
                     "name" => $selectedPackage['name']
                 ]
             ],
-            "credit_card" => [
-                "secure" => true
+            "qris" => [
+                "acquirer" => "gopay"
             ]
         ];
 
-        $ch = curl_init($snapUrl);
+        $ch = curl_init($chargeUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
@@ -420,27 +419,35 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             $midtransError = "Koneksi Error: " . curl_error($ch);
         } else if ($httpCode >= 400) {
             $resError = json_decode($response, true);
-            $errMsgs = isset($resError['error_messages']) ? implode(', ', $resError['error_messages']) : $response;
-            $midtransError = "Midtrans API Error ($httpCode): " . $errMsgs;
+            $errMsgs = isset($resError['status_message']) ? $resError['status_message'] : $response;
+            $midtransError = "Midtrans Core API Error ($httpCode): " . $errMsgs;
         } else {
             $resData = json_decode($response, true);
-            if (isset($resData['token'])) {
-                $midtransToken = $resData['token'];
-                $midtransRedirectUrl = $resData['redirect_url'];
+            $qrUrl = '';
+            if (isset($resData['actions']) && is_array($resData['actions'])) {
+                foreach ($resData['actions'] as $action) {
+                    if (isset($action['name']) && $action['name'] === 'generate-qr-code') {
+                        $qrUrl = $action['url'];
+                        break;
+                    }
+                }
+            }
+            
+            if ($qrUrl) {
+                $midtransQrUrl = $qrUrl;
                 
                 // Save to queue state
                 $state = getQueueState($queueFile);
                 foreach ($state['queue_list'] as &$item) {
                     if ($item['session_id'] === $orderId) {
-                        $item['midtrans_token'] = $midtransToken;
-                        $item['midtrans_redirect_url'] = $midtransRedirectUrl;
+                        $item['midtrans_qr_url'] = $midtransQrUrl;
                         break;
                     }
                 }
                 unset($item);
                 saveQueueState($queueFile, $state);
             } else {
-                $midtransError = "Struktur respon Midtrans tidak valid.";
+                $midtransError = "Gagal mendapatkan kode QRIS dari respon Midtrans.";
             }
         }
         curl_close($ch);
@@ -724,20 +731,18 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             <?php if ($settings['payment_mode'] === 'midtrans'): ?>
                 <?php if ($midtransError): ?>
                     <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
-                        <div style="color: #ef4444; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
+                        <div style="color: #ef4444; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
                         <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; line-height: 1.4;"><?php echo htmlspecialchars($midtransError); ?></div>
                         <button class="btn-verify" onclick="window.location.reload()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">Coba Lagi</button>
                     </div>
                 <?php else: ?>
-                    <div class="qris-section" style="padding: 10px 0; text-align: center; display: flex; flex-direction: column; gap: 8px;">
-                        <div style="font-size: 1.5rem;">📱</div>
-                        <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Selesaikan Pembayaran Anda</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; max-width: 300px; margin: 0 auto;">
-                            Klik tombol di bawah untuk membuka pilihan pembayaran (QRIS, GoPay, ShopeePay, Virtual Account, dll).
+                    <div class="qris-section">
+                        <div class="qris-box">
+                            <img src="<?php echo htmlspecialchars($midtransQrUrl); ?>" alt="Midtrans QRIS">
                         </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
                     </div>
-
-                    <button class="btn-verify" id="btnPayMidtrans" onclick="payWithMidtrans()" style="background-color: #4f46e5; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25); margin-bottom: 4px;">BAYAR SEKARANG</button>
+                    
                     <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.85rem; padding: 12px;">Cek Status Pembayaran Manual</button>
 
                     <div class="instruction">
@@ -790,15 +795,7 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
         </div>
     </div>
 
-    <!-- Script imports based on mode -->
-    <?php if ($settings['payment_mode'] === 'midtrans' && !$midtransError): ?>
-        <?php 
-        $snapScriptUrl = ($settings['midtrans_environment'] === 'production') 
-            ? "https://app.midtrans.com/snap/snap.js" 
-            : "https://app.sandbox.midtrans.com/snap/snap.js";
-        ?>
-        <script src="<?php echo $snapScriptUrl; ?>" data-client-key="<?php echo htmlspecialchars($settings['midtrans_client_key']); ?>"></script>
-    <?php endif; ?>
+    <!-- No snap.js script required for Core API -->
 
     <script>
         const orderId = '<?php echo $orderId; ?>';
@@ -1009,30 +1006,6 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             });
         }
 
-        // Midtrans Pay trigger
-        function payWithMidtrans() {
-            const token = '<?php echo $midtransToken; ?>';
-            if (!token) return;
-            
-            snap.pay(token, {
-                onSuccess: function(result){
-                    console.log('success', result);
-                    checkMidtransStatus(false);
-                },
-                onPending: function(result){
-                    console.log('pending', result);
-                    alert("Pembayaran Anda sedang tertunda. Selesaikan pembayaran Anda.");
-                },
-                onError: function(result){
-                    console.log('error', result);
-                    alert("Terjadi kesalahan pada pembayaran.");
-                },
-                onClose: function(){
-                    console.log('customer closed the popup without finishing the payment');
-                }
-            });
-        }
-
         // Midtrans Status verification via PHP backend
         function checkMidtransStatus(showAlert) {
             const formData = new FormData();
@@ -1071,12 +1044,7 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
         }
 
         // Automatic Status Polling for Midtrans Mode (every 4 seconds)
-        <?php if ($settings['payment_mode'] === 'midtrans' && !$midtransError && $midtransToken): ?>
-            // Automatically open Snap popup on load for better UX
-            window.addEventListener('DOMContentLoaded', () => {
-                setTimeout(payWithMidtrans, 800);
-            });
-            
+        <?php if ($settings['payment_mode'] === 'midtrans' && !$midtransError && $midtransQrUrl): ?>
             setInterval(() => {
                 checkMidtransStatus(false);
             }, 4000);
