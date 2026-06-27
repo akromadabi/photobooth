@@ -972,6 +972,7 @@ if ($isRemoteMode) {
         <script>
             const sessionId = '<?php echo $sessionId; ?>';
             const serverConfig = <?php echo json_encode($config); ?>;
+            const activeEventId = '<?php echo htmlspecialchars($eventId ?? ""); ?>';
             
             let currentStatus = 'WAITING';
             let selectedLayout = 'strip';
@@ -1071,8 +1072,17 @@ if ($isRemoteMode) {
                     matchedFrames = serverConfig.frames.filter(f => f.type.toLowerCase() === selectedLayout.toLowerCase());
                 }
                 
-                // Load general fallback frames
-                let filtered = matchedFrames.filter(f => f.event_id === 'general' || !f.event_id);
+                // Load frames based on allowed_frames or fallback to event matching / general
+                let filtered = [];
+                let activeEvtObj = serverConfig.events ? serverConfig.events.find(e => e.id === activeEventId) : null;
+                if (activeEvtObj && activeEvtObj.allowed_frames && Array.isArray(activeEvtObj.allowed_frames)) {
+                    filtered = matchedFrames.filter(f => activeEvtObj.allowed_frames.includes(f.id));
+                } else {
+                    filtered = matchedFrames.filter(f => f.event_id === activeEventId);
+                    if (filtered.length === 0) {
+                        filtered = matchedFrames.filter(f => f.event_id === 'general' || !f.event_id);
+                    }
+                }
                 
                 filtered.forEach((f, idx) => {
                     const card = document.createElement('div');

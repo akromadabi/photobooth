@@ -682,6 +682,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
     $rentalStartTime = trim($_POST['rental_start_time'] ?? '');
     $rentalEndTime = trim($_POST['rental_end_time'] ?? '');
     $limitPrintsPerSession = intval($_POST['limit_prints_per_session'] ?? 1);
+    $allowedFrames = $_POST['allowed_frames'] ?? [];
     
     if ($rentalStartTime) {
         $rentalStartTime = str_replace('T', ' ', $rentalStartTime);
@@ -710,7 +711,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
         'billing_type' => $billingType,
         'rental_start_time' => $rentalStartTime,
         'rental_end_time' => $rentalEndTime,
-        'limit_prints_per_session' => $limitPrintsPerSession
+        'limit_prints_per_session' => $limitPrintsPerSession,
+        'allowed_frames' => $allowedFrames
     ];
     
     if ($eventIndex !== -1) {
@@ -5020,10 +5022,188 @@ foreach ($weeklyStats as $date => $cnt) {
                                 <input type="datetime-local" id="event_rental_end_time" name="rental_end_time" class="form-input" style="background: white;">
                             </div>
                         </div>
-                        <div class="form-group" style="max-width: 50%;">
-                            <label for="event_limit_prints_per_session">Batas Cetak per Sesi Foto</label>
-                            <input type="number" id="event_limit_prints_per_session" name="limit_prints_per_session" class="form-input" value="1" min="1" style="background: white;">
-                            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Mencegah spam print per sesi tamu.</span>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end;">
+                            <div class="form-group">
+                                <label for="event_limit_prints_per_session">Batas Cetak per Sesi Foto</label>
+                                <input type="number" id="event_limit_prints_per_session" name="limit_prints_per_session" class="form-input" value="1" min="1" style="background: white;">
+                                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Mencegah spam print per sesi tamu.</span>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Bingkai Sesi Foto</label>
+                                <button type="button" class="btn-secondary" onclick="openFramesModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 600; border-radius: 8px; width: 100%; background: white; border: 1px solid var(--border-color); justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+                                    <i class="fa-solid fa-images" style="color: var(--primary);"></i>
+                                    <span id="selectedFramesCountLabel">Kelola Bingkai Sesi (Semua Terpilih)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <style>
+                        .frames-selector-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                            gap: 12px;
+                            margin-top: 8px;
+                        }
+                        .frame-select-card {
+                            border: 2px solid var(--border-color);
+                            border-radius: 8px;
+                            padding: 8px;
+                            background: #fff;
+                            cursor: pointer;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            text-align: center;
+                            position: relative;
+                            transition: all 0.2s ease;
+                        }
+                        .frame-select-card:hover {
+                            border-color: #cbd5e1;
+                            transform: translateY(-2px);
+                        }
+                        .frame-select-card.selected {
+                            border-color: var(--primary);
+                            box-shadow: 0 0 8px rgba(230, 57, 70, 0.2);
+                            background: rgba(230, 57, 70, 0.02);
+                        }
+                        .frame-select-preview {
+                            width: 100%;
+                            height: 120px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: #f8fafc;
+                            border-radius: 6px;
+                            overflow: hidden;
+                            margin-bottom: 8px;
+                            border: 1px solid var(--border-color);
+                        }
+                        .frame-select-preview img {
+                            max-width: 100%;
+                            max-height: 100%;
+                            object-fit: contain;
+                        }
+                        .frame-select-name {
+                            font-size: 0.8rem;
+                            font-weight: 600;
+                            color: var(--text-main);
+                            word-break: break-word;
+                            line-height: 1.2;
+                            margin-bottom: 4px;
+                        }
+                        .frame-select-badge {
+                            font-size: 0.65rem;
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                            background: #f1f5f9;
+                            color: #64748b;
+                            font-weight: 500;
+                        }
+                        .frame-select-card.selected .frame-select-badge {
+                            background: rgba(230, 57, 70, 0.1);
+                            color: var(--primary);
+                        }
+                    </style>
+
+                    <!-- Modal Selection of Frames -->
+                    <div class="modal" id="eventFramesModal" style="z-index: 1100;">
+                        <div class="modal-content" style="max-width: 800px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+                            <button type="button" class="modal-close" onclick="closeFramesModal()">&times;</button>
+                            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                                <i class="fa-solid fa-images" style="color: var(--primary);"></i>
+                                <span>Pilih Bingkai Sesi Foto</span>
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                                <button type="button" class="btn-secondary" onclick="selectAllFrames(true)" style="padding: 6px 12px; font-size: 0.8rem;">
+                                    <i class="fa-solid fa-check-double"></i> Pilih Semua Bingkai
+                                </button>
+                                <button type="button" class="btn-secondary" onclick="selectAllFrames(false)" style="padding: 6px 12px; font-size: 0.8rem;">
+                                    <i class="fa-solid fa-square"></i> Kosongkan Semua Pilihan
+                                </button>
+                            </div>
+                            
+                            <!-- Scrollable Frame Categories -->
+                            <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 20px;">
+                                <!-- Category: Dinamis -->
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
+                                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Bingkai Dinamis
+                                        </span>
+                                        <div style="display: flex; gap: 6px;">
+                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('dynamic', true)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Pilih Semua</button>
+                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('dynamic', false)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Kosongkan</button>
+                                        </div>
+                                    </div>
+                                    <div class="frames-selector-grid" id="dynamicFramesGrid">
+                                        <?php 
+                                        $dynamicFrames = array_filter($framesList, function($f) {
+                                            return isset($f['is_dynamic']) && $f['is_dynamic'];
+                                        });
+                                        foreach ($dynamicFrames as $f): 
+                                        ?>
+                                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="dynamic" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
+                                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
+                                                <div class="frame-select-preview">
+                                                    <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
+                                                </div>
+                                                <div class="frame-select-name"><?php echo htmlspecialchars($f['name']); ?></div>
+                                                <div class="frame-select-badge"><?php echo htmlspecialchars(ucfirst($f['type'])); ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <?php if (empty($dynamicFrames)): ?>
+                                            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
+                                                Tidak ada bingkai dinamis yang terdaftar.
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                
+                                <!-- Category: Statis -->
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
+                                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                                            <i class="fa-solid fa-image" style="color: #64748b;"></i> Bingkai Statis
+                                        </span>
+                                        <div style="display: flex; gap: 6px;">
+                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('static', true)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Pilih Semua</button>
+                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('static', false)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Kosongkan</button>
+                                        </div>
+                                    </div>
+                                    <div class="frames-selector-grid" id="staticFramesGrid">
+                                        <?php 
+                                        $staticFrames = array_filter($framesList, function($f) {
+                                            return !isset($f['is_dynamic']) || !$f['is_dynamic'];
+                                        });
+                                        foreach ($staticFrames as $f): 
+                                        ?>
+                                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="static" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
+                                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
+                                                <div class="frame-select-preview">
+                                                    <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
+                                                </div>
+                                                <div class="frame-select-name"><?php echo htmlspecialchars($f['name']); ?></div>
+                                                <div class="frame-select-badge"><?php echo htmlspecialchars(ucfirst($f['type'])); ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <?php if (empty($staticFrames)): ?>
+                                            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
+                                                Tidak ada bingkai statis yang terdaftar.
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Footer Actions -->
+                            <div style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; justify-content: flex-end; gap: 8px;">
+                                <button type="button" class="btn-primary" onclick="closeFramesModal()" style="padding: 8px 16px;">
+                                    Simpan & Tutup
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -7117,6 +7297,28 @@ function editFrame(frame) {
             document.getElementById('event_limit_prints_per_session').value = evt.limit_prints_per_session !== undefined ? evt.limit_prints_per_session : 1;
             toggleBillingFields();
 
+            // Load allowed frames into checkboxes and card selection states
+            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateFrameCardStyle(cb.value);
+            });
+            if (evt.allowed_frames && Array.isArray(evt.allowed_frames)) {
+                evt.allowed_frames.forEach(frameId => {
+                    const cb = document.querySelector(`.rental-frame-checkbox[value="${frameId}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                        updateFrameCardStyle(frameId);
+                    }
+                });
+            } else {
+                // If allowed_frames is not set (e.g. legacy events), check all by default
+                document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                    cb.checked = true;
+                    updateFrameCardStyle(cb.value);
+                });
+            }
+            updateSelectedFramesCount();
+
             document.getElementById('eventIsEditing').value = '1';
             
             // Show modal
@@ -7152,6 +7354,13 @@ function editFrame(frame) {
             document.getElementById('event_limit_prints_per_session').value = '1';
             toggleBillingFields();
 
+            // Check all frames by default when resetting/creating a new event
+            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                cb.checked = true;
+                updateFrameCardStyle(cb.value);
+            });
+            updateSelectedFramesCount();
+
             document.getElementById('eventLogoPreviewContainer').style.display = 'none';
             document.getElementById('eventIsEditing').value = '0';
         }
@@ -7178,6 +7387,71 @@ function editFrame(frame) {
 
         function closeEventModal() {
             document.getElementById('eventEditorModal').classList.remove('active');
+        }
+
+        // Functions for managing eventFramesModal
+        function openFramesModal() {
+            document.getElementById('eventFramesModal').classList.add('active');
+        }
+
+        function closeFramesModal() {
+            document.getElementById('eventFramesModal').classList.remove('active');
+            updateSelectedFramesCount();
+        }
+
+        function updateFrameCardStyle(frameId) {
+            const cb = document.querySelector(`.rental-frame-checkbox[value="${frameId}"]`);
+            const card = document.querySelector(`.frame-select-card[data-frame-id="${frameId}"]`);
+            if (cb && card) {
+                if (cb.checked) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            }
+        }
+
+        function toggleFrameCardSelection(frameId) {
+            const cb = document.querySelector(`.rental-frame-checkbox[value="${frameId}"]`);
+            if (cb) {
+                cb.checked = !cb.checked;
+                updateFrameCardStyle(frameId);
+            }
+        }
+
+        function selectAllFrames(state) {
+            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                cb.checked = state;
+                updateFrameCardStyle(cb.value);
+            });
+            updateSelectedFramesCount();
+        }
+
+        // category: 'dynamic' or 'static'
+        function selectCategoryFrames(category, state) {
+            document.querySelectorAll(`.frame-select-card[data-category="${category}"]`).forEach(card => {
+                const cb = card.querySelector('.rental-frame-checkbox');
+                if (cb) {
+                    cb.checked = state;
+                    updateFrameCardStyle(cb.value);
+                }
+            });
+            updateSelectedFramesCount();
+        }
+
+        function updateSelectedFramesCount() {
+            const total = document.querySelectorAll('.rental-frame-checkbox').length;
+            const checked = document.querySelectorAll('.rental-frame-checkbox:checked').length;
+            const label = document.getElementById('selectedFramesCountLabel');
+            if (label) {
+                if (checked === total) {
+                    label.innerText = `Kelola Bingkai Sesi (Semua Terpilih)`;
+                } else if (checked === 0) {
+                    label.innerText = `Kelola Bingkai Sesi (Belum Ada Terpilih)`;
+                } else {
+                    label.innerText = `Kelola Bingkai Sesi (${checked} Terpilih)`;
+                }
+            }
         }
 
         function toggleDynamicFields(show) {

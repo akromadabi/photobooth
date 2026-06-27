@@ -5464,9 +5464,15 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
             }
             
             // Filtering frames based on Event ID or falls back to 'general'
-            let filtered = matchingFrames.filter(f => f.event_id === eventIdFilter);
-            if (filtered.length === 0) {
-                filtered = matchingFrames.filter(f => f.event_id === 'general' || !f.event_id);
+            let filtered = [];
+            let activeEvtObj = serverConfig.events ? serverConfig.events.find(e => e.id === eventIdFilter) : null;
+            if (activeEvtObj && activeEvtObj.allowed_frames && Array.isArray(activeEvtObj.allowed_frames)) {
+                filtered = matchingFrames.filter(f => activeEvtObj.allowed_frames.includes(f.id));
+            } else {
+                filtered = matchingFrames.filter(f => f.event_id === eventIdFilter);
+                if (filtered.length === 0) {
+                    filtered = matchingFrames.filter(f => f.event_id === 'general' || !f.event_id);
+                }
             }
             
             filtered.forEach(f => {
