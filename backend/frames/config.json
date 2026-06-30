@@ -1,5 +1,5 @@
 {
-    "version": 22,
+    "version": 23,
     "events": [
         {
             "id": "general",
@@ -8,7 +8,10 @@
             "billing_type": "PAY_PER_SESSION",
             "rental_start_time": "",
             "rental_end_time": "",
-            "limit_prints_per_session": 1
+            "limit_prints_per_session": 1,
+            "allowed_frames": [
+                "dynamic_event_strip"
+            ]
         },
         {
             "id": "wedding_rian_ani",

@@ -98,6 +98,9 @@ fun MainNavigation() {
                     photoPaths = key.photoPaths,
                     frameId = key.frameId,
                     eventId = key.eventId,
+                    sessionId = key.sessionId,
+                    packageId = key.packageId,
+                    characterId = key.characterId,
                     onRetakeClick = { backStack.removeLastOrNull() },
                     onConfirmClick = { path, print, finalFrameId -> 
                         backStack.add(SharePrint(finalPhotoPath = path, shouldPrint = print, frameId = finalFrameId, eventId = key.eventId, sessionId = key.sessionId, packageId = key.packageId, characterId = key.characterId)) 

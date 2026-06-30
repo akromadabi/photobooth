@@ -89,7 +89,8 @@ fun CameraCaptureScreen(
     // Resolve frame configuration
     val frame = remember(frameId, eventId) {
         val allFrames = getFramesForLayout(context, "strip", configManager, eventId) + 
-                         getFramesForLayout(context, "grid", configManager, eventId)
+                         getFramesForLayout(context, "grid", configManager, eventId) +
+                         getFramesForLayout(context, "postcard", configManager, eventId)
         allFrames.firstOrNull { it.id == frameId } ?: allFrames.firstOrNull() ?: getFramesForLayout(context, "strip", configManager).first()
     }
 
@@ -348,9 +349,38 @@ fun CameraCaptureLayout(
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                         try {
                             val filePath = tempFile.absolutePath
+                            
+                            // Read EXIF orientation to correct rotation
+                            var rotationDegrees = 0
+                            try {
+                                val exif = android.media.ExifInterface(filePath)
+                                val orientation = exif.getAttributeInt(
+                                    android.media.ExifInterface.TAG_ORIENTATION,
+                                    android.media.ExifInterface.ORIENTATION_NORMAL
+                                )
+                                rotationDegrees = when (orientation) {
+                                    android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                                    android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                                    android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                                    else -> 0
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+
                             val opt = BitmapFactory.Options().apply { inMutable = true }
-                            val bitmap = BitmapFactory.decodeFile(filePath, opt)
+                            var bitmap = BitmapFactory.decodeFile(filePath, opt)
                             if (bitmap != null) {
+                                // Physically rotate the bitmap based on EXIF rotation degrees
+                                if (rotationDegrees != 0) {
+                                    val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                                    val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                                    if (rotated != bitmap) {
+                                        bitmap.recycle()
+                                        bitmap = rotated
+                                    }
+                                }
+
                                 val inputImg = InputImage.fromBitmap(bitmap, 0)
                                 val faceDetectorOptions = FaceDetectorOptions.Builder()
                                     .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
@@ -365,7 +395,9 @@ fun CameraCaptureLayout(
                                     FileOutputStream(tempFile).use { out ->
                                         processedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
                                     }
-                                    processedBitmap.recycle()
+                                    if (processedBitmap != bitmap) {
+                                        processedBitmap.recycle()
+                                    }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 } finally {

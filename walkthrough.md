@@ -202,3 +202,21 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
 * **Penyelesaian HTML Statis**: Menghapus teks statis `"Dago."`, `"RECEIPT PHOTOBOOTH"`, `"SINCE 2020"`, dan `"DAILY NEWS"` yang sebelumnya mengunci tampilan struk di halaman share/cetak struk simulator.
 * **Injeksi Data Awal via PHP**: Menambahkan blok pendeteksi info event general di awal [kiosk_sim.php](file:///c:/laragon/www/photobooth/backend/kiosk_sim.php) untuk mem-parsing nama brand umum secara dinamis saat halaman pertama kali dimuat di browser.
 * **Output Variabel**: Menghubungkan variabel PHP tersebut ke dalam markup HTML di elemen header logo (`dagoBrandMainText`), sub-header (`dago-brand-sub1`), logo kertas struk (`dagoReceiptPaperLogoText`), dan judul struk (`dagoReceiptPaperTitle`). Dengan demikian, cetakan struk simulator sekarang tampil dinamis berdasarkan data event yang sedang dipilih/aktif.
+
+---
+
+## Update: Perbaikan Orientasi Foto Kiosk Tablet Portrait (v1.28.1)
+
+### 1. Perbaikan Foto Miring (Tilted/Rotated) pada Kios Tablet Portrait
+* **Masalah**: Ketika tablet dipasang dalam posisi portrait, modul kamera fisik pada perangkat berada di sisi kanan (sensor miring 90 atau 270 derajat). Saat foto diambil menggunakan CameraX, hasil foto yang didekode dan disimpan ke penyimpanan lokal menjadi miring (sideways/landscape).
+* **Solusi**:
+  * Memodifikasi fungsi `takePicture` di dalam [CameraCaptureScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/camera/CameraCaptureScreen.kt).
+  * Membaca informasi orientasi EXIF (`android.media.ExifInterface.TAG_ORIENTATION`) yang ditulis oleh pustaka CameraX langsung dari berkas JPEG yang baru disimpan.
+  * Secara fisik memutar (rotate) objek `Bitmap` menggunakan `Matrix.postRotate` berdasarkan sudut rotasi EXIF yang terdeteksi (90, 180, atau 270 derajat) sebelum dikompresi kembali ke format JPEG.
+  * Hal ini menjamin berkas gambar yang tersimpan sudah berada dalam posisi tegak (upright portrait), sehingga hasil foto tampil tegak sempurna di galeri preview, filmstrip, frame gabungan (stitched frame), maupun saat dicetak ke printer.
+
+### 2. Peningkatan Versi Dinamis Kiosk (v1.28.1)
+* Bumping `versionName` ke `"1.28.1"` dan `versionCode` ke `45` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle secara bersih untuk memperbarui berkas APK rilis utama di `backend/app-debug.apk` dan memperbarui `backend/update.json` agar kiosk tablet dapat mengunduh pembaruan secara otomatis.
+* Mencadangkan salinan APK versi rilis ke root: `app-debug_v1.28.1.apk`.
+

@@ -597,6 +597,38 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_packages') {
     exit;
 }
 
+// Action: Save Event Frames (AJAX)
+if (isset($_POST['action']) && $_POST['action'] === 'save_event_frames') {
+    header('Content-Type: application/json');
+    $eventId = $_POST['event_id'] ?? '';
+    $allowedFrames = $_POST['allowed_frames'] ?? [];
+    
+    $configPath = __DIR__ . '/frames/config.json';
+    if (file_exists($configPath)) {
+        $config = json_decode(file_get_contents($configPath), true);
+        $found = false;
+        if (isset($config['events'])) {
+            foreach ($config['events'] as &$evt) {
+                if ($evt['id'] === $eventId) {
+                    $evt['allowed_frames'] = $allowedFrames;
+                    $found = true;
+                    break;
+                }
+            }
+        }
+        if ($found) {
+            $config['version'] = isset($config['version']) ? intval($config['version']) + 1 : 1;
+            file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Event tidak ditemukan']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Config file tidak ditemukan']);
+    }
+    exit;
+}
+
 // Action: Save Event
 if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
     $eventName = trim($_POST['event_name']);
@@ -4785,10 +4817,19 @@ foreach ($weeklyStats as $date => $cnt) {
                                                     </div>
                                                 </td>
                                                 <td style="text-align: right;">
-                                                    <div style="display: inline-flex; gap: 6px;">
-                                                        <button type="button" class="btn-secondary" onclick="editEvent(<?php echo htmlspecialchars(json_encode($evt)); ?>)" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px;">
-                                                            <i class="fa-solid fa-pen" style="font-size: 0.7rem;"></i> Edit
-                                                        </button>
+                                                    <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                                         <?php 
+                                                         $activeCount = isset($evt['allowed_frames']) ? count($evt['allowed_frames']) : count($framesList);
+                                                         ?>
+                                                         <button type="button" class="btn-secondary" onclick="openFramesModalFromRow(<?php echo htmlspecialchars(json_encode($evt)); ?>)" style="padding: 4.5px 8px; font-size: 0.75rem; border-radius: 6px; background: rgba(79, 70, 229, 0.1); color: var(--primary); border-color: rgba(79, 70, 229, 0.15); display: inline-flex; align-items: center; gap: 6px;">
+                                                             <i class="fa-solid fa-images" style="font-size: 0.7rem;"></i> Bingkai
+                                                             <span style="background: var(--primary); color: white; padding: 1px 5.5px; border-radius: 10px; font-size: 0.65rem; font-weight: 700; line-height: 1;">
+                                                                 <?php echo $activeCount; ?>
+                                                             </span>
+                                                         </button>
+                                                         <button type="button" class="btn-secondary" onclick="editEvent(<?php echo htmlspecialchars(json_encode($evt)); ?>)" style="padding: 4.5px 8px; font-size: 0.75rem; border-radius: 6px;">
+                                                             <i class="fa-solid fa-pen" style="font-size: 0.7rem;"></i> Edit
+                                                         </button>
                                                         <?php if ($evt['id'] !== 'general'): ?>
                                                             <a href="admin.php?action=delete_event&id=<?php echo urlencode($evt['id']); ?>" class="btn-danger" style="text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;" onclick="return confirm('Apakah Anda yakin ingin menghapus event ini? Semua bingkai yang terhubung akan dialihkan ke Umum.')">
                                                                 <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i> Hapus
@@ -4805,6 +4846,178 @@ foreach ($weeklyStats as $date => $cnt) {
                     </div>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <style>
+        .frames-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .frame-select-card {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .frame-select-card:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+        }
+        .frame-select-card.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(230, 57, 70, 0.2);
+            background: rgba(230, 57, 70, 0.02);
+        }
+        .frame-select-preview {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .frame-select-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .frame-select-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            word-break: break-word;
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+        .frame-select-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .frame-select-card.selected .frame-select-badge {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--primary);
+        }
+    </style>
+
+    <!-- Modal Selection of Frames -->
+    <div class="modal" id="eventFramesModal" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 800px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+            <button type="button" class="modal-close" onclick="cancelFramesModal()">&times;</button>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <i class="fa-solid fa-images" style="color: var(--primary);"></i>
+                <span>Pilih Bingkai Sesi Foto</span>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary" onclick="selectAllFrames(true)" style="padding: 6px 12px; font-size: 0.8rem;">
+                    <i class="fa-solid fa-check-double"></i> Pilih Semua Bingkai
+                </button>
+                <button type="button" class="btn-secondary" onclick="selectAllFrames(false)" style="padding: 6px 12px; font-size: 0.8rem;">
+                    <i class="fa-solid fa-square"></i> Kosongkan Semua Pilihan
+                </button>
+            </div>
+            
+            <!-- Scrollable Frame Categories -->
+            <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 20px;">
+                <!-- Category: Dinamis -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
+                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Bingkai Dinamis
+                        </span>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('dynamic', true)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Pilih Semua</button>
+                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('dynamic', false)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Kosongkan</button>
+                        </div>
+                    </div>
+                    <div class="frames-selector-grid" id="dynamicFramesGrid">
+                        <?php 
+                        $dynamicFrames = array_filter($framesList, function($f) {
+                            return isset($f['is_dynamic']) && $f['is_dynamic'];
+                        });
+                        foreach ($dynamicFrames as $f): 
+                        ?>
+                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="dynamic" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
+                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames_checkbox[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
+                                <div class="frame-select-preview">
+                                    <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
+                                </div>
+                                <div class="frame-select-name"><?php echo htmlspecialchars($f['name']); ?></div>
+                                <div class="frame-select-badge"><?php echo htmlspecialchars(ucfirst($f['type'])); ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php if (empty($dynamicFrames)): ?>
+                            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
+                                Tidak ada bingkai dinamis yang terdaftar.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- Category: Statis -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
+                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-image" style="color: #64748b;"></i> Bingkai Statis
+                        </span>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('static', true)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Pilih Semua</button>
+                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('static', false)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Kosongkan</button>
+                        </div>
+                    </div>
+                    <div class="frames-selector-grid" id="staticFramesGrid">
+                        <?php 
+                        $staticFrames = array_filter($framesList, function($f) {
+                            return !isset($f['is_dynamic']) || !$f['is_dynamic'];
+                        });
+                        foreach ($staticFrames as $f): 
+                        ?>
+                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="static" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
+                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames_checkbox[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
+                                <div class="frame-select-preview">
+                                    <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
+                                </div>
+                                <div class="frame-select-name"><?php echo htmlspecialchars($f['name']); ?></div>
+                                <div class="frame-select-badge"><?php echo htmlspecialchars(ucfirst($f['type'])); ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php if (empty($staticFrames)): ?>
+                            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
+                                Tidak ada bingkai statis yang terdaftar.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer Actions -->
+            <div style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-secondary" onclick="cancelFramesModal()" style="padding: 8px 16px; min-width: 100px;">
+                    Batal
+                </button>
+                <button type="button" class="btn-primary" onclick="saveFramesModal()" style="padding: 8px 16px; min-width: 120px;">
+                    Simpan Pilihan
+                </button>
+            </div>
         </div>
     </div>
 
@@ -5038,175 +5251,7 @@ foreach ($weeklyStats as $date => $cnt) {
                         </div>
                     </div>
                     
-                    <style>
-                        .frames-selector-grid {
-                            display: grid;
-                            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                            gap: 12px;
-                            margin-top: 8px;
-                        }
-                        .frame-select-card {
-                            border: 2px solid var(--border-color);
-                            border-radius: 8px;
-                            padding: 8px;
-                            background: #fff;
-                            cursor: pointer;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            text-align: center;
-                            position: relative;
-                            transition: all 0.2s ease;
-                        }
-                        .frame-select-card:hover {
-                            border-color: #cbd5e1;
-                            transform: translateY(-2px);
-                        }
-                        .frame-select-card.selected {
-                            border-color: var(--primary);
-                            box-shadow: 0 0 8px rgba(230, 57, 70, 0.2);
-                            background: rgba(230, 57, 70, 0.02);
-                        }
-                        .frame-select-preview {
-                            width: 100%;
-                            height: 120px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            background: #f8fafc;
-                            border-radius: 6px;
-                            overflow: hidden;
-                            margin-bottom: 8px;
-                            border: 1px solid var(--border-color);
-                        }
-                        .frame-select-preview img {
-                            max-width: 100%;
-                            max-height: 100%;
-                            object-fit: contain;
-                        }
-                        .frame-select-name {
-                            font-size: 0.8rem;
-                            font-weight: 600;
-                            color: var(--text-main);
-                            word-break: break-word;
-                            line-height: 1.2;
-                            margin-bottom: 4px;
-                        }
-                        .frame-select-badge {
-                            font-size: 0.65rem;
-                            padding: 2px 6px;
-                            border-radius: 4px;
-                            background: #f1f5f9;
-                            color: #64748b;
-                            font-weight: 500;
-                        }
-                        .frame-select-card.selected .frame-select-badge {
-                            background: rgba(230, 57, 70, 0.1);
-                            color: var(--primary);
-                        }
-                    </style>
-
-                    <!-- Modal Selection of Frames -->
-                    <div class="modal" id="eventFramesModal" style="z-index: 1100;">
-                        <div class="modal-content" style="max-width: 800px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
-                            <button type="button" class="modal-close" onclick="closeFramesModal()">&times;</button>
-                            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-                                <i class="fa-solid fa-images" style="color: var(--primary);"></i>
-                                <span>Pilih Bingkai Sesi Foto</span>
-                            </div>
-                            
-                            <!-- Quick Actions -->
-                            <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                                <button type="button" class="btn-secondary" onclick="selectAllFrames(true)" style="padding: 6px 12px; font-size: 0.8rem;">
-                                    <i class="fa-solid fa-check-double"></i> Pilih Semua Bingkai
-                                </button>
-                                <button type="button" class="btn-secondary" onclick="selectAllFrames(false)" style="padding: 6px 12px; font-size: 0.8rem;">
-                                    <i class="fa-solid fa-square"></i> Kosongkan Semua Pilihan
-                                </button>
-                            </div>
-                            
-                            <!-- Scrollable Frame Categories -->
-                            <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 20px;">
-                                <!-- Category: Dinamis -->
-                                <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
-                                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Bingkai Dinamis
-                                        </span>
-                                        <div style="display: flex; gap: 6px;">
-                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('dynamic', true)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Pilih Semua</button>
-                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('dynamic', false)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Kosongkan</button>
-                                        </div>
-                                    </div>
-                                    <div class="frames-selector-grid" id="dynamicFramesGrid">
-                                        <?php 
-                                        $dynamicFrames = array_filter($framesList, function($f) {
-                                            return isset($f['is_dynamic']) && $f['is_dynamic'];
-                                        });
-                                        foreach ($dynamicFrames as $f): 
-                                        ?>
-                                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="dynamic" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
-                                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
-                                                <div class="frame-select-preview">
-                                                    <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
-                                                </div>
-                                                <div class="frame-select-name"><?php echo htmlspecialchars($f['name']); ?></div>
-                                                <div class="frame-select-badge"><?php echo htmlspecialchars(ucfirst($f['type'])); ?></div>
-                                            </div>
-                                        <?php endforeach; ?>
-                                        <?php if (empty($dynamicFrames)): ?>
-                                            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
-                                                Tidak ada bingkai dinamis yang terdaftar.
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                
-                                <!-- Category: Statis -->
-                                <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
-                                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-image" style="color: #64748b;"></i> Bingkai Statis
-                                        </span>
-                                        <div style="display: flex; gap: 6px;">
-                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('static', true)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Pilih Semua</button>
-                                            <button type="button" class="btn-secondary" onclick="selectCategoryFrames('static', false)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px;">Kosongkan</button>
-                                        </div>
-                                    </div>
-                                    <div class="frames-selector-grid" id="staticFramesGrid">
-                                        <?php 
-                                        $staticFrames = array_filter($framesList, function($f) {
-                                            return !isset($f['is_dynamic']) || !$f['is_dynamic'];
-                                        });
-                                        foreach ($staticFrames as $f): 
-                                        ?>
-                                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="static" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
-                                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
-                                                <div class="frame-select-preview">
-                                                    <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
-                                                </div>
-                                                <div class="frame-select-name"><?php echo htmlspecialchars($f['name']); ?></div>
-                                                <div class="frame-select-badge"><?php echo htmlspecialchars(ucfirst($f['type'])); ?></div>
-                                            </div>
-                                        <?php endforeach; ?>
-                                        <?php if (empty($staticFrames)): ?>
-                                            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
-                                                Tidak ada bingkai statis yang terdaftar.
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Footer Actions -->
-                            <div style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; justify-content: flex-end; gap: 8px;">
-                                <button type="button" class="btn-primary" onclick="closeFramesModal()" style="padding: 8px 16px;">
-                                    Simpan & Tutup
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
+                    <div id="eventEditorAllowedFramesHiddenContainer"></div>
                     <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">
                         <button type="button" class="btn-secondary" onclick="closeEventModal()" style="padding: 10px 20px;">
                             Batal
@@ -7318,6 +7363,7 @@ function editFrame(frame) {
                 });
             }
             updateSelectedFramesCount();
+            syncHiddenAllowedFrames();
 
             document.getElementById('eventIsEditing').value = '1';
             
@@ -7360,6 +7406,7 @@ function editFrame(frame) {
                 updateFrameCardStyle(cb.value);
             });
             updateSelectedFramesCount();
+            syncHiddenAllowedFrames();
 
             document.getElementById('eventLogoPreviewContainer').style.display = 'none';
             document.getElementById('eventIsEditing').value = '0';
@@ -7390,13 +7437,120 @@ function editFrame(frame) {
         }
 
         // Functions for managing eventFramesModal
+        let activeEditFramesEventId = null;
+        let isOpenedFromRow = false;
+        let originalCheckedStates = {};
+
         function openFramesModal() {
+            isOpenedFromRow = false;
+            activeEditFramesEventId = null;
+            backupCheckedStates();
             document.getElementById('eventFramesModal').classList.add('active');
         }
 
-        function closeFramesModal() {
+        function openFramesModalFromRow(evt) {
+            isOpenedFromRow = true;
+            activeEditFramesEventId = evt.id;
+            backupCheckedStates();
+            
+            // Uncheck all first
+            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateFrameCardStyle(cb.value);
+            });
+            
+            // Check allowed ones
+            const allowedFrames = evt.allowed_frames;
+            if (allowedFrames && Array.isArray(allowedFrames)) {
+                allowedFrames.forEach(frameId => {
+                    const cb = document.querySelector(`.rental-frame-checkbox[value="${frameId}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                        updateFrameCardStyle(frameId);
+                    }
+                });
+            } else {
+                // If not set, check all by default
+                document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                    cb.checked = true;
+                    updateFrameCardStyle(cb.value);
+                });
+            }
+            updateSelectedFramesCount();
+            
+            document.getElementById('eventFramesModal').classList.add('active');
+        }
+
+        function backupCheckedStates() {
+            originalCheckedStates = {};
+            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                originalCheckedStates[cb.value] = cb.checked;
+            });
+        }
+
+        function restoreCheckedStates() {
+            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
+                if (originalCheckedStates[cb.value] !== undefined) {
+                    cb.checked = originalCheckedStates[cb.value];
+                    updateFrameCardStyle(cb.value);
+                }
+            });
+            updateSelectedFramesCount();
+        }
+
+        function cancelFramesModal() {
+            restoreCheckedStates();
+            document.getElementById('eventFramesModal').classList.remove('active');
+        }
+
+        function saveFramesModal() {
             document.getElementById('eventFramesModal').classList.remove('active');
             updateSelectedFramesCount();
+            
+            if (isOpenedFromRow && activeEditFramesEventId) {
+                const allowed = [];
+                document.querySelectorAll('.rental-frame-checkbox:checked').forEach(cb => {
+                    allowed.push(cb.value);
+                });
+                
+                const formData = new FormData();
+                formData.append('action', 'save_event_frames');
+                formData.append('event_id', activeEditFramesEventId);
+                allowed.forEach(f => formData.append('allowed_frames[]', f));
+                
+                fetch('admin.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Gagal menyimpan bingkai event: ' + (data.message || 'unknown error'));
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Gagal mengirim data bingkai.');
+                });
+            } else {
+                syncHiddenAllowedFrames();
+            }
+        }
+
+        function syncHiddenAllowedFrames() {
+            const container = document.getElementById('eventEditorAllowedFramesHiddenContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            document.querySelectorAll('.rental-frame-checkbox:checked').forEach(cb => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'allowed_frames[]';
+                hiddenInput.value = cb.value;
+                container.appendChild(hiddenInput);
+            });
         }
 
         function updateFrameCardStyle(frameId) {

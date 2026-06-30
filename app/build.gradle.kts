@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.photobooth"
         minSdk = 24
         targetSdk = 36
-        versionCode = 44
-        versionName = "1.28.0"
+        versionCode = 45
+        versionName = "1.28.1"
     }
 
     // ── Release Signing ──────────────────────────────────────────────────────

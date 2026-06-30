@@ -55,6 +55,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import coil.compose.AsyncImage
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
 import com.example.photobooth.data.FrameConfig
@@ -99,6 +102,9 @@ fun PreviewResultScreen(
     photoPaths: List<String>,
     frameId: String,
     eventId: String = "general",
+    sessionId: String = "",
+    packageId: String = "",
+    characterId: String = "",
     onRetakeClick: () -> Unit,
     onConfirmClick: (String, Boolean, String) -> Unit, // finalPath, shouldPrint, finalFrameId
     modifier: Modifier = Modifier
@@ -106,6 +112,34 @@ fun PreviewResultScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configManager = remember { ConfigManager(context) }
+
+    var isReceiptPackage by remember(packageId) {
+        mutableStateOf(
+            packageId.contains("receipt", ignoreCase = true) ||
+            packageId.contains("ticket", ignoreCase = true) ||
+            packageId.contains("slip", ignoreCase = true)
+        )
+    }
+
+    LaunchedEffect(packageId) {
+        if (packageId.isNotEmpty()) {
+            try {
+                val api = NetworkClient.getApi(configManager.backendUrl)
+                val pkgRes = api.getPackages()
+                if (pkgRes.isSuccessful && pkgRes.body() != null) {
+                    val activePackage = pkgRes.body()!!.find { it.id == packageId }
+                    if (activePackage != null) {
+                        isReceiptPackage = activePackage.printFlow == "RECEIPT" ||
+                                activePackage.id.contains("receipt", ignoreCase = true) ||
+                                activePackage.id.contains("ticket", ignoreCase = true) ||
+                                activePackage.id.contains("slip", ignoreCase = true)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
     
     // Resolve configurations and compatible frames
     val allFrames = remember {
@@ -252,7 +286,8 @@ fun PreviewResultScreen(
                         activeStrokeWidth = activeStrokeWidth,
                         stickers = stickers,
                         selectedStickerId = selectedStickerId,
-                        onStickerSelected = { selectedStickerId = it }
+                        onStickerSelected = { selectedStickerId = it },
+                        isReceiptPackage = isReceiptPackage
                     )
 
                     // Floating Swap Mode Button
@@ -352,7 +387,7 @@ fun PreviewResultScreen(
                         isProcessingConfirm = true
                         scope.launch {
                             val finalPath = withContext(Dispatchers.Default) {
-                                stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList(), eventId, configManager)
+                                stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList(), eventId, configManager, isReceiptPackage)
                             }
                             isProcessingConfirm = false
                             val shouldPrint = configManager.printerType != "NONE"
@@ -412,7 +447,8 @@ fun PreviewResultScreen(
                         activeStrokeWidth = activeStrokeWidth,
                         stickers = stickers,
                         selectedStickerId = selectedStickerId,
-                        onStickerSelected = { selectedStickerId = it }
+                        onStickerSelected = { selectedStickerId = it },
+                        isReceiptPackage = isReceiptPackage
                     )
 
                     // Floating Swap Mode Button
@@ -519,7 +555,7 @@ fun PreviewResultScreen(
                             isProcessingConfirm = true
                             scope.launch {
                                 val finalPath = withContext(Dispatchers.Default) {
-                                    stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList(), eventId, configManager)
+                                    stitchPhotos(context, photoStates.toList(), activeFrame, selectedFilter, doodleLines.toList(), stickers.toList(), eventId, configManager, isReceiptPackage)
                                 }
                                 isProcessingConfirm = false
                                 val shouldPrint = configManager.printerType != "NONE"
@@ -582,7 +618,8 @@ private fun stitchPhotos(
     doodleLines: List<DoodleLine>,
     stickers: List<Sticker>,
     eventId: String,
-    configManager: ConfigManager
+    configManager: ConfigManager,
+    isReceiptPackage: Boolean
 ): String {
     val multiplier = if (frame.width < 800) 3 else 2
     
@@ -893,14 +930,30 @@ private fun stitchPhotos(
         }
     }
     
+    var finalBitmap = template
+    if (isReceiptPackage) {
+        val grayscaleBitmap = Bitmap.createBitmap(template.width, template.height, Bitmap.Config.ARGB_8888)
+        val grayscaleCanvas = Canvas(grayscaleBitmap)
+        val grayscalePaint = Paint().apply {
+            val cm = android.graphics.ColorMatrix()
+            cm.setSaturation(0f)
+            colorFilter = ColorMatrixColorFilter(cm)
+        }
+        grayscaleCanvas.drawBitmap(template, 0f, 0f, grayscalePaint)
+        finalBitmap = grayscaleBitmap
+    }
+
     // Save final composite strip with a unique timestamp to bypass caching
     val outputFile = File(context.cacheDir, "final_stitched_strip_${System.currentTimeMillis()}.png")
     if (outputFile.exists()) outputFile.delete()
     
     FileOutputStream(outputFile).use { out ->
-        template.compress(Bitmap.CompressFormat.PNG, 100, out)
+        finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
     }
     
+    if (finalBitmap != template) {
+        finalBitmap.recycle()
+    }
     template.recycle()
     return outputFile.absolutePath
 }
@@ -963,15 +1016,25 @@ fun PreviewPhotoContainer(
     stickers: SnapshotStateList<Sticker>,
     selectedStickerId: String?,
     onStickerSelected: (String?) -> Unit,
+    isReceiptPackage: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val frameFile = remember(frame.id) { File(context.cacheDir, "frames/${frame.id}.png") }
     val frameAspectRatio = frame.width.toFloat() / frame.height.toFloat()
     
-    val parsedColor = remember(frame.backgroundColor) {
+    val parsedColor = remember(frame.backgroundColor, isReceiptPackage) {
         try {
-            Color(android.graphics.Color.parseColor(frame.backgroundColor))
+            val baseColor = Color(android.graphics.Color.parseColor(frame.backgroundColor))
+            if (isReceiptPackage) {
+                val r = baseColor.red
+                val g = baseColor.green
+                val b = baseColor.blue
+                val gray = 0.213f * r + 0.715f * g + 0.072f * b
+                Color(red = gray, green = gray, blue = gray, alpha = baseColor.alpha)
+            } else {
+                baseColor
+            }
         } catch (e: Exception) {
             Color.Black
         }
@@ -982,7 +1045,31 @@ fun PreviewPhotoContainer(
             .aspectRatio(frameAspectRatio)
             .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(parsedColor),
+            .background(parsedColor)
+            .drawWithContent {
+                if (isReceiptPackage) {
+                    val paint = androidx.compose.ui.graphics.Paint().apply {
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                            androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+                                0.213f, 0.715f, 0.072f, 0f, 0f,
+                                0.213f, 0.715f, 0.072f, 0f, 0f,
+                                0.213f, 0.715f, 0.072f, 0f, 0f,
+                                0f,     0f,     0f,     1f, 0f
+                            ))
+                        )
+                    }
+                    drawIntoCanvas { canvas ->
+                        canvas.saveLayer(
+                            androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height),
+                            paint
+                        )
+                        drawContent()
+                        canvas.restore()
+                    }
+                } else {
+                    drawContent()
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         // 1. Photo Slots Container
