@@ -578,7 +578,10 @@ $found = !empty($photoFile);
         /* Animated Effects CSS */
 
         /* 1. Film Scratches & Moving Dust (Newspaper strip only) */
-        .media-container.effect-newspaper_strip::after {
+        .media-container.effect-newspaper_strip::after,
+        .media-container.effect-newspaper_four::after,
+        .media-container.effect-newspaper_birthday::after,
+        .media-container.effect-newspaper_post::after {
             content: "";
             position: absolute;
             top: 0;
@@ -858,7 +861,7 @@ $found = !empty($photoFile);
 
             <div class="media-container effect-<?php echo htmlspecialchars($frameId); ?>" id="photo-wrapper">
                 <img src="<?php echo htmlspecialchars($photoFile); ?>" class="photo-img" alt="Your Photo Strip">
-                <?php if ($frameId === 'newspaper_strip'): ?>
+                <?php if ($frameId === 'newspaper_strip' || $frameId === 'newspaper_four' || $frameId === 'newspaper_birthday' || $frameId === 'newspaper_post'): ?>
                     <div class="scratches-overlay">
                         <div class="scratch"></div>
                         <div class="scratch"></div>
@@ -1061,7 +1064,7 @@ $found = !empty($photoFile);
                     ctx.drawImage(img, 0, 0, width, height);
 
                     // Draw effects
-                    if (frameId === 'newspaper_strip') {
+                    if (frameId === 'newspaper_strip' || frameId === 'newspaper_four' || frameId === 'newspaper_birthday' || frameId === 'newspaper_post') {
                         // Draw film grain noise
                         const noiseData = ctx.createImageData(width, height);
                         const buffer = new Uint32Array(noiseData.data.buffer);

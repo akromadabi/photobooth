@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object Home : NavKey
 @Serializable data object Admin : NavKey
-@Serializable data class LayoutSelect(val eventId: String = "general") : NavKey
+@Serializable data class PackageSelect(val eventId: String = "general") : NavKey
 @Serializable data class CharacterSelect(val eventId: String = "general") : NavKey
-@Serializable data class FrameSelect(val layoutType: String, val eventId: String = "general") : NavKey
+@Serializable data class FrameSelect(val packageId: String, val eventId: String = "general") : NavKey
 @Serializable data class CameraCapture(
     val frameId: String,
     val eventId: String = "general",

@@ -6,7 +6,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.photobooth.ui.home.HomeScreen
 import com.example.photobooth.ui.admin.AdminScreen
-import com.example.photobooth.ui.layout.LayoutSelectScreen
+import com.example.photobooth.ui.package_select.PackageSelectScreen
 import com.example.photobooth.ui.frame.FrameSelectScreen
 import com.example.photobooth.ui.camera.CameraCaptureScreen
 import com.example.photobooth.ui.preview.PreviewResultScreen
@@ -26,7 +26,7 @@ fun MainNavigation() {
             // Home Screen
             entry<Home> {
                 HomeScreen(
-                    onStartClick = { eventId -> backStack.add(LayoutSelect(eventId)) },
+                    onStartClick = { eventId -> backStack.add(PackageSelect(eventId)) },
                     onAdminNavigate = { backStack.add(Admin) },
                     onRemoteStartClick = { frameId, eventId, packageId, sessionId ->
                         backStack.add(CameraCapture(frameId = frameId, eventId = eventId, sessionId = sessionId, packageId = packageId))
@@ -41,16 +41,12 @@ fun MainNavigation() {
                 )
             }
             
-            // Layout Selector Screen
-            entry<LayoutSelect> { key ->
-                LayoutSelectScreen(
+            // Package Selector Screen
+            entry<PackageSelect> { key ->
+                PackageSelectScreen(
                     onBackClick = { backStack.removeLastOrNull() },
-                    onLayoutSelected = { type -> 
-                        if (type == "character_select") {
-                            backStack.add(CharacterSelect(key.eventId))
-                        } else {
-                            backStack.add(FrameSelect(type, key.eventId))
-                        }
+                    onPackageSelected = { pkgId -> 
+                        backStack.add(FrameSelect(pkgId, key.eventId))
                     }
                 )
             }
@@ -70,10 +66,12 @@ fun MainNavigation() {
             // Frame Selector Screen
             entry<FrameSelect> { key ->
                 FrameSelectScreen(
-                    layoutType = key.layoutType,
+                    packageId = key.packageId,
                     eventId = key.eventId,
                     onBackClick = { backStack.removeLastOrNull() },
-                    onFrameSelected = { fId -> backStack.add(CameraCapture(frameId = fId, eventId = key.eventId)) }
+                    onFrameSelected = { fId, charId -> 
+                        backStack.add(CameraCapture(frameId = fId, eventId = key.eventId, packageId = key.packageId, characterId = charId)) 
+                    }
                 )
             }
             

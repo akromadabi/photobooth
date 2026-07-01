@@ -3,7 +3,6 @@ package com.example.photobooth.ui.frame
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -14,18 +13,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import android.content.SharedPreferences
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -33,22 +28,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.photobooth.api.NetworkClient
+import com.example.photobooth.api.CharacterDto
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
 import com.example.photobooth.data.FrameConfig
 import com.example.photobooth.data.Slot
 import com.example.photobooth.theme.AppTheme
 import com.example.photobooth.theme.AppThemeType
+import com.example.photobooth.ui.character.CharacterCard
 import com.google.gson.Gson
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FrameSelectScreen(
-    layoutType: String,
+    packageId: String,
     eventId: String,
     onBackClick: () -> Unit,
-    onFrameSelected: (String) -> Unit,
+    onFrameSelected: (frameId: String, characterId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -57,14 +55,6 @@ fun FrameSelectScreen(
     val configuration = LocalConfiguration.current
     val isPortrait = configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
     
-    val columns = remember(layoutType, isPortrait) {
-        if (layoutType.equals("strip", ignoreCase = true)) {
-            if (isPortrait) GridCells.Fixed(2) else GridCells.Fixed(5)
-        } else {
-            if (isPortrait) GridCells.Fixed(1) else GridCells.Fixed(2)
-        }
-    }
-
     val prefs = remember { context.getSharedPreferences("photobooth_prefs", Context.MODE_PRIVATE) }
     var syncedJsonState by remember { mutableStateOf(prefs.getString("synced_frames_json", "") ?: "") }
     DisposableEffect(prefs) {
@@ -79,13 +69,63 @@ fun FrameSelectScreen(
         }
     }
 
-    // Load synced frames or get fallbacks
-    val frames = remember(layoutType, eventId, syncedJsonState) {
-        getFramesForLayout(context, layoutType, configManager, eventId)
+    // Resolve print flow from packageId
+    val api = remember { NetworkClient.getApi(configManager.backendUrl) }
+    var printFlow by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(packageId, configManager.backendUrl) {
+        if (packageId.isNotEmpty() && configManager.backendUrl.isNotEmpty()) {
+            try {
+                val response = api.getPackages()
+                if (response.isSuccessful && response.body() != null) {
+                    val pkg = response.body()!!.find { it.id == packageId }
+                    printFlow = pkg?.printFlow
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
-    val resolvedFrames = remember(frames) {
-        frames.map {
+    // Fetch AI Characters if color printing is selected
+    var aiCharacters by remember { mutableStateOf<List<CharacterDto>>(emptyList()) }
+    LaunchedEffect(printFlow, configManager.backendUrl) {
+        if (printFlow == "COLOR_PRINT" && configManager.backendUrl.isNotEmpty()) {
+            try {
+                val response = api.getCharacters()
+                if (response.isSuccessful && response.body() != null) {
+                    aiCharacters = response.body()!!
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // Load all event frames
+    val allFrames = remember(eventId, syncedJsonState) {
+        getAllEventFrames(context, configManager, eventId)
+    }
+
+    // Filter frames that support printFlow and resolve category
+    val resolvedFrames = remember(allFrames, printFlow) {
+        val compatible = allFrames.filter { f ->
+            val pf = f.printFlows ?: emptyList()
+            if (pf.isEmpty()) {
+                // Fallback legacy frames
+                if (printFlow == "RECEIPT") {
+                    f.type.equals("strip", ignoreCase = true)
+                } else if (printFlow == "ID_CARD") {
+                    f.type.equals("idcard", ignoreCase = true)
+                } else {
+                    true // Color supports everything by default
+                }
+            } else {
+                if (printFlow != null) pf.contains(printFlow) else true
+            }
+        }
+        
+        compatible.map {
             val cat = when {
                 !it.category.isNullOrEmpty() -> it.category
                 it.id.contains("classic", ignoreCase = true) || it.id.contains("black", ignoreCase = true) || it.id.contains("grid", ignoreCase = true) -> "Classic"
@@ -101,8 +141,11 @@ fun FrameSelectScreen(
         }
     }
 
-    val categories = remember(resolvedFrames) {
+    val categories = remember(resolvedFrames, aiCharacters) {
         val cats = resolvedFrames.map { it.category ?: "Classic" }.distinct().sorted().toMutableList()
+        if (aiCharacters.isNotEmpty()) {
+            cats.add("AI Karakter")
+        }
         if (cats.size > 1) {
             cats.add(0, "Semua")
         }
@@ -113,12 +156,8 @@ fun FrameSelectScreen(
         mutableStateOf(if (categories.contains("Semua")) "Semua" else categories.firstOrNull() ?: "")
     }
 
-    val filteredFrames = remember(resolvedFrames, selectedCategory) {
-        if (selectedCategory == "Semua" || selectedCategory.isEmpty()) {
-            resolvedFrames
-        } else {
-            resolvedFrames.filter { it.category == selectedCategory }
-        }
+    val columns = remember(selectedCategory, isPortrait) {
+        if (isPortrait) GridCells.Fixed(2) else GridCells.Fixed(4)
     }
 
     Scaffold(
@@ -185,30 +224,54 @@ fun FrameSelectScreen(
                 }
             }
 
-            if (filteredFrames.isEmpty()) {
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Belum ada bingkai yang tersedia.\nHarap sinkronkan bingkai di Menu Admin.",
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center,
-                        fontSize = 15.sp
-                    )
-                }
-            } else {
+            if (selectedCategory == "AI Karakter") {
                 LazyVerticalGrid(
                     columns = columns,
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(filteredFrames) { frame ->
-                        FrameCard(
-                            frame = frame,
-                            onClick = { onFrameSelected(frame.id) }
+                    items(aiCharacters) { character ->
+                        CharacterCard(
+                            character = character,
+                            onClick = { onFrameSelected("postcard_black", character.id) }
                         )
+                    }
+                }
+            } else {
+                val filteredFrames = remember(resolvedFrames, selectedCategory) {
+                    if (selectedCategory == "Semua" || selectedCategory.isEmpty()) {
+                        resolvedFrames
+                    } else {
+                        resolvedFrames.filter { it.category == selectedCategory }
+                    }
+                }
+                
+                if (filteredFrames.isEmpty()) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Belum ada bingkai dalam kategori ini.",
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            fontSize = 15.sp
+                        )
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = columns,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(filteredFrames) { frame ->
+                            FrameCard(
+                                frame = frame,
+                                onClick = { onFrameSelected(frame.id, "") }
+                            )
+                        }
                     }
                 }
             }
@@ -225,7 +288,6 @@ fun FrameCard(
     val context = LocalContext.current
     val frameFile = remember(frame.id) { File(context.cacheDir, "frames/${frame.id}.png") }
     
-    // Parse hex color safely
     val parsedColor = remember(frame.backgroundColor) {
         try {
             Color(android.graphics.Color.parseColor(frame.backgroundColor))
@@ -255,7 +317,6 @@ fun FrameCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Large dynamic preview box with silhouettes (completely transparent parent)
             BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
@@ -281,7 +342,6 @@ fun FrameCard(
                     previewHeight = constraintHeight
                 }
                 
-                // Actual frame strip container (background and shadow only match this exact frame size)
                 Box(
                     modifier = Modifier
                         .size(previewWidth, previewHeight)
@@ -289,7 +349,6 @@ fun FrameCard(
                         .clip(RoundedCornerShape(8.dp))
                         .background(parsedColor)
                 ) {
-                    // Draw slot silhouettes
                     frame.slots.forEach { slot ->
                         val slotLeft = (slot.x.toFloat() / frameWidth * previewWidth.value).dp
                         val slotTop = (slot.y.toFloat() / frameHeight * previewHeight.value).dp
@@ -312,7 +371,6 @@ fun FrameCard(
                         }
                     }
                     
-                    // Draw frame file on top
                     if (frameFile.exists()) {
                         AsyncImage(
                             model = frameFile,
@@ -336,7 +394,39 @@ fun FrameCard(
     }
 }
 
-// Logic to load frames from synced configurations or load fallbacks
+fun getAllEventFrames(context: Context, configManager: ConfigManager, eventId: String = "general"): List<Frame> {
+    val syncedJson = configManager.syncedFramesJson
+    val framesList = mutableListOf<Frame>()
+    
+    if (syncedJson.isNotEmpty()) {
+        try {
+            val config = Gson().fromJson(syncedJson, FrameConfig::class.java)
+            val filteredByEvent = if (eventId.isNotEmpty() && eventId != "general") {
+                config.frames.filter { it.eventId == eventId }
+            } else {
+                config.frames.filter { it.eventId == "general" || it.eventId.isNullOrEmpty() }
+            }
+            
+            if (filteredByEvent.isEmpty() && eventId != "general") {
+                framesList.addAll(config.frames.filter { it.eventId == "general" || it.eventId.isNullOrEmpty() })
+            } else {
+                framesList.addAll(filteredByEvent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    
+    if (framesList.isEmpty()) {
+        // Fallbacks
+        framesList.addAll(getFramesForLayout(context, "strip", configManager, eventId))
+        framesList.addAll(getFramesForLayout(context, "grid", configManager, eventId))
+        framesList.addAll(getFramesForLayout(context, "postcard", configManager, eventId))
+    }
+    
+    return framesList
+}
+
 fun getFramesForLayout(context: Context, layoutType: String, configManager: ConfigManager, eventId: String = "general"): List<Frame> {
     val syncedJson = configManager.syncedFramesJson
     val framesList = mutableListOf<Frame>()
@@ -361,7 +451,6 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
         }
     }
     
-    // Add default templates as fallback if empty
     if (framesList.isEmpty()) {
         val stripSlots = listOf(
             Slot(0, 50, 50, 500, 375),
@@ -453,261 +542,6 @@ fun getFramesForLayout(context: Context, layoutType: String, configManager: Conf
                     backgroundColor = "#0a0b10",
                     imageUrl = "frames/cyber_neon.png",
                     slots = stripSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "magazine_strip",
-                    name = "Vogue Magazine",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#ffffff",
-                    imageUrl = "frames/magazine_strip.png",
-                    slots = stripSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "magazine_sports",
-                    name = "Active Sports Magazine",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#0f172a",
-                    imageUrl = "frames/magazine_sports.png",
-                    slots = stripSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "magazine_music",
-                    name = "Rock & Rhythm Magazine",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#111111",
-                    imageUrl = "frames/magazine_music.png",
-                    slots = stripSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "magazine_gaming",
-                    name = "Pixel Game Magazine",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#1e1b4b",
-                    imageUrl = "frames/magazine_gaming.png",
-                    slots = stripSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "magazine_travel",
-                    name = "Wanderlust Explorer",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#f2efe9",
-                    imageUrl = "frames/magazine_travel.png",
-                    slots = stripSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "magazine_manga",
-                    name = "Manga Weekly",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#ffffff",
-                    imageUrl = "frames/magazine_manga.png",
-                    slots = stripSlots
-                )
-            )
-            
-            val receiptSlots = listOf(
-                Slot(0, 50, 100, 500, 375),
-                Slot(1, 50, 505, 500, 375),
-                Slot(2, 50, 910, 500, 375),
-                Slot(3, 50, 1315, 500, 375)
-            )
-            val cinemaSlots = listOf(
-                Slot(0, 55, 100, 490, 365),
-                Slot(1, 55, 495, 490, 365),
-                Slot(2, 55, 890, 490, 365),
-                Slot(3, 55, 1285, 490, 365)
-            )
-            
-            framesList.add(
-                Frame(
-                    id = "receipt_supermarket",
-                    name = "Supermarket Struk",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#f8f7f2",
-                    imageUrl = "frames/receipt_supermarket.png",
-                    slots = receiptSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "receipt_coffee",
-                    name = "Coffee Shop Invoice",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#fbf8f3",
-                    imageUrl = "frames/receipt_coffee.png",
-                    slots = receiptSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "receipt_cinema",
-                    name = "Retro Cinema Ticket",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#faf4e1",
-                    imageUrl = "frames/receipt_cinema.png",
-                    slots = cinemaSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "receipt_bank",
-                    name = "Minimalist Bank Slip",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#f4f6fa",
-                    imageUrl = "frames/receipt_bank.png",
-                    slots = receiptSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "receipt_clinic",
-                    name = "Clinic Prescription",
-                    type = "strip",
-                    width = 600,
-                    height = 2000,
-                    backgroundColor = "#eef2f6",
-                    imageUrl = "frames/receipt_clinic.png",
-                    slots = receiptSlots
-                )
-            )
-        } else if (layoutType.equals("grid", ignoreCase = true)) {
-            // Default 2x2 grid fallback
-            val gridSlots = listOf(
-                Slot(0, 50, 50, 440, 330),
-                Slot(1, 510, 50, 440, 330),
-                Slot(2, 50, 400, 440, 330),
-                Slot(3, 510, 400, 440, 330)
-            )
-            framesList.add(
-                Frame(
-                    id = "grid_black",
-                    name = "Grid Classic Black",
-                    type = "grid",
-                    width = 1000,
-                    height = 800,
-                    backgroundColor = "#121212",
-                    imageUrl = "frames/grid_black.png",
-                    slots = gridSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "grid_red",
-                    name = "Grid Creative Red",
-                    type = "grid",
-                    width = 1000,
-                    height = 800,
-                    backgroundColor = "#e63946",
-                    imageUrl = "frames/grid_red.png",
-                    slots = gridSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "grid_blue",
-                    name = "Grid Modern Blue",
-                    type = "grid",
-                    width = 1000,
-                    height = 800,
-                    backgroundColor = "#1d3557",
-                    imageUrl = "frames/grid_blue.png",
-                    slots = gridSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "grid_pink",
-                    name = "Grid Sweet Pink",
-                    type = "grid",
-                    width = 1000,
-                    height = 800,
-                    backgroundColor = "#ffb7b2",
-                    imageUrl = "frames/grid_pink.png",
-                    slots = gridSlots
-                )
-            )
-        } else if (layoutType.equals("postcard", ignoreCase = true)) {
-            // Default 1-shot postcard fallback
-            val postcardSlots = listOf(
-                Slot(0, 50, 50, 1100, 800)
-            )
-            framesList.add(
-                Frame(
-                    id = "postcard_black",
-                    name = "Postcard Classic Black",
-                    type = "postcard",
-                    width = 1200,
-                    height = 900,
-                    backgroundColor = "#121212",
-                    imageUrl = "frames/postcard_black.png",
-                    slots = postcardSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "postcard_red",
-                    name = "Postcard Creative Red",
-                    type = "postcard",
-                    width = 1200,
-                    height = 900,
-                    backgroundColor = "#e63946",
-                    imageUrl = "frames/postcard_red.png",
-                    slots = postcardSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "postcard_blue",
-                    name = "Postcard Modern Blue",
-                    type = "postcard",
-                    width = 1200,
-                    height = 900,
-                    backgroundColor = "#1d3557",
-                    imageUrl = "frames/postcard_blue.png",
-                    slots = postcardSlots
-                )
-            )
-            framesList.add(
-                Frame(
-                    id = "postcard_pink",
-                    name = "Postcard Sweet Pink",
-                    type = "postcard",
-                    width = 1200,
-                    height = 900,
-                    backgroundColor = "#ffb7b2",
-                    imageUrl = "frames/postcard_pink.png",
-                    slots = postcardSlots
                 )
             )
         }

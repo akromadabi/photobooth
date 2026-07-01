@@ -25,6 +25,8 @@ function loadSettings($file) {
         "midtrans_production_server_key" => "",
         "midtrans_production_client_key" => "",
         "midtrans_environment" => "sandbox",
+        "siapp_pay_token" => "",
+        "siapp_pay_merchant_name" => "",
         "fal_key" => "",
         "app_theme" => "NEON_RED",
         "thermal_contrast" => 1.2,
@@ -75,23 +77,96 @@ function hollowOutFrame($imagePath, $slots) {
     $img = imagecreatefrompng($imagePath);
     if (!$img) return;
     
-    // Enable alpha transparency blend mode
-    imagealphablending($img, false);
-    imagesavealpha($img, true);
+    // Convert palette/indexed image to truecolor if it is not truecolor
+    if (!imageistruecolor($img)) {
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $truecolorImg = imagecreatetruecolor($w, $h);
+        
+        imagealphablending($truecolorImg, false);
+        imagesavealpha($truecolorImg, true);
+        
+        imagecopy($truecolorImg, $img, 0, 0, 0, 0, $w, $h);
+        imagedestroy($img);
+        $img = $truecolorImg;
+    } else {
+        // Enable alpha transparency blend mode
+        imagealphablending($img, false);
+        imagesavealpha($img, true);
+    }
+    
+    // Check if the image already contains transparent pixels (to preserve custom transparent areas/stickers)
+    $w = imagesx($img);
+    $h = imagesy($img);
+    $hasTransparency = false;
+    $transparentCount = 0;
+    for ($x = 0; $x < $w; $x += 4) {
+        for ($y = 0; $y < $h; $y += 4) {
+            $colorIndex = imagecolorat($img, $x, $y);
+            $alpha = ($colorIndex >> 24) & 0x7F;
+            if ($alpha > 0) {
+                $transparentCount++;
+                if ($transparentCount > 100) {
+                    $hasTransparency = true;
+                    break 2;
+                }
+            }
+        }
+    }
+    
+    if ($hasTransparency) {
+        // The image already contains transparency (pre-hollowed with overlapping ornaments).
+        // Skip auto-hollowing to preserve overlapping elements.
+        imagedestroy($img);
+        return;
+    }
+    
+    // Define transparent color
+    $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
     
     foreach ($slots as $slot) {
-        $x = intval($slot['x']);
-        $y = intval($slot['y']);
-        $w = intval($slot['width']);
-        $h = intval($slot['height']);
+        $sx = intval($slot['x']);
+        $sy = intval($slot['y']);
+        $sw = intval($slot['width']);
+        $sh = intval($slot['height']);
         
-        if ($w <= 0 || $h <= 0) continue;
+        if ($sw <= 0 || $sh <= 0) continue;
         
-        // Define transparent color
-        $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
+        // Check if the slot area contains a significant amount of white/near-white pixels (> 5% of slot area)
+        $whiteCount = 0;
+        $totalChecked = 0;
+        for ($px = $sx; $px < $sx + $sw; $px += 5) {
+            for ($py = $sy; $py < $sy + $sh; $py += 5) {
+                $totalChecked++;
+                $rgb = imagecolorat($img, $px, $py);
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+                if ($r >= 240 && $g >= 240 && $b >= 240) {
+                    $whiteCount++;
+                }
+            }
+        }
         
-        // Carve slot region to transparent
-        imagefilledrectangle($img, $x, $y, $x + $w - 1, $y + $h - 1, $transparent);
+        $isWhiteSlot = ($totalChecked > 0 && ($whiteCount / $totalChecked) > 0.05);
+        
+        if ($isWhiteSlot) {
+            // Carve ONLY the white/near-white pixels to preserve colorful overlapping stickers
+            for ($px = $sx; $px < $sx + $sw; $px++) {
+                for ($py = $sy; $py < $sy + $sh; $py++) {
+                    $rgb = imagecolorat($img, $px, $py);
+                    $r = ($rgb >> 16) & 0xFF;
+                    $g = ($rgb >> 8) & 0xFF;
+                    $b = $rgb & 0xFF;
+                    if ($r >= 240 && $g >= 240 && $b >= 240) {
+                        imagesetpixel($img, $px, $py, $transparent);
+                    }
+                }
+            }
+        } else {
+            // Fallback: Carve the entire slot rectangle to transparent
+            imagefilledrectangle($img, $sx, $sy, $sx + $sw - 1, $sy + $sh - 1, $transparent);
+        }
     }
     
     // Save the PNG image back
@@ -414,6 +489,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $appTheme = isset($_POST['app_theme']) ? $_POST['app_theme'] : 'NEON_RED';
     $couponPromoText = isset($_POST['coupon_promo_text']) ? $_POST['coupon_promo_text'] : '';
     
+    $siappPayToken = isset($_POST['siapp_pay_token']) ? trim($_POST['siapp_pay_token']) : '';
+    $siappPayMerchantName = isset($_POST['siapp_pay_merchant_name']) ? trim($_POST['siapp_pay_merchant_name']) : '';
+    
     $settings = [
         "admin_pin" => $newPin ? $newPin : '1234',
         "countdown_seconds" => $countdown,
@@ -428,6 +506,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         "midtrans_production_server_key" => $midtransProductionServerKey,
         "midtrans_production_client_key" => $midtransProductionClientKey,
         "midtrans_environment" => $midtransEnv,
+        "siapp_pay_token" => $siappPayToken,
+        "siapp_pay_merchant_name" => $siappPayMerchantName,
         "fal_key" => $falKey,
         "app_theme" => $appTheme,
         "coupon_promo_text" => $couponPromoText,
@@ -946,6 +1026,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
             }
         }
 
+        $printFlows = isset($_POST['print_flows']) && is_array($_POST['print_flows']) ? $_POST['print_flows'] : [];
+        $printFlows = array_map(function($f) {
+            return preg_replace('/[^A-Z0-9_-]/', '', $f);
+        }, $printFlows);
+
         $newFrame = [
             "id" => $frameId,
             "name" => $frameName,
@@ -957,6 +1042,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_frame') {
             "image_url" => $targetFileUrl,
             "slots" => $slots,
             "category" => $category,
+            "print_flows" => $printFlows,
             "is_dynamic" => $isDynamic,
             "dynamic_elements" => $dynamicElements
         ];
@@ -3490,10 +3576,11 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="payment_mode">Mode Pembayaran</label>
+                                     <label for="payment_mode">Mode Pembayaran</label>
                                     <select id="payment_mode" name="payment_mode" class="form-select" onchange="toggleMidtransFields(this.value)">
                                         <option value="dummy" <?php echo $settings['payment_mode'] === 'dummy' ? 'selected' : ''; ?>>Simulasi (Dummy)</option>
                                         <option value="midtrans" <?php echo $settings['payment_mode'] === 'midtrans' ? 'selected' : ''; ?>>Midtrans (Gerbang Pembayaran)</option>
+                                        <option value="siapp_pay" <?php echo $settings['payment_mode'] === 'siapp_pay' ? 'selected' : ''; ?>>SiappPay (Gerbang Pembayaran QRIS)</option>
                                     </select>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
@@ -3538,6 +3625,22 @@ foreach ($weeklyStats as $date => $cnt) {
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- SiappPay Config Section -->
+                            <div id="siapppay-settings-section" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 24px; <?php echo $settings['payment_mode'] === 'siapp_pay' ? '' : 'display: none;'; ?>">
+                                <h4 style="margin-bottom: 16px; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-credit-card"></i> Pengaturan SiappPay</h4>
+                                <div class="form-grid">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="siapp_pay_token">API Token SiappPay</label>
+                                        <input type="password" id="siapp_pay_token" name="siapp_pay_token" class="form-input" value="<?php echo htmlspecialchars($settings['siapp_pay_token'] ?? ''); ?>" placeholder="SiappPaySecretToken...">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="siapp_pay_merchant_name">Nama Merchant (Opsional)</label>
+                                        <input type="text" id="siapp_pay_merchant_name" name="siapp_pay_merchant_name" class="form-input" value="<?php echo htmlspecialchars($settings['siapp_pay_merchant_name'] ?? ''); ?>" placeholder="Creative Studio">
+                                    </div>
+                                </div>
+                            </div>
+
                             <script>
                                 function toggleMidtransEnvFields(env) {
                                     const sandboxGroups = document.querySelectorAll('.sandbox-group');
@@ -3574,14 +3677,26 @@ foreach ($weeklyStats as $date => $cnt) {
                                 }
 
                                 function toggleMidtransFields(mode) {
-                                    const section = document.getElementById('midtrans-settings-section');
+                                    const midtransSection = document.getElementById('midtrans-settings-section');
+                                    const siapppaySection = document.getElementById('siapppay-settings-section');
+                                    
                                     if (mode === 'midtrans') {
-                                        section.style.display = 'block';
+                                        midtransSection.style.display = 'block';
+                                        siapppaySection.style.display = 'none';
                                         const env = document.getElementById('midtrans_environment').value;
                                         toggleMidtransEnvFields(env);
+                                        document.getElementById('siapp_pay_token').removeAttribute('required');
+                                    } else if (mode === 'siapp_pay') {
+                                        midtransSection.style.display = 'none';
+                                        siapppaySection.style.display = 'block';
+                                        document.getElementById('siapp_pay_token').setAttribute('required', 'required');
+                                        document.querySelectorAll('.sandbox-group input, .production-group input').forEach(input => {
+                                            input.removeAttribute('required');
+                                        });
                                     } else {
-                                        section.style.display = 'none';
-                                        // Remove required attributes from all inputs
+                                        midtransSection.style.display = 'none';
+                                        siapppaySection.style.display = 'none';
+                                        document.getElementById('siapp_pay_token').removeAttribute('required');
                                         document.querySelectorAll('.sandbox-group input, .production-group input').forEach(input => {
                                             input.removeAttribute('required');
                                         });
@@ -4385,6 +4500,73 @@ foreach ($weeklyStats as $date => $cnt) {
                                 </button>
                             </div>
                             
+                            <?php if (!empty($framesList)): ?>
+                            <?php
+                            // Extract unique categories from framesList dynamically
+                            $uniqueCategories = [];
+                            foreach ($framesList as $f) {
+                                $cat = isset($f['category']) ? trim($f['category']) : 'Classic';
+                                if ($cat !== '' && !in_array($cat, $uniqueCategories)) {
+                                    $uniqueCategories[] = $cat;
+                                }
+                            }
+                            sort($uniqueCategories);
+                            ?>
+                            <!-- Filter Bar -->
+                            <div class="filter-bar" style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; background: rgba(248, 250, 252, 0.6); padding: 18px; border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.8); align-items: flex-end;">
+                                <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Cari Bingkai</label>
+                                    <div style="position: relative; display: flex; align-items: center;">
+                                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; color: #94a3b8; font-size: 0.9rem;"></i>
+                                        <input type="text" id="filterFrameSearch" class="form-input" placeholder="Cari berdasarkan nama..." style="width: 100%; padding-left: 38px; background: white;">
+                                    </div>
+                                </div>
+                                <div style="width: 150px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Kategori</label>
+                                    <select id="filterFrameCategory" class="form-select" style="background: white; width: 100%;">
+                                        <option value="all">Semua Kategori</option>
+                                        <?php foreach ($uniqueCategories as $cat): ?>
+                                            <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div style="width: 140px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Format Bingkai</label>
+                                    <select id="filterFrameType" class="form-select" style="background: white; width: 100%;">
+                                        <option value="all">Semua Format</option>
+                                        <option value="strip">Vertical Strip</option>
+                                        <option value="grid">Collage Grid</option>
+                                        <option value="postcard">Postcard Card</option>
+                                    </select>
+                                </div>
+                                <div style="width: 130px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Sifat Bingkai</label>
+                                    <select id="filterFrameDynamic" class="form-select" style="background: white; width: 100%;">
+                                        <option value="all">Semua Sifat</option>
+                                        <option value="dynamic">Dinamis</option>
+                                        <option value="static">Statis</option>
+                                    </select>
+                                </div>
+                                <div style="width: 180px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Sesi Event</label>
+                                    <select id="filterFrameEvent" class="form-select" style="background: white; width: 100%;">
+                                        <option value="all">Semua Event</option>
+                                        <option value="general">Umum (Default)</option>
+                                        <?php foreach ($eventsList as $evt): ?>
+                                            <?php if ($evt['id'] !== 'general'): ?>
+                                                <option value="<?php echo htmlspecialchars($evt['id']); ?>"><?php echo htmlspecialchars($evt['name']); ?></option>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div style="height: 42px; display: flex; align-items: center;">
+                                    <button class="btn-secondary" onclick="resetFrameFilters()" style="height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; font-weight: 600;">
+                                        <i class="fa-solid fa-arrows-rotate" style="font-size: 0.85rem;"></i> Reset
+                                    </button>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            
                             <div class="frames-grid">
                                 <?php if (empty($framesList)): ?>
                                     <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 60px 40px;">
@@ -4404,7 +4586,31 @@ foreach ($weeklyStats as $date => $cnt) {
                                             </div>
                                             <div class="frame-card-meta">
                                                 <div class="frame-card-title"><?php echo htmlspecialchars($f['name']); ?></div>
-                                                <div class="frame-card-tag">Tipe: <b><?php echo htmlspecialchars(ucfirst($f['type'])); ?></b></div>
+                                                <div class="frame-card-tag">Format: <b>
+                                                    <?php 
+                                                        if ($f['type'] === 'strip') echo 'Vertical Strip';
+                                                        elseif ($f['type'] === 'grid') echo 'Collage Grid';
+                                                        elseif ($f['type'] === 'postcard') echo 'Postcard Card';
+                                                        else echo htmlspecialchars(ucfirst($f['type']));
+                                                    ?></b>
+                                                </div>
+                                                <div class="frame-card-tag">Kategori: <b><?php echo htmlspecialchars($f['category'] ?? 'Classic'); ?></b></div>
+                                                <div class="frame-card-tag">Cetak: <b>
+                                                    <?php 
+                                                        $pf = $f['print_flows'] ?? [];
+                                                        if (empty($pf)) {
+                                                            if ($f['type'] === 'strip') $pf = ['RECEIPT', 'COLOR_PRINT'];
+                                                            else $pf = ['COLOR_PRINT'];
+                                                        }
+                                                        $pfNames = [];
+                                                        foreach ($pf as $flow) {
+                                                            if ($flow === 'RECEIPT') $pfNames[] = 'Struk';
+                                                            elseif ($flow === 'COLOR_PRINT') $pfNames[] = 'Warna';
+                                                            elseif ($flow === 'ID_CARD') $pfNames[] = 'ID Card';
+                                                        }
+                                                        echo htmlspecialchars(implode(', ', $pfNames));
+                                                    ?></b>
+                                                </div>
                                                 <div class="frame-card-tag">Sesi Event: <b>
                                                     <?php 
                                                         $evtName = "Umum (Default)";
@@ -4416,11 +4622,6 @@ foreach ($weeklyStats as $date => $cnt) {
                                                         }
                                                         echo htmlspecialchars($evtName);
                                                     ?></b>
-                                                </div>
-                                                <div class="frame-card-tag" style="margin-top: 4px;">
-                                                    <span class="event-badge-code" style="font-size: 0.75rem; background-color: rgba(79, 70, 229, 0.1); color: var(--primary); font-weight: 600; padding: 4px 8px; border-radius: 6px;">
-                                                        <?php echo count($f['slots']); ?> Foto
-                                                    </span>
                                                 </div>
                                             </div>
                                             <div class="frame-card-actions">
@@ -4480,12 +4681,27 @@ foreach ($weeklyStats as $date => $cnt) {
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Tipe Tata Letak (Layout Type)</label>
+                                            <label>Format Bingkai (Frame Format)</label>
                                             <select id="editorLayoutType" name="layout_type" class="form-input" style="background: white;" onchange="onLayoutTypeChange()">
-                                                <option value="strip">Strip (Vertical Strip - 4 Foto)</option>
-                                                <option value="grid">Grid (2x2 Grid Collage - 4 Foto)</option>
-                                                <option value="postcard">Card (Postcard / 1-Shot - 1 Foto)</option>
+                                                <option value="strip">Vertical Strip</option>
+                                                <option value="grid">Collage Grid</option>
+                                                <option value="postcard">Postcard Card</option>
                                             </select>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label style="font-weight: 600;">Jenis Cetak Didukung (Supported Print Flows)</label>
+                                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                                                <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; color: var(--text-main);">
+                                                    <input type="checkbox" name="print_flows[]" value="RECEIPT" id="flowReceiptCheckbox"> Receipt Termal (Kertas Struk)
+                                                </label>
+                                                <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; color: var(--text-main);">
+                                                    <input type="checkbox" name="print_flows[]" value="COLOR_PRINT" id="flowColorCheckbox"> Cetak Warna (Foto Strip/Collage)
+                                                </label>
+                                                <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; color: var(--text-main);">
+                                                    <input type="checkbox" name="print_flows[]" value="ID_CARD" id="flowIdCardCheckbox"> Cetak ID Card (Kartu PVC)
+                                                </label>
+                                            </div>
                                         </div>
                                         
                                         <div class="form-group">
@@ -4518,6 +4734,10 @@ foreach ($weeklyStats as $date => $cnt) {
                                                 <option value="Magazine">Magazine</option>
                                                 <option value="Receipt">Receipt</option>
                                                 <option value="Dynamic">Dynamic</option>
+                                                <option value="Funny">Funny</option>
+                                                <option value="Newspaper">Newspaper</option>
+                                                <option value="Cute">Cute</option>
+                                                <option value="Romance">Romance</option>
                                                 <option value="__custom__">-- Kustom Baru --</option>
                                             </select>
                                             <input type="hidden" id="editorFrameCategory" name="category" value="Classic">
@@ -5079,7 +5299,7 @@ foreach ($weeklyStats as $date => $cnt) {
                         </h4>
                         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem;">
                             <div>ID Bingkai: <b id="zoomFrameId" style="font-family: monospace; color: var(--primary);"></b></div>
-                            <div>Tipe: <b id="zoomFrameType"></b></div>
+                            <div>Format: <b id="zoomFrameType"></b></div>
                             <div>Event: <b id="zoomFrameEvent"></b></div>
                             <div>Jumlah Slot: <b id="zoomFrameSlots"></b></div>
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -5620,10 +5840,133 @@ foreach ($weeklyStats as $date => $cnt) {
             });
         }
 
-        document.addEventListener('DOMContentLoaded', initListFrameOverlays);
+        function applyFrameFilters() {
+            const searchInput = document.getElementById('filterFrameSearch');
+            const categorySelect = document.getElementById('filterFrameCategory');
+            const typeSelect = document.getElementById('filterFrameType');
+            const dynamicSelect = document.getElementById('filterFrameDynamic');
+            const eventSelect = document.getElementById('filterFrameEvent');
+            if (!searchInput || !categorySelect || !typeSelect || !dynamicSelect || !eventSelect) return;
+
+            const searchVal = searchInput.value.toLowerCase().trim();
+            const categoryVal = categorySelect.value;
+            const typeVal = typeSelect.value;
+            const dynamicVal = dynamicSelect.value;
+            const eventVal = eventSelect.value;
+
+            const cards = document.querySelectorAll('.frame-card-admin');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const frameDataStr = card.getAttribute('data-frame');
+                if (!frameDataStr) return;
+                
+                let frame;
+                try {
+                    frame = JSON.parse(frameDataStr);
+                } catch(e) {
+                    return;
+                }
+
+                // Match search query
+                const matchSearch = !searchVal || frame.name.toLowerCase().includes(searchVal);
+
+                // Match category
+                const frameCategory = frame.category || 'Classic';
+                const matchCategory = categoryVal === 'all' || frameCategory === categoryVal;
+                
+                // Match layout type
+                const matchType = typeVal === 'all' || frame.type === typeVal;
+
+                // Match dynamic/static nature
+                const isFrameDynamic = frame.is_dynamic ? true : false;
+                let matchDynamic = true;
+                if (dynamicVal === 'dynamic') {
+                    matchDynamic = isFrameDynamic === true;
+                } else if (dynamicVal === 'static') {
+                    matchDynamic = isFrameDynamic === false;
+                }
+
+                // Match event
+                const frameEventId = frame.event_id || 'general';
+                const matchEvent = eventVal === 'all' || frameEventId === eventVal;
+
+                if (matchSearch && matchCategory && matchType && matchDynamic && matchEvent) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                    // Re-render overlay when shown to ensure layout calculations are accurate
+                    if (typeof renderListFrameOverlay === 'function') {
+                        renderListFrameOverlay(card);
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Handle "no frames match" placeholder
+            let emptyPlaceholder = document.getElementById('frameFilterEmptyPlaceholder');
+            if (visibleCount === 0) {
+                if (!emptyPlaceholder) {
+                    emptyPlaceholder = document.createElement('div');
+                    emptyPlaceholder.id = 'frameFilterEmptyPlaceholder';
+                    emptyPlaceholder.style.cssText = 'grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 60px 40px;';
+                    emptyPlaceholder.innerHTML = `
+                        <i class="fa-regular fa-image" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 12px; display: block;"></i>
+                        <span style="font-weight: 600; display: block;">Tidak ada bingkai yang cocok dengan filter Anda.</span>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Coba ubah kata kunci atau pilihan filter Anda.</p>
+                    `;
+                    const grid = document.querySelector('.frames-grid');
+                    if (grid) {
+                        grid.appendChild(emptyPlaceholder);
+                    }
+                } else {
+                    emptyPlaceholder.style.display = 'block';
+                }
+            } else {
+                if (emptyPlaceholder) {
+                    emptyPlaceholder.style.display = 'none';
+                }
+            }
+        }
+
+        function resetFrameFilters() {
+            const searchInput = document.getElementById('filterFrameSearch');
+            const categorySelect = document.getElementById('filterFrameCategory');
+            const typeSelect = document.getElementById('filterFrameType');
+            const dynamicSelect = document.getElementById('filterFrameDynamic');
+            const eventSelect = document.getElementById('filterFrameEvent');
+            if (searchInput) searchInput.value = '';
+            if (categorySelect) categorySelect.value = 'all';
+            if (typeSelect) typeSelect.value = 'all';
+            if (dynamicSelect) dynamicSelect.value = 'all';
+            if (eventSelect) eventSelect.value = 'all';
+            applyFrameFilters();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initListFrameOverlays();
+            
+            // Set up filter event listeners
+            const searchInput = document.getElementById('filterFrameSearch');
+            const categorySelect = document.getElementById('filterFrameCategory');
+            const typeSelect = document.getElementById('filterFrameType');
+            const dynamicSelect = document.getElementById('filterFrameDynamic');
+            const eventSelect = document.getElementById('filterFrameEvent');
+
+            if (searchInput) searchInput.addEventListener('input', applyFrameFilters);
+            if (categorySelect) categorySelect.addEventListener('change', applyFrameFilters);
+            if (typeSelect) typeSelect.addEventListener('change', applyFrameFilters);
+            if (dynamicSelect) dynamicSelect.addEventListener('change', applyFrameFilters);
+            if (eventSelect) eventSelect.addEventListener('change', applyFrameFilters);
+        });
+
         window.addEventListener('resize', () => {
             const cards = document.querySelectorAll('.frame-card-admin');
-            cards.forEach(renderListFrameOverlay);
+            cards.forEach(card => {
+                if (card.style.display !== 'none') {
+                    renderListFrameOverlay(card);
+                }
+            });
         });
 
         // Zoom Frame Modal Handlers
@@ -5640,7 +5983,11 @@ foreach ($weeklyStats as $date => $cnt) {
             
             // Set metadata
             document.getElementById('zoomFrameId').innerText = frame.id;
-            document.getElementById('zoomFrameType').innerText = frame.type.toUpperCase();
+            let fmtName = frame.type.toUpperCase();
+            if (frame.type === 'strip') fmtName = 'VERTICAL STRIP';
+            else if (frame.type === 'grid') fmtName = 'COLLAGE GRID';
+            else if (frame.type === 'postcard') fmtName = 'POSTCARD CARD';
+            document.getElementById('zoomFrameType').innerText = fmtName;
             
             // Event Name
             let evtName = "Umum (Default)";
@@ -5949,6 +6296,11 @@ foreach ($weeklyStats as $date => $cnt) {
                 document.getElementById('editorFrameCategoryCustomGroup').style.display = 'none';
             }
             document.getElementById('editorFrameCategory').value = 'Classic';
+            
+            // Reset Print Flow checkboxes
+            document.getElementById('flowReceiptCheckbox').checked = true;
+            document.getElementById('flowColorCheckbox').checked = true;
+            document.getElementById('flowIdCardCheckbox').checked = false;
             document.getElementById('editorFrameIsDynamic').checked = false;
             if (typeof toggleDynamicFields === 'function') {
                 toggleDynamicFields(false);
@@ -5979,7 +6331,7 @@ foreach ($weeklyStats as $date => $cnt) {
         function hideFrameEditor() {
             document.getElementById('frameEditorView').style.display = 'none';
             document.getElementById('framesListView').style.display = 'block';
-            initListFrameOverlays();
+            applyFrameFilters();
         }
 
         function clearSlots() {
@@ -6405,8 +6757,14 @@ foreach ($weeklyStats as $date => $cnt) {
             for (let y = 0; y < h; y++) {
                 let transCount = 0;
                 for (let x = 0; x < w; x++) {
+                    const r = data[(y * w + x) * 4];
+                    const g = data[(y * w + x) * 4 + 1];
+                    const b = data[(y * w + x) * 4 + 2];
                     const alpha = data[(y * w + x) * 4 + 3];
-                    if (alpha < 80) transCount++; // alpha < 80 threshold is very safe
+                    // Detect transparent OR white/near-white pixels as slot area
+                    if (alpha < 80 || (r >= 240 && g >= 240 && b >= 240)) {
+                        transCount++;
+                    }
                 }
                 rowTransparency[y] = transCount / w;
             }
@@ -6456,8 +6814,14 @@ foreach ($weeklyStats as $date => $cnt) {
                 for (let x = 0; x < w; x++) {
                     let transCount = 0;
                     for (let y = yStart; y < yEnd; y++) {
+                        const r = data[(y * w + x) * 4];
+                        const g = data[(y * w + x) * 4 + 1];
+                        const b = data[(y * w + x) * 4 + 2];
                         const alpha = data[(y * w + x) * 4 + 3];
-                        if (alpha < 80) transCount++;
+                        // Detect transparent OR white/near-white pixels as slot area
+                        if (alpha < 80 || (r >= 240 && g >= 240 && b >= 240)) {
+                            transCount++;
+                        }
                     }
                     colTransparency[x] = transCount / segHeight;
                 }
@@ -7148,6 +7512,20 @@ function editFrame(frame) {
             document.getElementById('editorFrameCategorySelect').value = selectVal;
             document.getElementById('editorFrameCategoryCustomGroup').style.display = customGroupDisplay;
             document.getElementById('editorFrameCategory').value = cat;
+            
+            // Populate print flows
+            var printFlows = frame.print_flows || [];
+            if (printFlows.length === 0) {
+                // Fallback mapping based on legacy frame type
+                if (frame.type === 'strip') {
+                    printFlows = ['RECEIPT', 'COLOR_PRINT'];
+                } else if (frame.type === 'grid' || frame.type === 'postcard') {
+                    printFlows = ['COLOR_PRINT'];
+                }
+            }
+            document.getElementById('flowReceiptCheckbox').checked = printFlows.includes('RECEIPT');
+            document.getElementById('flowColorCheckbox').checked = printFlows.includes('COLOR_PRINT');
+            document.getElementById('flowIdCardCheckbox').checked = printFlows.includes('ID_CARD');
             
             // Populate dynamic elements
             var isDyn = frame.is_dynamic ? true : false;

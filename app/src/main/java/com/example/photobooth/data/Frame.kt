@@ -30,6 +30,7 @@ data class Frame(
     @SerializedName("slots") val slots: List<Slot>,
     @SerializedName("event_id") val eventId: String? = "general",
     @SerializedName("category") val category: String? = "Classic",
+    @SerializedName("print_flows") val printFlows: List<String>? = null,
     @SerializedName("is_dynamic") val isDynamic: Boolean? = false,
     @SerializedName("dynamic_elements") val dynamicElements: DynamicElements? = null
 )

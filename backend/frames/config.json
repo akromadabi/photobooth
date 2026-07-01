@@ -1,5 +1,5 @@
 {
-    "version": 23,
+    "version": 40,
     "events": [
         {
             "id": "general",
@@ -110,7 +110,12 @@
                         "align": "center"
                     }
                 ]
-            }
+            },
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Classic"
         },
         {
             "id": "classic_strip_black",
@@ -150,47 +155,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
-        },
-        {
-            "id": "creative_strip_red",
-            "name": "Creative Red",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#e63946",
-            "image_url": "frames\/creative_strip_red.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 50,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 455,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 860,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1265,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Classic"
         },
         {
             "id": "newspaper_strip",
@@ -230,7 +200,302 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Classic"
+        },
+        {
+            "id": "newspaper_four",
+            "name": "Newspaper 4-Foto",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2200,
+            "background_color": "#e8e4db",
+            "image_url": "frames\/newspaper_four.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 330,
+                    "width": 499,
+                    "height": 376
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 724,
+                    "width": 499,
+                    "height": 376
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1118,
+                    "width": 499,
+                    "height": 376
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1517,
+                    "width": 499,
+                    "height": 376
+                }
+            ],
+            "category": "Classic",
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "is_dynamic": false,
+            "dynamic_elements": null
+        },
+        {
+            "id": "newspaper_birthday",
+            "name": "Newspaper Birthday",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2200,
+            "background_color": "#eae6df",
+            "image_url": "frames\/newspaper_birthday.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 330,
+                    "width": 499,
+                    "height": 376
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 724,
+                    "width": 499,
+                    "height": 376
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1118,
+                    "width": 499,
+                    "height": 376
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1517,
+                    "width": 499,
+                    "height": 376
+                }
+            ],
+            "category": "Classic",
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "is_dynamic": true,
+            "dynamic_elements": {
+                "logo": {
+                    "x": 37,
+                    "y": 1007,
+                    "width": 180,
+                    "height": 166,
+                    "align": "center"
+                },
+                "texts": [
+                    {
+                        "type": "event_subtitle",
+                        "x": 300,
+                        "y": 200,
+                        "font_size": 18,
+                        "font_style": "bold_italic",
+                        "color": "#282828",
+                        "align": "center"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 410,
+                        "y": 2019,
+                        "font_size": 11,
+                        "font_style": "bold",
+                        "color": "#282828",
+                        "align": "center"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "newspaper_post",
+            "name": "Newspaper Post",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2200,
+            "background_color": "#eae6df",
+            "image_url": "frames\/newspaper_post.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 310,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 705,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1100,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1495,
+                    "width": 500,
+                    "height": 375
+                }
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Classic",
+            "is_dynamic": true,
+            "dynamic_elements": {
+                "logo": {
+                    "x": 440,
+                    "y": 1780,
+                    "width": 120,
+                    "height": 120,
+                    "align": "center"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 300,
+                        "y": 185,
+                        "font_size": 32,
+                        "font_style": "bold",
+                        "color": "#282828",
+                        "align": "center"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 300,
+                        "y": 230,
+                        "font_size": 16,
+                        "font_style": "italic",
+                        "color": "#282828",
+                        "align": "center"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 300,
+                        "y": 1980,
+                        "font_size": 18,
+                        "font_style": "bold",
+                        "color": "#282828",
+                        "align": "center"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "receipt_invoice",
+            "name": "Invoice Premium",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2400,
+            "background_color": "#f5f5f5",
+            "image_url": "frames\/receipt_invoice.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 360,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 775,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1190,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1605,
+                    "width": 500,
+                    "height": 375
+                }
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Receipt",
+            "is_dynamic": true,
+            "dynamic_elements": {
+                "logo": {
+                    "x": 50,
+                    "y": 35,
+                    "width": 75,
+                    "height": 55,
+                    "align": "left"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 85,
+                        "y": 235,
+                        "font_size": 11,
+                        "font_style": "bold",
+                        "color": "#282828",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 180,
+                        "y": 2245,
+                        "font_size": 9,
+                        "font_style": "bold",
+                        "color": "#282828",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 300,
+                        "y": 2320,
+                        "font_size": 10,
+                        "font_style": "bold",
+                        "color": "#282828",
+                        "align": "center"
+                    }
+                ]
+            }
         },
         {
             "id": "magazine_strip",
@@ -270,87 +535,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
-        },
-        {
-            "id": "retro_film_strip",
-            "name": "35mm Analog Film",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#1c1917",
-            "image_url": "frames\/retro_film_strip.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 80,
-                    "y": 80,
-                    "width": 440,
-                    "height": 330
-                },
-                {
-                    "index": 1,
-                    "x": 80,
-                    "y": 475,
-                    "width": 440,
-                    "height": 330
-                },
-                {
-                    "index": 2,
-                    "x": 80,
-                    "y": 870,
-                    "width": 440,
-                    "height": 330
-                },
-                {
-                    "index": 3,
-                    "x": 80,
-                    "y": 1265,
-                    "width": 440,
-                    "height": 330
-                }
-            ]
-        },
-        {
-            "id": "TES",
-            "name": "TES",
-            "type": "strip",
-            "event_id": "general",
-            "width": 750,
-            "height": 2250,
-            "background_color": "#ffffff",
-            "image_url": "frames\/TES.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 42,
-                    "y": 52,
-                    "width": 661,
-                    "height": 427
-                },
-                {
-                    "index": 1,
-                    "x": 42,
-                    "y": 525,
-                    "width": 661,
-                    "height": 427
-                },
-                {
-                    "index": 2,
-                    "x": 42,
-                    "y": 994,
-                    "width": 661,
-                    "height": 427
-                },
-                {
-                    "index": 3,
-                    "x": 42,
-                    "y": 1467,
-                    "width": 661,
-                    "height": 427
-                }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Magazine"
         },
         {
             "id": "seoul_aesthetic",
@@ -390,7 +580,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Aesthetic"
         },
         {
             "id": "love_factory",
@@ -430,7 +625,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Y2K"
         },
         {
             "id": "cyber_neon",
@@ -470,7 +670,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Y2K"
         },
         {
             "id": "receipt_supermarket",
@@ -510,47 +715,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
-        },
-        {
-            "id": "receipt_coffee",
-            "name": "Coffee Shop Invoice",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#fbf8f3",
-            "image_url": "frames\/receipt_coffee.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 100,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 505,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 910,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1315,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Receipt"
         },
         {
             "id": "receipt_cinema",
@@ -590,7 +760,12 @@
                     "width": 490,
                     "height": 365
                 }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Receipt"
         },
         {
             "id": "receipt_bank",
@@ -630,207 +805,12 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
-        },
-        {
-            "id": "receipt_clinic",
-            "name": "Clinic Prescription",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#eef2f6",
-            "image_url": "frames\/receipt_clinic.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 100,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 505,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 910,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1315,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
-        },
-        {
-            "id": "magazine_sports",
-            "name": "Active Sports Magazine",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#0f172a",
-            "image_url": "frames\/magazine_sports.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 50,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 454,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 858,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1267,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
-        },
-        {
-            "id": "magazine_music",
-            "name": "Rock & Rhythm Magazine",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#111111",
-            "image_url": "frames\/magazine_music.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 50,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 454,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 858,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1267,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
-        },
-        {
-            "id": "magazine_gaming",
-            "name": "Pixel Game Magazine",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#1e1b4b",
-            "image_url": "frames\/magazine_gaming.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 50,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 454,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 858,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1267,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
-        },
-        {
-            "id": "magazine_travel",
-            "name": "Wanderlust Explorer",
-            "type": "strip",
-            "event_id": "general",
-            "width": 600,
-            "height": 2000,
-            "background_color": "#f2efe9",
-            "image_url": "frames\/magazine_travel.png",
-            "slots": [
-                {
-                    "index": 0,
-                    "x": 50,
-                    "y": 50,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 1,
-                    "x": 50,
-                    "y": 454,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 2,
-                    "x": 50,
-                    "y": 858,
-                    "width": 500,
-                    "height": 375
-                },
-                {
-                    "index": 3,
-                    "x": 50,
-                    "y": 1267,
-                    "width": 500,
-                    "height": 375
-                }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Receipt"
         },
         {
             "id": "magazine_manga",
@@ -870,7 +850,89 @@
                     "width": 500,
                     "height": 375
                 }
-            ]
+            ],
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Magazine"
+        },
+        {
+            "id": "purple_cute",
+            "name": "Purple Cute",
+            "type": "strip",
+            "event_id": "general",
+            "width": 795,
+            "height": 2250,
+            "background_color": "#ffffff",
+            "image_url": "frames\/purple_cute.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 71,
+                    "y": 164,
+                    "width": 652,
+                    "height": 459
+                },
+                {
+                    "index": 1,
+                    "x": 72,
+                    "y": 722,
+                    "width": 652,
+                    "height": 459
+                },
+                {
+                    "index": 2,
+                    "x": 70,
+                    "y": 1284,
+                    "width": 653,
+                    "height": 459
+                }
+            ],
+            "category": "Creative",
+            "print_flows": [],
+            "is_dynamic": false,
+            "dynamic_elements": null
+        },
+        {
+            "id": "cream_flower",
+            "name": "Cream Flower",
+            "type": "strip",
+            "event_id": "general",
+            "width": 591,
+            "height": 1772,
+            "background_color": "#ffffff",
+            "image_url": "frames\/cream_flower.png",
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 78,
+                    "y": 96,
+                    "width": 432,
+                    "height": 450
+                },
+                {
+                    "index": 1,
+                    "x": 78,
+                    "y": 594,
+                    "width": 432,
+                    "height": 450
+                },
+                {
+                    "index": 2,
+                    "x": 78,
+                    "y": 1096,
+                    "width": 436,
+                    "height": 450
+                }
+            ],
+            "category": "Classic",
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "is_dynamic": false,
+            "dynamic_elements": null
         }
     ]
 }

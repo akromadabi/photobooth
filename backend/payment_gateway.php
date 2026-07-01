@@ -26,6 +26,86 @@ function saveQueueState($file, $state) {
 $rawBody = file_get_contents('php://input');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action']) && !empty($rawBody)) {
     $notification = json_decode($rawBody, true);
+    
+    // SiappPay Webhook / Notification Handler
+    if ($notification && isset($notification['token']) && isset($notification['message'])) {
+        header('Content-Type: application/json');
+        $settingsFile = __DIR__ . '/settings.json';
+        $settings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
+        $siappPayToken = isset($settings['siapp_pay_token']) ? $settings['siapp_pay_token'] : '';
+        
+        if ($siappPayToken && $notification['token'] === $siappPayToken) {
+            $message = $notification['message'];
+            if (preg_match('/Rp\.?\s*([0-9.,]+)/i', $message, $matches)) {
+                $amount_str = preg_replace('/[^0-9]/', '', preg_replace('/[,.]00$/', '', $matches[1]));
+                $amount_received = intval($amount_str);
+                
+                if ($amount_received > 0) {
+                    $state = getQueueState($queueFile);
+                    $found = false;
+                    $packagesFile = __DIR__ . '/packages.json';
+                    
+                    foreach ($state['queue_list'] as &$item) {
+                        if ($item['status'] === 'UNPAID') {
+                            $expectedAmount = isset($item['siapp_pay_total_amount']) ? intval($item['siapp_pay_total_amount']) : 0;
+                            
+                            if ($expectedAmount === 0 && isset($item['package_id'])) {
+                                $packages = [];
+                                if (file_exists($packagesFile)) {
+                                    $packages = json_decode(file_get_contents($packagesFile), true);
+                                }
+                                foreach ($packages as $pkg) {
+                                    if ($pkg['id'] === $item['package_id']) {
+                                        $expectedAmount = intval($pkg['price']);
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if ($expectedAmount === $amount_received) {
+                                $item['status'] = 'WAITING';
+                                
+                                $activeExists = false;
+                                foreach ($state['queue_list'] as $q) {
+                                    if ($q['status'] === 'ACTIVE' || $q['status'] === 'CAPTURING') {
+                                        $activeExists = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!$activeExists) {
+                                    $item['status'] = 'ACTIVE';
+                                    $state['active_queue_number'] = $item['queue_number'];
+                                    $state['active_session_id'] = $item['session_id'];
+                                }
+                                
+                                $found = true;
+                                break;
+                            }
+                        }
+                    }
+                    unset($item);
+                    
+                    if ($found) {
+                        saveQueueState($queueFile, $state);
+                        echo json_encode(['status' => 'OK', 'message' => 'Status updated successfully']);
+                    } else {
+                        echo json_encode(['status' => 'ERROR', 'message' => 'No matching unpaid order found for amount ' . $amount_received]);
+                    }
+                } else {
+                    echo json_encode(['status' => 'ERROR', 'message' => 'Invalid amount in message']);
+                }
+            } else {
+                echo json_encode(['status' => 'ERROR', 'message' => 'No amount found in message']);
+            }
+            exit;
+        } else {
+            http_response_code(401);
+            echo json_encode(['status' => 'ERROR', 'message' => 'Unauthorized']);
+            exit;
+        }
+    }
+
     if ($notification && isset($notification['order_id']) && isset($notification['transaction_status']) && isset($notification['signature_key'])) {
         header('Content-Type: application/json');
         
@@ -106,6 +186,73 @@ if (isset($_POST['action']) && $_POST['action'] === 'check_midtrans_status') {
     if ($orderId) {
         $settingsFile = __DIR__ . '/settings.json';
         $settings = file_exists($settingsFile) ? json_decode(file_get_contents($settingsFile), true) : [];
+        
+        if (isset($settings['payment_mode']) && $settings['payment_mode'] === 'siapp_pay') {
+            $token = isset($settings['siapp_pay_token']) ? $settings['siapp_pay_token'] : '';
+            if (!$token) {
+                echo json_encode(['success' => false, 'message' => 'Token SiappPay tidak dikonfigurasi.']);
+                exit;
+            }
+            
+            $statusUrl = "https://pay.siapp.in/status.php?action=check_status&order_id=" . urlencode($orderId) . "&token=" . urlencode($token);
+            
+            $ch = curl_init($statusUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($httpCode === 200) {
+                $resData = json_decode($response, true);
+                $txStatus = isset($resData['status']) ? $resData['status'] : '';
+                
+                if (isset($resData['success']) && $resData['success'] == true && $txStatus === 'PAID') {
+                    $state = getQueueState($queueFile);
+                    $found = false;
+                    
+                    foreach ($state['queue_list'] as &$item) {
+                        if ($item['session_id'] === $orderId) {
+                            if ($item['status'] === 'UNPAID') {
+                                $item['status'] = 'WAITING';
+                                
+                                $activeExists = false;
+                                foreach ($state['queue_list'] as $q) {
+                                    if ($q['status'] === 'ACTIVE' || $q['status'] === 'CAPTURING') {
+                                        $activeExists = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!$activeExists) {
+                                    $item['status'] = 'ACTIVE';
+                                    $state['active_queue_number'] = $item['queue_number'];
+                                    $state['active_session_id'] = $item['session_id'];
+                                }
+                            }
+                            $found = true;
+                            break;
+                        }
+                    }
+                    unset($item);
+                    
+                    if ($found) {
+                        saveQueueState($queueFile, $state);
+                        echo json_encode(['success' => true, 'status' => 'PAID', 'message' => 'Pembayaran lunas terverifikasi!']);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Transaksi tidak ditemukan dalam antrean.']);
+                    }
+                } else {
+                    $readableStatus = ($txStatus === 'PAID') ? 'Lunas' : 'Menunggu Pembayaran';
+                    echo json_encode(['success' => true, 'status' => 'PENDING', 'message' => 'Status: ' . $readableStatus]);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Gagal memeriksa status ke SiappPay (HTTP ' . $httpCode . ').']);
+            }
+            exit;
+        }
+
         $isProduction = isset($settings['midtrans_environment']) && $settings['midtrans_environment'] === 'production';
         
         if ($isProduction) {
@@ -333,7 +480,9 @@ $defaults = [
     "midtrans_sandbox_client_key" => "",
     "midtrans_production_server_key" => "",
     "midtrans_production_client_key" => "",
-    "midtrans_environment" => "sandbox"
+    "midtrans_environment" => "sandbox",
+    "siapp_pay_token" => "",
+    "siapp_pay_merchant_name" => ""
 ];
 $settings = array_merge($defaults, (array)$settings);
 
@@ -451,6 +600,70 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             }
         }
         curl_close($ch);
+    }
+}
+
+$siappPayQrUrl = '';
+$siappPayError = '';
+$siappPayTotalAmount = 0;
+
+if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === 'UNPAID') {
+    if (isset($orderQueueItem['siapp_pay_qr_url']) && $orderQueueItem['siapp_pay_qr_url']) {
+        $siappPayQrUrl = $orderQueueItem['siapp_pay_qr_url'];
+        $siappPayTotalAmount = isset($orderQueueItem['siapp_pay_total_amount']) ? $orderQueueItem['siapp_pay_total_amount'] : intval($selectedPackage['price']);
+    } else {
+        $token = $settings['siapp_pay_token'];
+        if (!$token) {
+            $siappPayError = "Token SiappPay belum dikonfigurasi.";
+        } else {
+            $url = "https://pay.siapp.in/status.php";
+            $payload = [
+                'token'       => $token,
+                'action'      => 'create_order',
+                'order_id'    => $orderId,
+                'base_amount' => intval($selectedPackage['price'])
+            ];
+            if (!empty($settings['siapp_pay_merchant_name'])) {
+                $payload['merchant_name'] = $settings['siapp_pay_merchant_name'];
+            }
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            if (curl_errno($ch)) {
+                $siappPayError = "Koneksi Error: " . curl_error($ch);
+            } else if ($httpCode >= 400) {
+                $siappPayError = "SiappPay API Error (HTTP $httpCode): " . $response;
+            } else {
+                $resData = json_decode($response, true);
+                if (isset($resData['success']) && $resData['success'] == true) {
+                    $siappPayQrUrl = $resData['qris_qr_url'];
+                    $siappPayTotalAmount = intval($resData['total_amount']);
+                    
+                    // Save to queue state
+                    $state = getQueueState($queueFile);
+                    foreach ($state['queue_list'] as &$item) {
+                        if ($item['session_id'] === $orderId) {
+                            $item['siapp_pay_qr_url'] = $siappPayQrUrl;
+                            $item['siapp_pay_total_amount'] = $siappPayTotalAmount;
+                            break;
+                        }
+                    }
+                    unset($item);
+                    saveQueueState($queueFile, $state);
+                } else {
+                    $msg = isset($resData['message']) ? $resData['message'] : 'Gagal membuat order.';
+                    $siappPayError = "SiappPay Error: " . $msg;
+                }
+            }
+            curl_close($ch);
+        }
     }
 }
 ?>
@@ -695,6 +908,8 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             <div class="logo">Creative<span>Studio</span></div>
             <?php if ($settings['payment_mode'] === 'midtrans'): ?>
                 <div class="title">💳 SECURE CHECKOUT (MIDTRANS)</div>
+            <?php elseif ($settings['payment_mode'] === 'siapp_pay'): ?>
+                <div class="title">💳 SECURE CHECKOUT (SIAPPPAY)</div>
             <?php else: ?>
                 <div class="title">💵 GERBANG PEMBAYARAN SIMULASI</div>
             <?php endif; ?>
@@ -713,7 +928,15 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
                 <span class="bill-label">Nomor Antrean</span>
                 <span class="bill-val" style="color:var(--primary-red);">#<?php echo $currentQueueNumber; ?></span>
             </div>
-            <div class="price-tag">Rp <?php echo number_format($selectedPackage['price'], 0, ',', '.'); ?></div>
+            <div class="price-tag">
+                Rp <?php 
+                    $displayPrice = $selectedPackage['price'];
+                    if ($settings['payment_mode'] === 'siapp_pay' && isset($orderQueueItem['siapp_pay_total_amount']) && $orderQueueItem['siapp_pay_total_amount'] > 0) {
+                        $displayPrice = $orderQueueItem['siapp_pay_total_amount'];
+                    }
+                    echo number_format($displayPrice, 0, ',', '.'); 
+                ?>
+            </div>
         </div>
 
         <!-- Tab Navigation for Payment Methods -->
@@ -739,6 +962,28 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
                     <div class="qris-section">
                         <div class="qris-box">
                             <img src="<?php echo htmlspecialchars($midtransQrUrl); ?>" alt="Midtrans QRIS">
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
+                    </div>
+                    
+                    <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.85rem; padding: 12px;">Cek Status Pembayaran Manual</button>
+
+                    <div class="instruction">
+                        *Menunggu pembayaran terdeteksi secara otomatis... Halaman ini akan dialihkan setelah transaksi sukses.
+                    </div>
+                <?php endif; ?>
+
+            <?php elseif ($settings['payment_mode'] === 'siapp_pay'): ?>
+                <?php if ($siappPayError): ?>
+                    <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
+                        <div style="color: #ef4444; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; line-height: 1.4;"><?php echo htmlspecialchars($siappPayError); ?></div>
+                        <button class="btn-verify" onclick="window.location.reload()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">Coba Lagi</button>
+                    </div>
+                <?php else: ?>
+                    <div class="qris-section">
+                        <div class="qris-box">
+                            <img src="<?php echo htmlspecialchars($siappPayQrUrl); ?>" alt="SiappPay QRIS">
                         </div>
                         <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
                     </div>
@@ -1043,8 +1288,8 @@ if ($settings['payment_mode'] === 'midtrans' && $orderQueueItem['status'] === 'U
             });
         }
 
-        // Automatic Status Polling for Midtrans Mode (every 4 seconds)
-        <?php if ($settings['payment_mode'] === 'midtrans' && !$midtransError && $midtransQrUrl): ?>
+        // Automatic Status Polling for Midtrans or SiappPay Mode (every 4 seconds)
+        <?php if (($settings['payment_mode'] === 'midtrans' && !$midtransError && $midtransQrUrl) || ($settings['payment_mode'] === 'siapp_pay' && !$siappPayError && $siappPayQrUrl)): ?>
             setInterval(() => {
                 checkMidtransStatus(false);
             }, 4000);

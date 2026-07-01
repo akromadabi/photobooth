@@ -160,10 +160,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'create_order') {
     }
 }
 
-// Check if we are in Remote Controller mode (?session_id=...)
-$sessionId = isset($_GET['session_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['session_id']) : '';
-$isRemoteMode = !empty($sessionId);
-
+$activePrintFlow = '';
 if ($isRemoteMode) {
     // Save session to cookie/PHP session if it is currently active
     $state = getQueueState($queueFile);
@@ -173,6 +170,13 @@ if ($isRemoteMode) {
         if ($item['session_id'] === $sessionId) {
             $sessionExists = true;
             $sessionStatus = $item['status'];
+            $itemPackageId = $item['package_id'] ?? '';
+            foreach ($packages as $pkg) {
+                if ($pkg['id'] === $itemPackageId) {
+                    $activePrintFlow = $pkg['print_flow'] ?? '';
+                    break;
+                }
+            }
             break;
         }
     }
@@ -808,6 +812,35 @@ if ($isRemoteMode) {
             color: var(--text-muted);
             cursor: not-allowed;
         }
+        .category-tab-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 0 12px 0;
+            width: 100%;
+            margin-bottom: 12px;
+            scrollbar-width: none;
+        }
+        .category-tab-container::-webkit-scrollbar {
+            display: none;
+        }
+        .category-tab-btn {
+            padding: 8px 16px;
+            background: #15151e;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .category-tab-btn.active {
+            background: var(--primary-gold);
+            color: black;
+            border-color: var(--primary-gold);
+        }
     </style>
 </head>
 <body>
@@ -920,43 +953,15 @@ if ($isRemoteMode) {
 
             <!-- Controller Selection Box (Visible only when ACTIVE) -->
             <div class="glass-card" id="remoteControllerBox" style="display:none;">
-                <!-- STEP 1: SELECT LAYOUT -->
-                <div class="selector-box" id="layoutStepContainer">
-                    <span class="selector-label">1. Pilih Layout Foto</span>
-                    <div class="layout-cards-grid">
-                        <div class="layout-card-item" onclick="selectLayoutStep('strip')">
-                            <div class="layout-card-icon strip-preview">
-                                <div class="line"></div>
-                                <div class="line"></div>
-                                <div class="line"></div>
-                            </div>
-                            <div class="layout-card-name">Strip</div>
-                        </div>
-                        <div class="layout-card-item" onclick="selectLayoutStep('grid')">
-                            <div class="layout-card-icon grid-preview">
-                                <div class="box"></div>
-                                <div class="box"></div>
-                                <div class="box"></div>
-                                <div class="box"></div>
-                            </div>
-                            <div class="layout-card-name">Grid</div>
-                        </div>
-                        <div class="layout-card-item" onclick="selectLayoutStep('postcard')">
-                            <div class="layout-card-icon postcard-preview">
-                                <div class="full-box"></div>
-                            </div>
-                            <div class="layout-card-name">Card</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STEP 2: SELECT FRAME -->
+                <!-- DIRECT FRAME SELECTION -->
                 <div class="selector-box" id="frameStepContainer" style="display:none; width: 100%;">
-                    <div class="step-header">
-                        <button class="btn-back-step" onclick="backToLayoutStep()">&larr; Ubah Layout</button>
-                        <div class="selected-layout-badge">Layout: <span id="selectedLayoutLabel">Strip</span></div>
+                    <span class="selector-label" style="margin-bottom: 12px;">Pilih Bingkai Foto</span>
+                    
+                    <!-- Kategori Tab Container -->
+                    <div class="category-tab-container" id="remoteCategoryTabs">
+                        <!-- Loaded dynamically via JS -->
                     </div>
-                    <span class="selector-label" style="margin-top: 8px;">2. Pilih Bingkai</span>
+                    
                     <div class="frame-scroll-select" id="remoteFrameList">
                         <!-- Loaded dynamically via JS -->
                     </div>
@@ -973,6 +978,7 @@ if ($isRemoteMode) {
             const sessionId = '<?php echo $sessionId; ?>';
             const serverConfig = <?php echo json_encode($config); ?>;
             const activeEventId = '<?php echo htmlspecialchars($eventId ?? ""); ?>';
+            const activePrintFlow = '<?php echo $activePrintFlow; ?>';
             
             let currentStatus = 'WAITING';
             let selectedLayout = 'strip';
@@ -1014,15 +1020,14 @@ if ($isRemoteMode) {
                                     btnCapture.innerText = 'MENUNGGU GILIRAN ANDA...';
                                 }
                                 
-                                // Show layout step by default if frame step is not yet active
                                 if (document.getElementById('frameStepContainer').style.display !== 'block') {
-                                    document.getElementById('layoutStepContainer').style.display = 'block';
-                                    document.getElementById('frameStepContainer').style.display = 'none';
+                                    document.getElementById('frameStepContainer').style.display = 'block';
+                                    loadFramesList();
                                 }
                             } 
                             else if (data.status === 'ACTIVE') {
                                 title.innerText = 'GILIRAN ANDA AKTIF';
-                                desc.innerHTML = 'Silakan pilih layout dan bingkai foto Anda untuk memulai!';
+                                desc.innerHTML = 'Silakan pilih bingkai foto Anda untuk memulai!';
                                 controller.style.display = 'flex';
                                 statusCard.classList.add('compact');
                                 
@@ -1031,10 +1036,9 @@ if ($isRemoteMode) {
                                     btnCapture.innerText = 'MULAI FOTO';
                                 }
                                 
-                                // Show layout step by default if frame step is not yet active
                                 if (document.getElementById('frameStepContainer').style.display !== 'block') {
-                                    document.getElementById('layoutStepContainer').style.display = 'block';
-                                    document.getElementById('frameStepContainer').style.display = 'none';
+                                    document.getElementById('frameStepContainer').style.display = 'block';
+                                    loadFramesList();
                                 }
                             }
                             else if (data.status === 'CAPTURING') {
@@ -1061,71 +1065,115 @@ if ($isRemoteMode) {
                     .catch(err => console.error("Polling error", err));
             }
 
+            let selectedCategory = 'Semua';
+
+            function renderCategoryTabs(frames) {
+                const container = document.getElementById('remoteCategoryTabs');
+                if (!container) return;
+                
+                const categories = ['Semua'];
+                frames.forEach(f => {
+                    const cat = f.category || 'Classic';
+                    if (!categories.includes(cat)) {
+                        categories.push(cat);
+                    }
+                });
+                
+                container.innerHTML = '';
+                if (categories.length <= 1) {
+                    container.style.display = 'none';
+                    return;
+                }
+                container.style.display = 'flex';
+                
+                categories.forEach(cat => {
+                    const btn = document.createElement('button');
+                    btn.className = 'category-tab-btn' + (cat === selectedCategory ? ' active' : '');
+                    btn.innerText = cat;
+                    btn.onclick = () => {
+                        selectedCategory = cat;
+                        document.querySelectorAll('.category-tab-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        renderFramesGrid(frames);
+                    };
+                    container.appendChild(btn);
+                });
+            }
+
+            function getCompatibleFrames() {
+                if (!serverConfig.frames) return [];
+                
+                return serverConfig.frames.filter(f => {
+                    let pf = f.print_flows || [];
+                    if (pf.length === 0) {
+                        if (f.type === 'strip') pf = ['RECEIPT', 'COLOR_PRINT'];
+                        else if (f.type === 'grid' || f.type === 'postcard') pf = ['COLOR_PRINT'];
+                    }
+                    
+                    if (activePrintFlow) {
+                        return pf.includes(activePrintFlow);
+                    }
+                    return true;
+                });
+            }
+
             // Load frames matching active event ID or general fallback
             function loadFramesList() {
-                const list = document.getElementById('remoteFrameList');
-                if (list.children.length > 0) return; // Already loaded
-                
-                list.innerHTML = "";
-                let matchedFrames = [];
-                if (serverConfig.frames) {
-                    matchedFrames = serverConfig.frames.filter(f => f.type.toLowerCase() === selectedLayout.toLowerCase());
-                }
+                const compatible = getCompatibleFrames();
                 
                 // Load frames based on allowed_frames or fallback to event matching / general
                 let filtered = [];
                 let activeEvtObj = serverConfig.events ? serverConfig.events.find(e => e.id === activeEventId) : null;
                 if (activeEvtObj && activeEvtObj.allowed_frames && Array.isArray(activeEvtObj.allowed_frames)) {
-                    filtered = matchedFrames.filter(f => activeEvtObj.allowed_frames.includes(f.id));
+                    filtered = compatible.filter(f => activeEvtObj.allowed_frames.includes(f.id));
                 } else {
-                    filtered = matchedFrames.filter(f => f.event_id === activeEventId);
+                    filtered = compatible.filter(f => f.event_id === activeEventId);
                     if (filtered.length === 0) {
-                        filtered = matchedFrames.filter(f => f.event_id === 'general' || !f.event_id);
+                        filtered = compatible.filter(f => f.event_id === 'general' || !f.event_id);
                     }
                 }
                 
-                filtered.forEach((f, idx) => {
+                renderCategoryTabs(filtered);
+                renderFramesGrid(filtered);
+            }
+
+            function renderFramesGrid(frames) {
+                const list = document.getElementById('remoteFrameList');
+                list.innerHTML = "";
+                
+                let toRender = frames;
+                if (selectedCategory !== 'Semua') {
+                    toRender = frames.filter(f => (f.category || 'Classic') === selectedCategory);
+                }
+                
+                if (toRender.length === 0) {
+                    list.innerHTML = "<div style='color: var(--text-muted); padding: 20px; text-align: center; width: 100%;'>Tidak ada bingkai dalam kategori ini.</div>";
+                    return;
+                }
+                
+                toRender.forEach((f, idx) => {
                     const card = document.createElement('div');
-                    card.className = 'frame-item-card layout-' + selectedLayout + ' ' + (idx === 0 ? 'active' : '');
-                    if (idx === 0) selectedFrameId = f.id;
+                    card.className = 'frame-item-card layout-' + f.type + ' ' + (idx === 0 ? 'active' : '');
+                    if (idx === 0) {
+                        selectedFrameId = f.id;
+                        selectedLayout = f.type;
+                    }
                     
                     card.onclick = () => {
                         document.querySelectorAll('.frame-item-card').forEach(c => c.classList.remove('active'));
                         card.classList.add('active');
                         selectedFrameId = f.id;
+                        selectedLayout = f.type;
                     };
                     
                     card.innerHTML = `
-                        <div class="frame-item-preview layout-${selectedLayout}">
+                        <div class="frame-item-preview layout-${f.type}">
                             <img src="../${f.image_url}" onerror="this.src='https://placehold.co/50x120/121212/ffffff?text=${encodeURIComponent(f.name)}'">
                         </div>
                         <div class="frame-item-name">${f.name}</div>
                     `;
                     list.appendChild(card);
                 });
-            }
-
-            function selectLayoutStep(layout) {
-                selectedLayout = layout;
-                
-                const layoutLabels = {
-                    'strip': 'Strip',
-                    'grid': 'Grid',
-                    'postcard': 'Card'
-                };
-                document.getElementById('selectedLayoutLabel').innerText = layoutLabels[layout] || layout;
-                
-                const list = document.getElementById('remoteFrameList');
-                list.innerHTML = "";
-                loadFramesList();
-                
-                document.getElementById('layoutStepContainer').style.display = 'none';
-                document.getElementById('frameStepContainer').style.display = 'block';
-            }
-
-            function backToLayoutStep() {
-                document.getElementById('layoutStepContainer').style.display = 'block';
-                document.getElementById('frameStepContainer').style.display = 'none';
             }
 
             function sendCaptureCommand() {

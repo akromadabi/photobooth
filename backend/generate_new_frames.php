@@ -18,7 +18,8 @@ $fonts = [
     'cour'      => $fontDir . 'cour.ttf',
     'courbd'    => $fontDir . 'courbd.ttf',
     'impact'    => $fontDir . 'impact.ttf',
-    'malgun'    => $fontDir . 'malgun.ttf' // Korean font if available
+    'malgun'    => $fontDir . 'malgun.ttf', // Korean font if available
+    'oldengl'   => $fontDir . 'OLDENGL.TTF'
 ];
 
 // Helper: safe font resolver falling back to build-in fonts
@@ -365,6 +366,489 @@ drawText($imgNews, 8, 0, 502, 102, $charcoal, 'courbd', '10c');
 
 imagepng($imgNews, $outputDir . 'newspaper_strip.png');
 imagedestroy($imgNews);
+
+
+// ==========================================
+// 3b. NEWSPAPER FOUR (newspaper_four.png)
+// ==========================================
+echo "Generating newspaper_four.png...\n";
+$imgNewsFour = imagecreatetruecolor(600, 2200);
+imagealphablending($imgNewsFour, false);
+imagesavealpha($imgNewsFour, true);
+
+$bgNewsFour = imagecolorallocate($imgNewsFour, 232, 228, 219); // #E8E4DB
+imagefill($imgNewsFour, 0, 0, $bgNewsFour);
+
+$fourSlots = [
+    ['x' => 50, 'y' => 330, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 725, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1120, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1515, 'w' => 500, 'h' => 375]
+];
+
+$transparent = imagecolorallocatealpha($imgNewsFour, 0, 0, 0, 127);
+foreach ($fourSlots as $slot) {
+    imagefilledrectangle($imgNewsFour, $slot['x'], $slot['y'], $slot['x'] + $slot['w'] - 1, $slot['y'] + $slot['h'] - 1, $transparent);
+}
+imagealphablending($imgNewsFour, true);
+
+$charcoal = imagecolorallocate($imgNewsFour, 40, 40, 40);
+$white = imagecolorallocate($imgNewsFour, 255, 255, 255);
+
+// Outer card borders
+imagerectangle($imgNewsFour, 20, 20, 600 - 21, 2200 - 21, $charcoal);
+imagerectangle($imgNewsFour, 24, 24, 600 - 25, 2200 - 25, $charcoal);
+
+// Borders around slots
+foreach ($fourSlots as $slot) {
+    imagerectangle($imgNewsFour, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $charcoal);
+}
+
+// Newspaper Header (Masthead)
+// Special Edition line
+imageline($imgNewsFour, 40, 55, 180, 55, $charcoal);
+imageline($imgNewsFour, 420, 55, 560, 55, $charcoal);
+drawText($imgNewsFour, 11, 0, -1, 60, $charcoal, 'georgiai', 'Special Edition');
+
+// Left meta column
+drawText($imgNewsFour, 9, 0, 50, 115, $charcoal, 'georgiai', '@reallygreatsite');
+drawText($imgNewsFour, 9, 0, 50, 135, $charcoal, 'georgiai', '+123-456-7890');
+
+// Right meta column
+drawText($imgNewsFour, 9, 0, 420, 115, $charcoal, 'georgiai', '123 Anywhere');
+drawText($imgNewsFour, 9, 0, 420, 135, $charcoal, 'georgiai', 'St., Any City');
+
+// Title: Our Memories in Old English
+drawText($imgNewsFour, 36, 0, -1, 135, $charcoal, 'oldengl', 'Our Memories');
+
+// Stars on left and right of title (procedural drawing based on text width)
+$bbox = imagettfbbox(36, 0, $fonts['oldengl'], 'Our Memories');
+$textW = abs($bbox[2] - $bbox[0]);
+$centerX = 300;
+$leftStarX = $centerX - ($textW / 2) - 40;
+$rightStarX = $centerX + ($textW / 2) + 40;
+drawFourPointStar($imgNewsFour, $leftStarX, 120, 12, $charcoal);
+drawFourPointStar($imgNewsFour, $rightStarX, 120, 12, $charcoal);
+
+// Subtitle
+drawText($imgNewsFour, 18, 0, -1, 200, $charcoal, 'georgiab', 'Best Friend Forever');
+
+// Double underline below header
+drawThickLine($imgNewsFour, 40, 240, 560, 240, 4, $charcoal);
+imageline($imgNewsFour, 40, 248, 560, 248, $charcoal);
+
+
+// Newspaper Footer
+// Double underline above footer
+imageline($imgNewsFour, 40, 1920, 560, 1920, $charcoal);
+imageline($imgNewsFour, 40, 1926, 560, 1926, $charcoal);
+
+// Brand box (black rectangle on left)
+imagefilledrectangle($imgNewsFour, 50, 1950, 280, 2130, $charcoal);
+
+// Centered white Old English text "Groovy Studio" inside brand box
+$brandText = 'Groovy Studio';
+$brandBbox = imagettfbbox(20, 0, $fonts['oldengl'], $brandText);
+$brandW = abs($brandBbox[2] - $brandBbox[0]);
+$brandH = abs($brandBbox[5] - $brandBbox[1]);
+$brandX = 165 - ($brandW / 2);
+$brandY = 2040 + ($brandH / 2);
+imagettftext($imgNewsFour, 20, 0, $brandX, $brandY, $white, $fonts['oldengl'], $brandText);
+
+// Quote/story box (framed rectangle on right)
+imagerectangle($imgNewsFour, 310, 1950, 550, 2130, $charcoal);
+drawText($imgNewsFour, 12, 0, 325, 1980, $charcoal, 'georgiab', 'On This Page of Ours');
+drawText($imgNewsFour, 9, 0, 325, 2010, $charcoal, 'georgiai', 'Best stories came from random laughs,');
+drawText($imgNewsFour, 9, 0, 325, 2035, $charcoal, 'georgiai', 'long chats, and friends who were always');
+drawText($imgNewsFour, 9, 0, 325, 2060, $charcoal, 'georgiai', 'there through every part of life.');
+
+// Footer metadata (barcode & weather/date)
+drawBarcode($imgNewsFour, 370, 2150, 180, 30, $charcoal);
+drawText($imgNewsFour, 7, 0, 370, 2190, $charcoal, 'cour', '9940172-88295-001');
+
+drawText($imgNewsFour, 8, 0, 50, 2160, $charcoal, 'courbd', 'ISSUE DATE: ' . $dateStr);
+drawText($imgNewsFour, 8, 0, 50, 2180, $charcoal, 'courbd', 'PRICE:      PRICELESS');
+
+imagepng($imgNewsFour, $outputDir . 'newspaper_four.png');
+imagedestroy($imgNewsFour);
+
+
+// ==========================================
+// 3c. NEWSPAPER BIRTHDAY (newspaper_birthday.png)
+// ==========================================
+echo "Generating newspaper_birthday.png...\n";
+$imgBirth = imagecreatetruecolor(600, 2200);
+imagealphablending($imgBirth, false);
+imagesavealpha($imgBirth, true);
+
+$bgBirth = imagecolorallocate($imgBirth, 234, 230, 223); // #eae6df
+imagefill($imgBirth, 0, 0, $bgBirth);
+
+$birthSlots = [
+    ['x' => 50, 'y' => 330, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 725, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1120, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1515, 'w' => 500, 'h' => 375]
+];
+
+$transparent = imagecolorallocatealpha($imgBirth, 0, 0, 0, 127);
+foreach ($birthSlots as $slot) {
+    imagefilledrectangle($imgBirth, $slot['x'], $slot['y'], $slot['x'] + $slot['w'] - 1, $slot['y'] + $slot['h'] - 1, $transparent);
+}
+imagealphablending($imgBirth, true);
+
+$charcoal = imagecolorallocate($imgBirth, 40, 40, 40);
+$white = imagecolorallocate($imgBirth, 255, 255, 255);
+$red = imagecolorallocate($imgBirth, 220, 50, 50);
+
+// Outer card borders
+imagerectangle($imgBirth, 20, 20, 600 - 21, 2200 - 21, $charcoal);
+imagerectangle($imgBirth, 24, 24, 600 - 25, 2200 - 25, $charcoal);
+
+// Borders around slots
+foreach ($birthSlots as $slot) {
+    imagerectangle($imgBirth, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $charcoal);
+}
+
+// Newspaper Header (Masthead)
+// Special Edition line
+imageline($imgBirth, 40, 55, 180, 55, $charcoal);
+imageline($imgBirth, 420, 55, 560, 55, $charcoal);
+drawText($imgBirth, 11, 0, -1, 60, $charcoal, 'georgiai', 'Special Edition');
+
+// Date top right
+$currentDateStr = strtoupper(date('F d, Y'));
+drawText($imgBirth, 10, 0, 430, 60, $charcoal, 'georgiab', $currentDateStr);
+
+// Headline text: BREAKING NEWS
+drawText($imgBirth, 30, 0, -1, 105, $charcoal, 'georgiab', 'BREAKING NEWS');
+
+// Double underline below headline
+imageline($imgBirth, 40, 115, 560, 115, $charcoal);
+imageline($imgBirth, 40, 119, 560, 119, $charcoal);
+
+// Subhead texts (with generic fallbacks for dynamic replacement)
+drawText($imgBirth, 26, 0, -1, 175, $charcoal, 'georgiai', "It's My");
+drawText($imgBirth, 52, 0, -1, 245, $charcoal, 'impact', 'BIRTHDAY!');
+
+// Double underline below header
+drawThickLine($imgBirth, 40, 275, 560, 275, 4, $charcoal);
+imageline($imgBirth, 40, 283, 560, 283, $charcoal);
+
+
+// =========================================================================
+// Overlapping Elements (Cross-photo content) - Pedoman standar_bingkai.md
+// =========================================================================
+
+// Element 1: Red slanted rectangle badge "HOT NEWS" overlapping top-left of Slot 0
+$cx1 = 75; $cy1 = 325;
+$w2 = 60; $h2 = 16;
+$angle1 = -15 * M_PI / 180;
+$cos1 = cos($angle1);
+$sin1 = sin($angle1);
+$pts1 = [
+    intval($cx1 - $w2*$cos1 + $h2*$sin1), intval($cy1 - $w2*$sin1 - $h2*$cos1),
+    intval($cx1 + $w2*$cos1 + $h2*$sin1), intval($cy1 + $w2*$sin1 - $h2*$cos1),
+    intval($cx1 + $w2*$cos1 - $h2*$sin1), intval($cy1 + $w2*$sin1 + $h2*$cos1),
+    intval($cx1 - $w2*$cos1 - $h2*$sin1), intval($cy1 - $w2*$sin1 + $h2*$cos1)
+];
+imagefilledpolygon($imgBirth, $pts1, $red);
+imagepolygon($imgBirth, $pts1, $charcoal);
+imagettftext($imgBirth, 9, 15, 45, 332, $white, $fonts['arialbd'], 'HOT NEWS');
+
+// Element 2: Semi-transparent circular "APPROVED" stamp overlapping bottom-right of Slot 1
+$stampColor = imagecolorallocatealpha($imgBirth, 40, 40, 40, 60);
+$stampSolid = imagecolorallocate($imgBirth, 40, 40, 40);
+imagefilledellipse($imgBirth, 520, 1100, 75, 75, $stampColor);
+imageellipse($imgBirth, 520, 1100, 75, 75, $stampSolid);
+imageellipse($imgBirth, 520, 1100, 67, 67, $stampSolid);
+drawText($imgBirth, 9, 0, 492, 1105, $stampSolid, 'arialbd', 'APPROVED');
+
+// Element 3: Black filled "LIVE REPORT" banner overlapping border between Slot 2 & Slot 3
+imagefilledrectangle($imgBirth, 210, 1490, 390, 1520, $charcoal);
+$badgeBbox = imagettfbbox(9, 0, $fonts['arialbd'], 'LIVE REPORT');
+$badgeW = abs($badgeBbox[2] - $badgeBbox[0]);
+$badgeX = 300 - ($badgeW / 2);
+imagettftext($imgBirth, 9, 0, $badgeX, 1511, $white, $fonts['arialbd'], 'LIVE REPORT');
+
+
+// Newspaper Footer
+// Double underline above footer
+imageline($imgBirth, 40, 1920, 560, 1920, $charcoal);
+imageline($imgBirth, 40, 1926, 560, 1926, $charcoal);
+
+// Left Column: Mock Newspaper Article (Birthday Special Report)
+drawText($imgBirth, 10, 0, 50, 1960, $charcoal, 'georgiab', 'BIRTHDAY SPECIAL');
+drawText($imgBirth, 9, 0, 50, 1980, $charcoal, 'georgiai', 'In today\'s special edition, we are');
+drawText($imgBirth, 9, 0, 50, 2000, $charcoal, 'georgiai', 'thrilled to report a fantastic new');
+drawText($imgBirth, 9, 0, 50, 2020, $charcoal, 'georgiai', 'milestone. Today marks a day of');
+drawText($imgBirth, 9, 0, 50, 2040, $charcoal, 'georgiai', 'joy, laughter, and celebration.');
+drawText($imgBirth, 9, 0, 50, 2065, $charcoal, 'georgiai', 'Sources reveal that the star of');
+drawText($imgBirth, 9, 0, 50, 2085, $charcoal, 'georgiai', 'the show continues to be an');
+drawText($imgBirth, 9, 0, 50, 2105, $charcoal, 'georgiai', 'inspiration, spreading positivity');
+drawText($imgBirth, 9, 0, 50, 2125, $charcoal, 'georgiai', 'and light wherever they go.');
+
+// Right Column: Highlighted Editorial Birthday Quote
+drawText($imgBirth, 11, 0, 310, 1965, $charcoal, 'georgiab', '"Wishing you a fantastic');
+drawText($imgBirth, 11, 0, 310, 1985, $charcoal, 'georgiab', 'year ahead! May your days');
+drawText($imgBirth, 11, 0, 310, 2005, $charcoal, 'georgiab', 'be as bright & wonderful');
+drawText($imgBirth, 11, 0, 310, 2025, $charcoal, 'georgiab', 'as you are!"');
+
+drawText($imgBirth, 9, 0, 310, 2055, $charcoal, 'georgiai', 'Today\'s forecast calls for cake,');
+drawText($imgBirth, 9, 0, 310, 2075, $charcoal, 'georgiai', 'laughter, and sweet memories');
+drawText($imgBirth, 9, 0, 310, 2095, $charcoal, 'georgiai', 'with loved ones. Experts suggest');
+drawText($imgBirth, 9, 0, 310, 2115, $charcoal, 'georgiai', 'lots of smiles and wishes.');
+
+// Footer metadata (barcode & weather/date)
+drawBarcode($imgBirth, 370, 2150, 180, 30, $charcoal);
+drawText($imgBirth, 7, 0, 370, 2190, $charcoal, 'cour', '9940172-88295-002');
+
+drawText($imgBirth, 8, 0, 50, 2160, $charcoal, 'courbd', 'ISSUE DATE: ' . $dateStr);
+drawText($imgBirth, 8, 0, 50, 2180, $charcoal, 'courbd', 'BY:         GROOVY STUDIO');
+
+imagepng($imgBirth, $outputDir . 'newspaper_birthday.png');
+imagedestroy($imgBirth);
+
+
+// ==========================================
+// 3d. NEWSPAPER POST (newspaper_post.png)
+// ==========================================
+echo "Generating newspaper_post.png...\n";
+$imgPost = imagecreatetruecolor(600, 2200);
+imagealphablending($imgPost, false);
+imagesavealpha($imgPost, true);
+
+$bgPost = imagecolorallocate($imgPost, 234, 230, 223); // #eae6df
+imagefill($imgPost, 0, 0, $bgPost);
+
+$postSlots = [
+    ['x' => 50, 'y' => 310, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 705, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1100, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1495, 'w' => 500, 'h' => 375]
+];
+
+$transparent = imagecolorallocatealpha($imgPost, 0, 0, 0, 127);
+foreach ($postSlots as $slot) {
+    imagefilledrectangle($imgPost, $slot['x'], $slot['y'], $slot['x'] + $slot['w'] - 1, $slot['y'] + $slot['h'] - 1, $transparent);
+}
+imagealphablending($imgPost, true);
+
+$charcoal = imagecolorallocate($imgPost, 40, 40, 40);
+$white = imagecolorallocate($imgPost, 255, 255, 255);
+$red = imagecolorallocate($imgPost, 220, 50, 50);
+
+// Outer card borders
+imagerectangle($imgPost, 20, 20, 600 - 21, 2200 - 21, $charcoal);
+imagerectangle($imgPost, 24, 24, 600 - 25, 2200 - 25, $charcoal);
+
+// Borders around slots
+foreach ($postSlots as $slot) {
+    imagerectangle($imgPost, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $charcoal);
+}
+
+// Newspaper Header (Masthead) - Boxed Headline style
+imagerectangle($imgPost, 40, 40, 560, 100, $charcoal);
+imageline($imgPost, 180, 40, 180, 100, $charcoal);
+
+// BREAKING NEWS on left
+drawText($imgPost, 10, 0, 52, 75, $charcoal, 'arialbd', 'BREAKING');
+drawText($imgPost, 10, 0, 118, 75, $charcoal, 'arialbd', 'NEWS');
+
+// Gothic title on right
+$postTitle = 'The Graduation Post';
+$postBbox = imagettfbbox(20, 0, $fonts['oldengl'], $postTitle);
+$postW = abs($postBbox[2] - $postBbox[0]);
+$postX = 370 - ($postW / 2);
+imagettftext($imgPost, 20, 0, intval($postX), 82, $charcoal, $fonts['oldengl'], $postTitle);
+
+// Under masthead box
+imageline($imgPost, 40, 115, 560, 115, $charcoal);
+drawText($imgPost, 9, 0, 50, 128, $charcoal, 'georgia', 'NEW YORK');
+$currentPostDate = date('l, F j, Y'); // e.g. Saturday, June 9, 2030
+$currentPostDateUpper = strtoupper($currentPostDate);
+// Right align date
+$dateBbox = imagettfbbox(8, 0, $fonts['georgia'], $currentPostDateUpper);
+$dateW = abs($dateBbox[2] - $dateBbox[0]);
+drawText($imgPost, 8, 0, 550 - $dateW, 128, $charcoal, 'georgia', $currentPostDateUpper);
+
+// Double underlines below header
+imageline($imgPost, 40, 138, 560, 138, $charcoal);
+imageline($imgPost, 40, 142, 560, 142, $charcoal);
+
+// Note: Main text (Headline) "SHE DID IT!" and subhead "Samira Hadid is Graduating"
+// are drawn dynamically by the kiosk app to allow customizable "COMING SOON" headlines!
+// So we do not write them statically on the background image.
+
+// Double underline below headline area
+drawThickLine($imgPost, 40, 260, 560, 260, 4, $charcoal);
+imageline($imgPost, 40, 268, 560, 268, $charcoal);
+
+
+// =========================================================================
+// Overlapping Elements (Cross-photo content) - Pedoman standar_bingkai.md
+// =========================================================================
+
+// Element 1: Red slanted rectangle badge "EXCLUSIVE" overlapping top-left of Slot 0
+$cx2 = 75; $cy2 = 305;
+$w2 = 60; $h2 = 16;
+$angle2 = -15 * M_PI / 180;
+$cos2 = cos($angle2);
+$sin2 = sin($angle2);
+$pts2 = [
+    intval($cx2 - $w2*$cos2 + $h2*$sin2), intval($cy2 - $w2*$sin2 - $h2*$cos2),
+    intval($cx2 + $w2*$cos2 + $h2*$sin2), intval($cy2 + $w2*$sin2 - $h2*$cos2),
+    intval($cx2 + $w2*$cos2 - $h2*$sin2), intval($cy2 + $w2*$sin2 + $h2*$cos2),
+    intval($cx2 - $w2*$cos2 - $h2*$sin2), intval($cy2 - $w2*$sin2 + $h2*$cos2)
+];
+imagefilledpolygon($imgPost, $pts2, $red);
+imagepolygon($imgPost, $pts2, $charcoal);
+imagettftext($imgPost, 9, 15, 45, 312, $white, $fonts['arialbd'], 'EXCLUSIVE');
+
+// Element 2: Black 4-point star ornaments on left and right of dynamic hashtag
+drawFourPointStar($imgPost, 80, 1980, 12, $charcoal);
+drawFourPointStar($imgPost, 520, 1980, 12, $charcoal);
+
+
+// Newspaper Footer
+// Double underline above footer
+imageline($imgPost, 40, 1910, 560, 1910, $charcoal);
+imageline($imgPost, 40, 1916, 560, 1916, $charcoal);
+
+// Footer metadata (barcode & weather/date)
+drawBarcode($imgPost, 370, 2140, 180, 30, $charcoal);
+drawText($imgPost, 7, 0, 370, 2180, $charcoal, 'cour', '9940172-88295-003');
+
+drawText($imgPost, 8, 0, 50, 2150, $charcoal, 'courbd', 'ISSUE DATE: ' . $dateStr);
+drawText($imgPost, 8, 0, 50, 2170, $charcoal, 'courbd', 'BY:         GROOVY STUDIO');
+
+imagepng($imgPost, $outputDir . 'newspaper_post.png');
+imagedestroy($imgPost);
+
+
+// ==========================================
+// 3e. INVOICE PREMIUM (receipt_invoice.png)
+// ==========================================
+echo "Generating receipt_invoice.png...\n";
+$imgInv = imagecreatetruecolor(600, 2400);
+imagealphablending($imgInv, false);
+imagesavealpha($imgInv, true);
+
+$bgInv = imagecolorallocate($imgInv, 245, 245, 245); // #f5f5f5
+imagefill($imgInv, 0, 0, $bgInv);
+
+$invSlots = [
+    ['x' => 50, 'y' => 360, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 775, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1190, 'w' => 500, 'h' => 375],
+    ['x' => 50, 'y' => 1605, 'w' => 500, 'h' => 375]
+];
+
+$transparent = imagecolorallocatealpha($imgInv, 0, 0, 0, 127);
+foreach ($invSlots as $slot) {
+    imagefilledrectangle($imgInv, $slot['x'], $slot['y'], $slot['x'] + $slot['w'] - 1, $slot['y'] + $slot['h'] - 1, $transparent);
+}
+imagealphablending($imgInv, true);
+
+$charcoal = imagecolorallocate($imgInv, 40, 40, 40);
+$white = imagecolorallocate($imgInv, 255, 255, 255);
+
+// Outer card borders
+imagerectangle($imgInv, 20, 20, 600 - 21, 2400 - 21, $charcoal);
+imagerectangle($imgInv, 24, 24, 600 - 25, 2400 - 25, $charcoal);
+
+// Borders around slots
+foreach ($invSlots as $slot) {
+    imagerectangle($imgInv, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $charcoal);
+}
+
+// 1. Eagle Logo
+// central body
+imagefilledpolygon($imgInv, [75, 45, 70, 70, 75, 75, 80, 70], $charcoal);
+// left wing
+imagefilledpolygon($imgInv, [75, 55, 45, 35, 55, 55, 48, 68, 65, 62], $charcoal);
+// right wing
+imagefilledpolygon($imgInv, [75, 55, 105, 35, 95, 55, 102, 68, 85, 62], $charcoal);
+
+// Company name - shifted slightly right to x = 145 to prevent overlapping with logo overlay
+drawText($imgInv, 10, 0, 145, 55, $charcoal, 'arialbd', 'Ginyard');
+drawText($imgInv, 10, 0, 145, 75, $charcoal, 'arialbd', 'International Co.');
+
+// Right side header info
+drawText($imgInv, 9, 0, 400, 55, $charcoal, 'cour', 'reallygreatsite.com');
+drawText($imgInv, 9, 0, 400, 75, $charcoal, 'cour', '+123-456-7890');
+drawText($imgInv, 9, 0, 400, 95, $charcoal, 'cour', '@reallygreatsite');
+
+// Large Invoice Title
+drawText($imgInv, 40, 0, 50, 160, $charcoal, 'georgiab', 'Invoice');
+
+// Divider line
+imageline($imgInv, 40, 185, 560, 185, $charcoal);
+
+// Invoice Meta fields - corrected spacing
+drawText($imgInv, 10, 0, 50, 205, $charcoal, 'courbd', 'No: invc-90823');
+drawText($imgInv, 10, 0, 50, 235, $charcoal, 'cour', 'To:'); // 'To: Helene Paquet' will overlay at y = 235
+
+$currentInvDate = date('F d, Y'); 
+$dueInvDate = date('F d, Y', strtotime('+7 days'));
+drawText($imgInv, 9, 0, 360, 205, $charcoal, 'cour', 'Date: ' . $currentInvDate);
+drawText($imgInv, 9, 0, 360, 235, $charcoal, 'cour', 'Due Date: ' . $dueInvDate);
+
+// Table Header lines
+imageline($imgInv, 40, 280, 560, 280, $charcoal);
+drawThickLine($imgInv, 40, 320, 560, 320, 3, $charcoal);
+
+// Column Headers
+drawText($imgInv, 10, 0, 50, 305, $charcoal, 'courbd', 'No');
+drawText($imgInv, 10, 0, 95, 305, $charcoal, 'courbd', 'Description');
+drawText($imgInv, 10, 0, 350, 305, $charcoal, 'courbd', 'Price');
+drawText($imgInv, 10, 0, 450, 305, $charcoal, 'courbd', 'Qty');
+drawText($imgInv, 10, 0, 505, 295, $charcoal, 'courbd', 'Total');
+
+// Draw Line Items above each slot
+drawText($imgInv, 9, 0, 50, 350, $charcoal, 'cour', '1.  Memory Capture #1     $100    1    $100');
+drawText($imgInv, 9, 0, 50, 765, $charcoal, 'cour', '2.  Memory Capture #2     $100    1    $100');
+drawText($imgInv, 9, 0, 50, 1180, $charcoal, 'cour', '3.  Memory Capture #3     $100    1    $100');
+drawText($imgInv, 9, 0, 50, 1595, $charcoal, 'cour', '4.  Memory Capture #4     $100    1    $100');
+
+// Dotted separator lines between items
+for ($dx = 40; $dx < 560; $dx += 8) {
+    imageline($imgInv, $dx, 752, $dx + 4, 752, $charcoal);
+    imageline($imgInv, $dx, 1167, $dx + 4, 1167, $charcoal);
+    imageline($imgInv, $dx, 1582, $dx + 4, 1582, $charcoal);
+}
+
+// Table Footer Divider
+imageline($imgInv, 40, 2000, 560, 2000, $charcoal);
+
+// Footer left info
+drawText($imgInv, 10, 0, 50, 2040, $charcoal, 'georgiai', 'The invoice amount must be paid');
+drawText($imgInv, 10, 0, 50, 2060, $charcoal, 'georgiai', 'no later than 7 business days');
+drawText($imgInv, 10, 0, 50, 2080, $charcoal, 'georgiai', 'after invoice issuance.');
+
+// Footer right totals
+drawText($imgInv, 9, 0, 360, 2040, $charcoal, 'cour', 'SUBTOTAL : $400.00');
+drawText($imgInv, 9, 0, 360, 2065, $charcoal, 'cour', 'TAX (0%) : $0.00');
+drawText($imgInv, 9, 0, 360, 2090, $charcoal, 'cour', 'DISCOUNT : $0.00');
+drawText($imgInv, 11, 0, 360, 2120, $charcoal, 'courbd', 'TOTAL    : $400.00');
+
+// Bottom Divider
+imageline($imgInv, 40, 2155, 560, 2155, $charcoal);
+
+// Payment Information
+drawText($imgInv, 11, 0, 50, 2195, $charcoal, 'arialbd', 'Payment Information:');
+drawText($imgInv, 9, 0, 50, 2220, $charcoal, 'cour', 'Payment Method: Online Payment');
+drawText($imgInv, 9, 0, 50, 2245, $charcoal, 'cour', 'Account Name:'); // dynamic event_subtitle overlay at y = 2245
+drawText($imgInv, 9, 0, 50, 2270, $charcoal, 'cour', 'Account Number: 123-456-7890');
+
+// Thank You in script font
+drawText($imgInv, 22, 0, 370, 2250, $charcoal, 'georgiai', 'Thank You');
+
+// Barcode at bottom (shifted down, leaves y = 2320 clean for dynamic event_hashtag)
+drawBarcode($imgInv, 200, 2350, 200, 20, $charcoal);
+
+imagepng($imgInv, $outputDir . 'receipt_invoice.png');
+imagedestroy($imgInv);
 
 
 // ==========================================
@@ -1344,10 +1828,79 @@ foreach ($dynSlots as $slot) {
 }
 imagealphablending($imgDyn, true);
 
-$borderColor = imagecolorallocate($imgDyn, 220, 220, 220); // Very light grey border for photo slots
+// Configure colors
+$greyDark = imagecolorallocate($imgDyn, 40, 40, 40);
+$greyLight = imagecolorallocate($imgDyn, 200, 192, 180);
+$greyBorder = imagecolorallocate($imgDyn, 220, 220, 220); // Very light grey border for photo slots
+$vfColor = imagecolorallocate($imgDyn, 100, 100, 100);
+$badgeBg = imagecolorallocate($imgDyn, 255, 255, 255);
+$badgeBorder = imagecolorallocate($imgDyn, 210, 205, 195);
+$boxBg = imagecolorallocate($imgDyn, 250, 250, 248);
+$boxBorder = imagecolorallocate($imgDyn, 225, 220, 210);
+
+// 1. Draw Dual Outer Borders
+imagerectangle($imgDyn, 15, 15, 584, 1984, $greyLight);
+imagerectangle($imgDyn, 20, 20, 579, 1979, $greyDark);
+
+// 2. Draw Slot Borders and Viewfinder Corners
+$vfSize = 22;
+$vfThickness = 3;
 foreach ($dynSlots as $slot) {
-    imagerectangle($imgDyn, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $borderColor);
+    // Light border around slot
+    imagerectangle($imgDyn, $slot['x'] - 1, $slot['y'] - 1, $slot['x'] + $slot['w'], $slot['y'] + $slot['h'], $greyBorder);
+    
+    $sx = $slot['x'];
+    $sy = $slot['y'];
+    $sw = $slot['w'];
+    $sh = $slot['h'];
+    
+    // Top-left corner bracket
+    imagefilledrectangle($imgDyn, $sx - 6, $sy - 6, $sx - 6 + $vfSize, $sy - 6 + $vfThickness - 1, $vfColor);
+    imagefilledrectangle($imgDyn, $sx - 6, $sy - 6, $sx - 6 + $vfThickness - 1, $sy - 6 + $vfSize, $vfColor);
+    
+    // Top-right corner bracket
+    imagefilledrectangle($imgDyn, $sx + $sw + 6 - $vfSize, $sy - 6, $sx + $sw + 6, $sy - 6 + $vfThickness - 1, $vfColor);
+    imagefilledrectangle($imgDyn, $sx + $sw + 6 - $vfThickness, $sy - 6, $sx + $sw + 6, $sy - 6 + $vfSize, $vfColor);
+    
+    // Bottom-left corner bracket
+    imagefilledrectangle($imgDyn, $sx - 6, $sy + $sh + 6 - $vfThickness, $sx - 6 + $vfSize, $sy + $sh + 6, $vfColor);
+    imagefilledrectangle($imgDyn, $sx - 6, $sy + $sh + 6 - $vfSize, $sx - 6 + $vfThickness - 1, $sy + $sh + 6, $vfColor);
+    
+    // Bottom-right corner bracket
+    imagefilledrectangle($imgDyn, $sx + $sw + 6 - $vfSize, $sy + $sh + 6 - $vfThickness, $sx + $sw + 6, $sy + $sh + 6, $vfColor);
+    imagefilledrectangle($imgDyn, $sx + $sw + 6 - $vfThickness, $sy + $sh + 6 - $vfSize, $sx + $sw + 6, $sy + $sh + 6, $vfColor);
 }
+
+// 3. Draw Logo Background Circle Badge (Centered at x=300, y=890)
+imagefilledellipse($imgDyn, 300, 890, 130, 130, $badgeBg);
+imageellipse($imgDyn, 300, 890, 130, 130, $badgeBorder);
+imageellipse($imgDyn, 300, 890, 122, 122, $greyDark);
+
+// 4. Draw Decorative Dividers with Y2K Stars
+// Upper Divider (below Subtitle, y=435)
+imageline($imgDyn, 50, 435, 260, 435, $greyLight);
+imageline($imgDyn, 340, 435, 550, 435, $greyLight);
+drawFourPointStar($imgDyn, 300, 435, 12, $greyDark);
+
+// Lower Divider (above Hashtag, y=1380)
+imageline($imgDyn, 50, 1380, 260, 1380, $greyLight);
+imageline($imgDyn, 340, 1380, 550, 1380, $greyLight);
+drawFourPointStar($imgDyn, 300, 1380, 12, $greyDark);
+
+// 5. Draw Information Box (y=1580 - 1700)
+imagefilledrectangle($imgDyn, 80, 1580, 520, 1700, $boxBg);
+imagerectangle($imgDyn, 80, 1580, 520, 1700, $boxBorder);
+imagerectangle($imgDyn, 84, 1584, 516, 1696, $greyLight);
+
+// Content inside Info Box
+drawText($imgDyn, 12, 0, 110, 1622, $greyDark, 'courbd', 'DATE: ' . date('Y.m.d'));
+drawText($imgDyn, 12, 0, 110, 1662, $greyDark, 'courbd', 'LOC:  PHOTO KIOSK');
+drawText($imgDyn, 12, 0, 310, 1622, $greyDark, 'courbd', 'VER:  V1.28');
+drawText($imgDyn, 12, 0, 310, 1662, $greyDark, 'courbd', 'TYPE: DYNAMIC STRIP');
+
+// 6. Draw Procedural Barcode stamp (y=1790)
+drawBarcode($imgDyn, 180, 1790, 240, 55, $greyDark);
+drawText($imgDyn, 10, 0, 180, 1865, $greyDark, 'cour', 'NO. EV-9948D-STRIP');
 
 // Draw static branding at the very bottom
 $grey = imagecolorallocate($imgDyn, 120, 120, 120);
