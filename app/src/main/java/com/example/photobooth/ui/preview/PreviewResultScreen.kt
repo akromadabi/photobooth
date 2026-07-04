@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -57,6 +58,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import coil.compose.AsyncImage
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.rotate
 import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
 import com.example.photobooth.data.Frame
@@ -722,13 +724,29 @@ private fun stitchPhotos(
             val cropped = getCroppedBitmapWithState(srcBmp, targetW, targetH, photoState)
             
             // Draw photo to canvas
-            val rectDest = Rect(
-                slot.x * multiplier,
-                slot.y * multiplier,
-                (slot.x + slot.width) * multiplier,
-                (slot.y + slot.height) * multiplier
-            )
-            canvas.drawBitmap(cropped, null, rectDest, paint)
+            val rotation = slot.rotation ?: 0f
+            if (rotation != 0f) {
+                canvas.save()
+                val centerX = (slot.x + slot.width / 2f) * multiplier
+                val centerY = (slot.y + slot.height / 2f) * multiplier
+                canvas.rotate(rotation, centerX, centerY)
+                val rectDest = Rect(
+                    slot.x * multiplier,
+                    slot.y * multiplier,
+                    (slot.x + slot.width) * multiplier,
+                    (slot.y + slot.height) * multiplier
+                )
+                canvas.drawBitmap(cropped, null, rectDest, paint)
+                canvas.restore()
+            } else {
+                val rectDest = Rect(
+                    slot.x * multiplier,
+                    slot.y * multiplier,
+                    (slot.x + slot.width) * multiplier,
+                    (slot.y + slot.height) * multiplier
+                )
+                canvas.drawBitmap(cropped, null, rectDest, paint)
+            }
             
             srcBmp.recycle()
             cropped.recycle()
@@ -751,13 +769,29 @@ private fun stitchPhotos(
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 6f * multiplier
         for (slot in frame.slots) {
-            canvas.drawRect(
-                (slot.x * multiplier).toFloat(),
-                (slot.y * multiplier).toFloat(),
-                ((slot.x + slot.width) * multiplier).toFloat(),
-                ((slot.y + slot.height) * multiplier).toFloat(),
-                paint
-            )
+            val rotation = slot.rotation ?: 0f
+            if (rotation != 0f) {
+                canvas.save()
+                val centerX = (slot.x + slot.width / 2f) * multiplier
+                val centerY = (slot.y + slot.height / 2f) * multiplier
+                canvas.rotate(rotation, centerX, centerY)
+                canvas.drawRect(
+                    (slot.x * multiplier).toFloat(),
+                    (slot.y * multiplier).toFloat(),
+                    ((slot.x + slot.width) * multiplier).toFloat(),
+                    ((slot.y + slot.height) * multiplier).toFloat(),
+                    paint
+                )
+                canvas.restore()
+            } else {
+                canvas.drawRect(
+                    (slot.x * multiplier).toFloat(),
+                    (slot.y * multiplier).toFloat(),
+                    ((slot.x + slot.width) * multiplier).toFloat(),
+                    ((slot.y + slot.height) * multiplier).toFloat(),
+                    paint
+                )
+            }
         }
         
         // Procedural text
@@ -1126,6 +1160,7 @@ fun PreviewPhotoContainer(
                         modifier = Modifier
                             .offset(x = slotLeft, y = slotTop)
                             .size(slotWidth, slotHeight)
+                            .rotate(slot.rotation ?: 0f)
                             .clipToBounds()
                             .background(Color.DarkGray)
                             .then(
@@ -1230,12 +1265,24 @@ fun PreviewPhotoContainer(
                 
                 androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
                     frame.slots.forEach { slot ->
-                        drawRect(
-                            color = Color.White,
-                            topLeft = Offset(slot.x * scaleX, slot.y * scaleY),
-                            size = androidx.compose.ui.geometry.Size(slot.width * scaleX, slot.height * scaleY),
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
-                        )
+                        val rotation = slot.rotation ?: 0f
+                        if (rotation != 0f) {
+                            rotate(rotation, pivot = Offset((slot.x + slot.width / 2f) * scaleX, (slot.y + slot.height / 2f) * scaleY)) {
+                                drawRect(
+                                    color = Color.White,
+                                    topLeft = Offset(slot.x * scaleX, slot.y * scaleY),
+                                    size = androidx.compose.ui.geometry.Size(slot.width * scaleX, slot.height * scaleY),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                )
+                            }
+                        } else {
+                            drawRect(
+                                color = Color.White,
+                                topLeft = Offset(slot.x * scaleX, slot.y * scaleY),
+                                size = androidx.compose.ui.geometry.Size(slot.width * scaleX, slot.height * scaleY),
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                            )
+                        }
                     }
                 }
             }
@@ -1948,10 +1995,12 @@ fun MiniFrameCard(
                         val slotWidth = (slot.width.toFloat() / frameWidth * previewWidth.value).dp
                         val slotHeight = (slot.height.toFloat() / frameHeight * previewHeight.value).dp
                         
+                        val rotation = slot.rotation ?: 0f
                         Box(
                             modifier = Modifier
                                 .offset(x = slotLeft, y = slotTop)
                                 .size(slotWidth, slotHeight)
+                                .rotate(rotation)
                                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                         )
                     }

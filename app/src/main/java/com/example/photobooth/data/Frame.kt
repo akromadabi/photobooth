@@ -40,7 +40,8 @@ data class Slot(
     @SerializedName("x") val x: Int,
     @SerializedName("y") val y: Int,
     @SerializedName("width") val width: Int,
-    @SerializedName("height") val height: Int
+    @SerializedName("height") val height: Int,
+    @SerializedName("rotation") val rotation: Float? = 0f
 )
 
 data class DynamicElements(

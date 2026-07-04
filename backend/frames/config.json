@@ -1,5 +1,5 @@
 {
-    "version": 40,
+    "version": 45,
     "events": [
         {
             "id": "general",
@@ -10,7 +10,12 @@
             "rental_end_time": "",
             "limit_prints_per_session": 1,
             "allowed_frames": [
-                "dynamic_event_strip"
+                "dynamic_event_strip",
+                "receipt_tagihan_dynamic",
+                "music_player_strip",
+                "boarding_pass_strip",
+                "vip_ticket_strip",
+                "my_style_stacked"
             ]
         },
         {
@@ -47,6 +52,339 @@
         }
     ],
     "frames": [
+        {
+            "id": "my_style_stacked",
+            "name": "My Style Stacked",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2400,
+            "background_color": "#2b3447",
+            "image_url": "frames/my_style_stacked.png",
+            "is_dynamic": true,
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 55,
+                    "y": 319,
+                    "width": 430,
+                    "height": 322,
+                    "rotation": -7
+                },
+                {
+                    "index": 1,
+                    "x": 115,
+                    "y": 729,
+                    "width": 430,
+                    "height": 322,
+                    "rotation": 7
+                },
+                {
+                    "index": 2,
+                    "x": 55,
+                    "y": 1139,
+                    "width": 430,
+                    "height": 322,
+                    "rotation": -5
+                },
+                {
+                    "index": 3,
+                    "x": 115,
+                    "y": 1549,
+                    "width": 430,
+                    "height": 322,
+                    "rotation": 8
+                }
+            ],
+            "dynamic_elements": {
+                "logo": {
+                    "x": 440,
+                    "y": 2020,
+                    "width": 110,
+                    "height": 110,
+                    "align": "center"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 50,
+                        "y": 2050,
+                        "font_size": 22,
+                        "font_style": "bold",
+                        "color": "#ffffff",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 50,
+                        "y": 2110,
+                        "font_size": 14,
+                        "font_style": "normal",
+                        "color": "#a0aec0",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 50,
+                        "y": 2170,
+                        "font_size": 14,
+                        "font_style": "bold",
+                        "color": "#ffffff",
+                        "align": "left"
+                    }
+                ]
+            },
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Aesthetic"
+        },
+        {
+            "id": "vip_ticket_strip",
+            "name": "VIP Concert Ticket 4-Foto",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2400,
+            "background_color": "#0f0c1b",
+            "image_url": "frames\/vip_ticket_strip.png",
+            "is_dynamic": true,
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 380,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 795,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1210,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1625,
+                    "width": 500,
+                    "height": 375
+                }
+            ],
+            "dynamic_elements": {
+                "logo": {
+                    "x": 460,
+                    "y": 2060,
+                    "width": 70,
+                    "height": 70,
+                    "align": "center"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 60,
+                        "y": 2085,
+                        "font_size": 18,
+                        "font_style": "bold",
+                        "color": "#ffffff",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 60,
+                        "y": 2140,
+                        "font_size": 12,
+                        "font_style": "normal",
+                        "color": "#06b6d4",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 60,
+                        "y": 2195,
+                        "font_size": 11,
+                        "font_style": "bold",
+                        "color": "#f59e0b",
+                        "align": "left"
+                    }
+                ]
+            },
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Concert"
+        },
+        {
+            "id": "boarding_pass_strip",
+            "name": "Boarding Pass 4-Foto",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2700,
+            "background_color": "#f6f6f8",
+            "image_url": "frames\/boarding_pass_strip.png",
+            "is_dynamic": true,
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 350,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 765,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1180,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1595,
+                    "width": 500,
+                    "height": 375
+                }
+            ],
+            "dynamic_elements": {
+                "logo": {
+                    "x": 440,
+                    "y": 2030,
+                    "width": 90,
+                    "height": 90,
+                    "align": "center"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 55,
+                        "y": 2135,
+                        "font_size": 22,
+                        "font_style": "bold",
+                        "color": "#0e1e3c",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 55,
+                        "y": 2210,
+                        "font_size": 15,
+                        "font_style": "normal",
+                        "color": "#1e232d",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 55,
+                        "y": 2298,
+                        "font_size": 13,
+                        "font_style": "bold",
+                        "color": "#2563eb",
+                        "align": "left"
+                    }
+                ]
+            },
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Travel"
+        },
+        {
+            "id": "music_player_strip",
+            "name": "Music Player Aesthetic",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2000,
+            "background_color": "#0d3b2e",
+            "image_url": "frames\/music_player_strip.png",
+            "is_dynamic": true,
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 200,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 605,
+                    "width": 500,
+                    "height": 375
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1010,
+                    "width": 500,
+                    "height": 375
+                }
+            ],
+            "dynamic_elements": {
+                "logo": {
+                    "x": 475,
+                    "y": 1475,
+                    "width": 75,
+                    "height": 75,
+                    "align": "center"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 50,
+                        "y": 1485,
+                        "font_size": 24,
+                        "font_style": "bold",
+                        "color": "#ffffff",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 50,
+                        "y": 1525,
+                        "font_size": 16,
+                        "font_style": "normal",
+                        "color": "#b3d4c9",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 300,
+                        "y": 1938,
+                        "font_size": 13,
+                        "font_style": "bold",
+                        "color": "#0d3b2e",
+                        "align": "center"
+                    }
+                ]
+            },
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Aesthetic"
+        },
         {
             "id": "dynamic_event_strip",
             "name": "Dynamic Event Strip",
@@ -933,6 +1271,90 @@
             ],
             "is_dynamic": false,
             "dynamic_elements": null
+        },
+        {
+            "id": "receipt_tagihan_dynamic",
+            "name": "Tagihan Dinamis (Yellow)",
+            "type": "strip",
+            "event_id": "general",
+            "width": 600,
+            "height": 2400,
+            "background_color": "#f6f6f8",
+            "image_url": "frames\/receipt_tagihan_dynamic.png",
+            "is_dynamic": true,
+            "slots": [
+                {
+                    "index": 0,
+                    "x": 50,
+                    "y": 420,
+                    "width": 500,
+                    "height": 360
+                },
+                {
+                    "index": 1,
+                    "x": 50,
+                    "y": 830,
+                    "width": 500,
+                    "height": 360
+                },
+                {
+                    "index": 2,
+                    "x": 50,
+                    "y": 1240,
+                    "width": 500,
+                    "height": 360
+                },
+                {
+                    "index": 3,
+                    "x": 50,
+                    "y": 1650,
+                    "width": 500,
+                    "height": 360
+                }
+            ],
+            "dynamic_elements": {
+                "logo": {
+                    "x": 25,
+                    "y": 37,
+                    "width": 60,
+                    "height": 60,
+                    "align": "left"
+                },
+                "texts": [
+                    {
+                        "type": "event_name",
+                        "x": 105,
+                        "y": 55,
+                        "font_size": 14,
+                        "font_style": "bold",
+                        "color": "#1e1e1e",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_subtitle",
+                        "x": 350,
+                        "y": 238,
+                        "font_size": 13,
+                        "font_style": "bold_italic",
+                        "color": "#1e1e1e",
+                        "align": "left"
+                    },
+                    {
+                        "type": "event_hashtag",
+                        "x": 300,
+                        "y": 2315,
+                        "font_size": 12,
+                        "font_style": "bold",
+                        "color": "#555555",
+                        "align": "center"
+                    }
+                ]
+            },
+            "print_flows": [
+                "RECEIPT",
+                "COLOR_PRINT"
+            ],
+            "category": "Receipt"
         }
     ]
 }

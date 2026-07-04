@@ -5700,7 +5700,18 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                     const img = new Image();
                     img.src = capturedPhotos[index];
                     img.onload = () => {
-                        bgCtx.drawImage(img, slot.x, slot.y, slot.width, slot.height);
+                        bgCtx.save();
+                        if (slot.rotation) {
+                            const centerX = slot.x + slot.width / 2;
+                            const centerY = slot.y + slot.height / 2;
+                            bgCtx.translate(centerX, centerY);
+                            bgCtx.rotate(slot.rotation * Math.PI / 180);
+                            bgCtx.drawImage(img, -slot.width / 2, -slot.height / 2, slot.width, slot.height);
+                        } else {
+                            bgCtx.drawImage(img, slot.x, slot.y, slot.width, slot.height);
+                        }
+                        bgCtx.restore();
+                        
                         loadedPhotosCount++;
                         if (loadedPhotosCount === slots.length) {
                             loadFrameTemplateOverlay();

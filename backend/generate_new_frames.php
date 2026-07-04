@@ -1,6 +1,7 @@
 <?php
 // Set execution timeout to 90 seconds
 set_time_limit(90);
+ini_set('memory_limit', '512M');
 
 $outputDir = __DIR__ . '/frames/';
 if (!file_exists($outputDir)) {
@@ -19,7 +20,9 @@ $fonts = [
     'courbd'    => $fontDir . 'courbd.ttf',
     'impact'    => $fontDir . 'impact.ttf',
     'malgun'    => $fontDir . 'malgun.ttf', // Korean font if available
-    'oldengl'   => $fontDir . 'OLDENGL.TTF'
+    'oldengl'   => $fontDir . 'OLDENGL.TTF',
+    'segoesc'   => $fontDir . 'segoesc.ttf',
+    'segoescb'  => $fontDir . 'segoescb.ttf'
 ];
 
 // Helper: safe font resolver falling back to build-in fonts
@@ -1909,6 +1912,478 @@ drawText($imgDyn, 12, 0, -1, 1920, $grey, 'arial', 'photobooth by @polling.id');
 imagepng($imgDyn, $outputDir . 'dynamic_event_strip.png');
 imagedestroy($imgDyn);
 
+// ==========================================
+// 6. TAGIHAN DINAMIS (receipt_tagihan_dynamic.png)
+// ==========================================
+echo "Generating receipt_tagihan_dynamic.png...\n";
+$imgTag = imagecreatetruecolor(600, 2400);
+imagealphablending($imgTag, false);
+imagesavealpha($imgTag, true);
 
-echo "All 19 frames generated successfully!\n";
+$paperBase = imagecolorallocate($imgTag, 250, 246, 238);
+imagefill($imgTag, 0, 0, $paperBase);
+
+for ($y = 0; $y < 2400; $y++) {
+    $ratio = $y / 2400;
+    $r = intval(250 - (10 * $ratio));
+    $g = intval(246 - (12 * $ratio));
+    $b = intval(238 - (15 * $ratio));
+    $col = imagecolorallocate($imgTag, $r, $g, $b);
+    imageline($imgTag, 0, $y, 600, $y, $col);
+}
+
+imagealphablending($imgTag, true);
+
+$gridColor = imagecolorallocatealpha($imgTag, 200, 190, 175, 105);
+for ($gx = 0; $gx < 600; $gx += 30) {
+    imageline($imgTag, $gx, 0, $gx, 2400, $gridColor);
+}
+for ($gy = 0; $gy < 2400; $gy += 30) {
+    imageline($imgTag, 0, $gy, 600, $gy, $gridColor);
+}
+
+$accentStarColor = imagecolorallocatealpha($imgTag, 220, 160, 30, 85);
+drawFourPointStar($imgTag, 530, 260, 16, $accentStarColor);
+drawFourPointStar($imgTag, 60, 2150, 18, $accentStarColor);
+drawFourPointStar($imgTag, 540, 2280, 14, $accentStarColor);
+
+$stampRed = imagecolorallocatealpha($imgTag, 210, 45, 45, 40);
+imageellipse($imgTag, 500, 100, 100, 100, $stampRed);
+imageellipse($imgTag, 500, 100, 92, 92, $stampRed);
+drawText($imgTag, 10, 15, 455, 105, $stampRed, 'arialbd', 'APPROVED');
+drawText($imgTag, 7, 15, 465, 120, $stampRed, 'arialbd', 'PHOTOBOOTH');
+
+$mustardYellow = imagecolorallocate($imgTag, 230, 168, 37);
+$darkCharcoal  = imagecolorallocate($imgTag, 28, 28, 28);
+$cardBgColor   = imagecolorallocate($imgTag, 255, 255, 255);
+$cardShadow    = imagecolorallocatealpha($imgTag, 0, 0, 0, 115);
+$cardBorder    = imagecolorallocate($imgTag, 215, 210, 200);
+$white         = imagecolorallocate($imgTag, 255, 255, 255);
+$mutedText     = imagecolorallocate($imgTag, 110, 110, 110);
+$subheadText   = imagecolorallocate($imgTag, 65, 65, 65);
+
+$tagSlots = [
+    ['x' => 50, 'y' => 420, 'w' => 500, 'h' => 360],
+    ['x' => 50, 'y' => 830, 'w' => 500, 'h' => 360],
+    ['x' => 50, 'y' => 1240, 'w' => 500, 'h' => 360],
+    ['x' => 50, 'y' => 1650, 'w' => 500, 'h' => 360]
+];
+
+
+imagefilledrectangle($imgTag, 0, 25, 250, 110, $mustardYellow);
+imagefilledellipse($imgTag, 250, 67, 85, 85, $mustardYellow);
+imagefilledellipse($imgTag, 55, 67, 65, 65, $white);
+imageellipse($imgTag, 55, 67, 65, 65, $cardBorder);
+
+drawText($imgTag, 26, 0, 315, 65, $darkCharcoal, 'arialbd', 'PHOTO RECEIPT');
+
+$contactItems = [
+    ['icon' => 'P', 'text' => '+123-456-7890', 'y' => 95],
+    ['icon' => 'L', 'text' => 'Studio Photobooth', 'y' => 120],
+    ['icon' => 'E', 'text' => 'hello@reallygreatsite.com', 'y' => 145]
+];
+
+foreach ($contactItems as $item) {
+    $cy = $item['y'] - 5;
+    imagefilledellipse($imgTag, 335, $cy, 18, 18, $mustardYellow);
+    if ($item['icon'] === 'P') {
+        imagefilledellipse($imgTag, 335, $cy, 7, 7, $white);
+    } else if ($item['icon'] === 'L') {
+        imagefilledellipse($imgTag, 335, $cy - 1, 5, 5, $white);
+        imagefilledrectangle($imgTag, 334, $cy + 1, 336, $cy + 3, $white);
+    } else {
+        imagefilledrectangle($imgTag, 331, $cy - 3, 339, $cy + 3, $white);
+    }
+    drawText($imgTag, 9, 0, 352, $item['y'], $subheadText, 'arialbd', $item['text']);
+}
+
+imageline($imgTag, 40, 175, 560, 175, $darkCharcoal);
+imageline($imgTag, 40, 177, 560, 177, $darkCharcoal);
+imageline($imgTag, 40, 182, 560, 182, $darkCharcoal);
+
+drawText($imgTag, 13, 0, 50, 215, $darkCharcoal, 'arialbd', 'Bukti Kenangan Session');
+drawText($imgTag, 10, 0, 50, 240, $subheadText, 'arial', 'Receipt No : #' . rand(100000, 999999));
+drawText($imgTag, 10, 0, 50, 262, $subheadText, 'arial', 'Date : ' . date('d/m/Y'));
+drawText($imgTag, 11, 0, 350, 215, $subheadText, 'arialbd', 'Kepada :');
+
+// Drop Shadow under Card Container
+imagefilledrectangle($imgTag, 44, 304, 564, 2024, $cardShadow);
+
+// Table Body Background Card (White Card)
+imagefilledrectangle($imgTag, 40, 320, 560, 2020, $cardBgColor);
+imagefilledrectangle($imgTag, 40, 300, 560, 355, $mustardYellow);
+
+// Cut transparent rectangles for photo slots AFTER drawing card background
+$transTag = imagecolorallocatealpha($imgTag, 0, 0, 0, 127);
+imagealphablending($imgTag, false);
+foreach ($tagSlots as $slot) {
+    imagefilledrectangle($imgTag, $slot['x'], $slot['y'], $slot['x'] + $slot['w'] - 1, $slot['y'] + $slot['h'] - 1, $transTag);
+}
+imagealphablending($imgTag, true);
+
+drawText($imgTag, 13, 0, 70, 335, $white, 'arialbd', 'Keterangan Momen');
+drawText($imgTag, 13, 0, 300, 335, $white, 'arialbd', 'Jumlah');
+drawText($imgTag, 13, 0, 455, 335, $white, 'arialbd', 'Status');
+
+$items = [
+    ['name' => 'Capture #1 - Smile & Pose',  'qty' => '1', 'total' => 'PRICELESS', 'itemY' => 390, 'slot' => $tagSlots[0]],
+    ['name' => 'Capture #2 - Best Moment',   'qty' => '1', 'total' => 'PRICELESS', 'itemY' => 800, 'slot' => $tagSlots[1]],
+    ['name' => 'Capture #3 - Sweet Memories', 'qty' => '1', 'total' => 'PRICELESS', 'itemY' => 1210, 'slot' => $tagSlots[2]],
+    ['name' => 'Capture #4 - Fun Times',      'qty' => '1', 'total' => 'PRICELESS', 'itemY' => 1620, 'slot' => $tagSlots[3]]
+];
+
+foreach ($items as $it) {
+    drawText($imgTag, 11, 0, 75, $it['itemY'], $darkCharcoal, 'arialbd', $it['name']);
+    drawText($imgTag, 11, 0, 320, $it['itemY'], $darkCharcoal, 'arialbd', $it['qty']);
+    drawText($imgTag, 11, 0, 435, $it['itemY'], $mustardYellow, 'arialbd', $it['total']);
+    $s = $it['slot'];
+    imagerectangle($imgTag, $s['x'] - 1, $s['y'] - 1, $s['x'] + $s['w'], $s['y'] + $s['h'], $darkCharcoal);
+}
+
+// ✨ CROSS-PHOTO OVERLAPPING ELEMENTS
+$ribbonBg = imagecolorallocate($imgTag, 230, 168, 37);
+$ribbonShadow = imagecolorallocatealpha($imgTag, 0, 0, 0, 80);
+imagefilledpolygon($imgTag, [35, 410, 165, 410, 150, 445, 35, 445], $ribbonShadow);
+imagefilledpolygon($imgTag, [30, 405, 160, 405, 145, 440, 30, 440], $ribbonBg);
+drawText($imgTag, 10, 0, 42, 428, $white, 'arialbd', '★ BEST SHOT');
+
+$stampRedCross = imagecolorallocatealpha($imgTag, 215, 35, 35, 20);
+$stampRedDark  = imagecolorallocatealpha($imgTag, 180, 20, 20, 20);
+imagefilledellipse($imgTag, 520, 805, 95, 95, $stampRedCross);
+imageellipse($imgTag, 520, 805, 95, 95, $stampRedDark);
+imageellipse($imgTag, 520, 805, 87, 87, $stampRedDark);
+drawText($imgTag, 9, -12, 480, 792, $stampRedDark, 'arialbd', '100% AUTHENTIC');
+drawText($imgTag, 8, -12, 488, 810, $stampRedDark, 'arialbd', '★ MEMORY ★');
+drawText($imgTag, 7, -12, 492, 825, $stampRedDark, 'arialbd', 'APPROVED');
+
+$washiColor = imagecolorallocatealpha($imgTag, 245, 220, 120, 45);
+$washiLine  = imagecolorallocatealpha($imgTag, 210, 170, 60, 60);
+imagefilledpolygon($imgTag, [20, 1230, 110, 1225, 105, 1255, 15, 1260], $washiColor);
+imageline($imgTag, 20, 1230, 110, 1225, $washiLine);
+imageline($imgTag, 15, 1260, 105, 1255, $washiLine);
+drawText($imgTag, 8, -3, 28, 1247, $darkCharcoal, 'courbd', 'SWEET POSES');
+
+$scriptTextCol = imagecolorallocate($imgTag, 220, 40, 40);
+drawText($imgTag, 16, -8, 440, 1590, $scriptTextCol, 'georgiai', 'Keep Smiling!');
+drawFourPointStar($imgTag, 545, 1585, 10, $mustardYellow);
+
+$badgeBg = imagecolorallocate($imgTag, 28, 28, 28);
+imagefilledrectangle($imgTag, 35, 1985, 160, 2015, $badgeBg);
+drawText($imgTag, 8, 0, 45, 2004, $white, 'courbd', 'AUTHENTIC SHOT');
+
+drawText($imgTag, 9, 0, 50, 2050, $mutedText, 'arial', 'Catatan Kenangan :');
+drawText($imgTag, 9, 0, 50, 2070, $subheadText, 'arialbd', 'Simpan Struk Foto Ini Selamanya!');
+drawText($imgTag, 9, 0, 50, 2090, $mutedText, 'arial', 'Atas Nama : Photobooth Joy Session');
+
+drawText($imgTag, 10, 0, 320, 2050, $darkCharcoal, 'arialbd', 'TOTAL SHOTS');
+drawText($imgTag, 10, 0, 470, 2050, $subheadText, 'arialbd', '4 POSES');
+drawText($imgTag, 10, 0, 320, 2080, $darkCharcoal, 'arialbd', 'HAPPY RATE');
+drawText($imgTag, 10, 0, 470, 2080, $subheadText, 'arialbd', '100%');
+drawText($imgTag, 12, 0, 320, 2118, $darkCharcoal, 'arialbd', 'TOTAL JOY');
+drawText($imgTag, 12, 0, 435, 2118, $mustardYellow, 'arialbd', 'PRICELESS');
+
+imageline($imgTag, 40, 2155, 560, 2155, $darkCharcoal);
+imageline($imgTag, 40, 2158, 560, 2158, $darkCharcoal);
+
+drawText($imgTag, 32, 0, -1, 2225, $darkCharcoal, 'arialbd', 'THANK YOU!');
+drawBarcode($imgTag, 200, 2265, 200, 25, $darkCharcoal);
+
+imagepng($imgTag, $outputDir . 'receipt_tagihan_dynamic.png');
+imagedestroy($imgTag);
+
+// ==========================================
+// 20. MY STYLE STACKED (my_style_stacked.png)
+// ==========================================
+echo "Generating my_style_stacked.png...\n";
+
+// Local Helpers for Upgraded Scrapbook Style
+if (!function_exists('drawRotatedFilledEllipse')) {
+    function drawRotatedFilledEllipse($img, $cx, $cy, $width, $height, $angleDegrees, $color) {
+        $points = [];
+        $numSegments = 32;
+        $rad = deg2rad($angleDegrees);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        for ($i = 0; $i < $numSegments; $i++) {
+            $theta = ($i * 2 * M_PI) / $numSegments;
+            $ex = ($width / 2) * cos($theta);
+            $ey = ($height / 2) * sin($theta);
+            $rx = $ex * $cos - $ey * $sin;
+            $ry = $ex * $sin + $ey * $cos;
+            $points[] = intval($cx + $rx);
+            $points[] = intval($cy + $ry);
+        }
+        imagefilledpolygon($img, $points, $color);
+    }
+}
+
+if (!function_exists('drawRotatedPolaroidCard')) {
+    function drawRotatedPolaroidCard($img, $cx, $cy, $w, $h, $rotation, $shadowColor, $whiteColor, $borderColor) {
+        $x1 = -$w/2 - 25; $y1 = -$h/2 - 25;
+        $x2 = $w/2 + 25;  $y2 = -$h/2 - 25;
+        $x3 = $w/2 + 25;  $y3 = $h/2 + 75;
+        $x4 = -$w/2 - 25; $y4 = $h/2 + 75;
+        
+        $rad = deg2rad($rotation);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        
+        // 1. Draw Drop Shadow
+        $shadowPts = [];
+        $dx = 6; $dy = 6;
+        foreach ([[$x1,$y1], [$x2,$y2], [$x3,$y3], [$x4,$y4]] as $c) {
+            $rx = $c[0] * $cos - $c[1] * $sin;
+            $ry = $c[0] * $sin + $c[1] * $cos;
+            $shadowPts[] = intval($cx + $rx + $dx);
+            $shadowPts[] = intval($cy + $ry + $dy);
+        }
+        imagefilledpolygon($img, $shadowPts, $shadowColor);
+        
+        // 2. Draw White Board
+        $boardPts = [];
+        foreach ([[$x1,$y1], [$x2,$y2], [$x3,$y3], [$x4,$y4]] as $c) {
+            $rx = $c[0] * $cos - $c[1] * $sin;
+            $ry = $c[0] * $sin + $c[1] * $cos;
+            $boardPts[] = intval($cx + $rx);
+            $boardPts[] = intval($cy + $ry);
+        }
+        imagefilledpolygon($img, $boardPts, $whiteColor);
+        imagepolygon($img, $boardPts, $borderColor);
+    }
+}
+
+if (!function_exists('cutoutRotatedSlot')) {
+    function cutoutRotatedSlot($img, $cx, $cy, $w, $h, $rotation, $transColor) {
+        $x1 = -$w/2; $y1 = -$h/2;
+        $x2 = $w/2;  $y2 = -$h/2;
+        $x3 = $w/2;  $y3 = $h/2;
+        $x4 = -$w/2; $y4 = $h/2;
+        
+        $rad = deg2rad($rotation);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        
+        $pts = [];
+        foreach ([[$x1,$y1], [$x2,$y2], [$x3,$y3], [$x4,$y4]] as $c) {
+            $rx = $c[0] * $cos - $c[1] * $sin;
+            $ry = $c[0] * $sin + $c[1] * $cos;
+            $pts[] = intval($cx + $rx);
+            $pts[] = intval($cy + $ry);
+        }
+        imagefilledpolygon($img, $pts, $transColor);
+    }
+}
+
+if (!function_exists('drawRotatedCenteredText')) {
+    function drawRotatedCenteredText($img, $cx, $cy, $offsetY, $text, $size, $angleDegrees, $color, $fontKey) {
+        global $fonts;
+        $fontPath = isset($fonts[$fontKey]) && file_exists($fonts[$fontKey]) ? $fonts[$fontKey] : null;
+        
+        if ($fontPath) {
+            $bbox = imagettfbbox($size, $angleDegrees, $fontPath, $text);
+            $textW = abs($bbox[2] - $bbox[0]);
+        } else {
+            $textW = strlen($text) * 8; // fallback
+        }
+        
+        $rad = deg2rad($angleDegrees);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        
+        // Unrotated offset coordinates relative to center
+        $ux = -$textW / 2;
+        $uy = $offsetY;
+        
+        // Apply rotation
+        $rx = $ux * $cos - $uy * $sin;
+        $ry = $ux * $sin + $uy * $cos;
+        
+        drawText($img, $size, $angleDegrees, $cx + $rx, $cy + $ry, $color, $fontKey, $text);
+    }
+}
+
+if (!function_exists('getRotatedCorner')) {
+    function getRotatedCorner($cx, $cy, $dx, $dy, $rotationAngle) {
+        $rad = deg2rad($rotationAngle);
+        $rx = $dx * cos($rad) - $dy * sin($rad);
+        $ry = $dx * sin($rad) + $dy * cos($rad);
+        return [intval($cx + $rx), intval($cy + $ry)];
+    }
+}
+
+if (!function_exists('drawWashiTape')) {
+    function drawWashiTape($img, $cx, $cy, $w, $h, $angleDegrees, $tapeColor, $borderColor) {
+        $x1 = -$w / 2; $y1 = -$h / 2;
+        $x2 = $w / 2;  $y2 = -$h / 2;
+        $x3 = $w / 2;  $y3 = $h / 2;
+        $x4 = -$w / 2; $y4 = $h / 2;
+        
+        $rad = deg2rad($angleDegrees);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        
+        $pts = [];
+        foreach ([[$x1,$y1], [$x2,$y2], [$x3,$y3], [$x4,$y4]] as $c) {
+            $rx = $c[0] * $cos - $c[1] * $sin;
+            $ry = $c[0] * $sin + $c[1] * $cos;
+            $pts[] = intval($cx + $rx);
+            $pts[] = intval($cy + $ry);
+        }
+        imagefilledpolygon($img, $pts, $tapeColor);
+        imagepolygon($img, $pts, $borderColor);
+    }
+}
+
+$imgStyle = imagecreatetruecolor(600, 2400);
+imagealphablending($imgStyle, true);
+imagesavealpha($imgStyle, true);
+
+// Navy Slate Background #222b3e
+$bgSlate = imagecolorallocate($imgStyle, 34, 43, 62);
+imagefill($imgStyle, 0, 0, $bgSlate);
+
+// Colors
+$whiteCol = imagecolorallocate($imgStyle, 255, 255, 255);
+$lightGrey = imagecolorallocate($imgStyle, 220, 220, 220);
+$darkGrey = imagecolorallocate($imgStyle, 45, 55, 72);
+$shadowCol = imagecolorallocatealpha($imgStyle, 0, 0, 0, 85);
+
+// 1. Draw Faint Blueprint Grid lines on the Background
+$gridColor = imagecolorallocatealpha($imgStyle, 255, 255, 255, 114); // Very transparent white (alpha 114/127)
+for ($gx = 0; $gx < 600; $gx += 48) {
+    imageline($imgStyle, $gx, 0, $gx, 2400, $gridColor);
+}
+for ($gy = 0; $gy < 2400; $gy += 48) {
+    imageline($imgStyle, 0, $gy, 600, $gy, $gridColor);
+}
+
+// 2. Draw Static Header "My Style"
+drawText($imgStyle, 45, 0, 75, 150, $whiteCol, 'segoescb', 'My Style');
+
+// Underline scribble under "My Style"
+for ($thick = -1; $thick <= 1; $thick++) {
+    imageline($imgStyle, 70, 168 + $thick, 290, 172 + $thick, $whiteCol);
+}
+
+// 3. Draw Top-Right Splash Doodle
+drawRotatedFilledEllipse($imgStyle, 480, 220, 30, 80, 20, $whiteCol); // Center droplet
+drawRotatedFilledEllipse($imgStyle, 410, 195, 22, 60, -45, $whiteCol);
+drawRotatedFilledEllipse($imgStyle, 370, 245, 20, 55, -75, $whiteCol);
+drawRotatedFilledEllipse($imgStyle, 530, 235, 18, 50, 60, $whiteCol);
+drawRotatedFilledEllipse($imgStyle, 535, 290, 10, 10, 0, $whiteCol); // Dot
+drawRotatedFilledEllipse($imgStyle, 365, 185, 8, 8, 0, $whiteCol); // Dot
+
+// 4. Draw Bottom-Right Loop/Swirl Doodle
+$prevX = null; $prevY = null;
+$swirlCx = 450; $swirlCy = 2080;
+for ($t = 0; $t <= 14; $t += 0.1) {
+    $x = $swirlCx + $t * 9 - 40 * cos($t);
+    $y = $swirlCy - 45 * sin($t) + $t * 5;
+    if ($prevX !== null) {
+        for ($thick = -2; $thick <= 2; $thick++) {
+            imageline($imgStyle, intval($prevX + $thick), intval($prevY), intval($x + $thick), intval($y), $whiteCol);
+            imageline($imgStyle, intval($prevX), intval($prevY + $thick), intval($x), intval($y + $thick), $whiteCol);
+        }
+    }
+    $prevX = $x;
+    $prevY = $y;
+}
+
+// 5. Draw Connective curved arrows & background text scribbles
+// Curved Arrow #1 (Card 0 -> Card 1)
+$arrowColor = imagecolorallocatealpha($imgStyle, 255, 255, 255, 20); // slightly transparent white for doodle lines
+$arrowPoints = [];
+for ($t = 0; $t <= 1; $t += 0.05) {
+    $x = (1-$t)*(1-$t)*130 + 2*(1-$t)*$t*80 + $t*$t*140;
+    $y = (1-$t)*(1-$t)*610 + 2*(1-$t)*$t*680 + $t*$t*740;
+    $arrowPoints[] = [$x, $y];
+}
+for ($i = 0; $i < count($arrowPoints)-1; $i++) {
+    imageline($imgStyle, intval($arrowPoints[$i][0]), intval($arrowPoints[$i][1]), intval($arrowPoints[$i+1][0]), intval($arrowPoints[$i+1][1]), $whiteCol);
+}
+imageline($imgStyle, 140, 740, 125, 725, $whiteCol);
+imageline($imgStyle, 140, 740, 145, 720, $whiteCol);
+
+drawText($imgStyle, 11, -10, 40, 675, $whiteCol, 'segoesc', 'this is me');
+
+// Curved Arrow #2 (Card 2 -> Card 3)
+$arrowPoints2 = [];
+for ($t = 0; $t <= 1; $t += 0.05) {
+    $x = (1-$t)*(1-$t)*460 + 2*(1-$t)*$t*500 + $t*$t*450;
+    $y = (1-$t)*(1-$t)*1450 + 2*(1-$t)*$t*1500 + $t*$t*1560;
+    $arrowPoints2[] = [$x, $y];
+}
+for ($i = 0; $i < count($arrowPoints2)-1; $i++) {
+    imageline($imgStyle, intval($arrowPoints2[$i][0]), intval($arrowPoints2[$i][1]), intval($arrowPoints2[$i+1][0]), intval($arrowPoints2[$i+1][1]), $whiteCol);
+}
+imageline($imgStyle, 450, 1560, 465, 1540, $whiteCol);
+imageline($imgStyle, 450, 1560, 440, 1542, $whiteCol);
+
+drawText($imgStyle, 11, 15, 475, 1495, $whiteCol, 'segoesc', 'vibes');
+
+// 6. Draw Scattered Doodles (Stars/Sparkles ✦)
+drawFourPointStar($imgStyle, 80, 220, 12, $whiteCol);
+drawFourPointStar($imgStyle, 490, 80, 14, $whiteCol);
+drawFourPointStar($imgStyle, 520, 670, 10, $whiteCol);
+drawFourPointStar($imgStyle, 70, 1120, 12, $whiteCol);
+drawFourPointStar($imgStyle, 80, 1550, 14, $whiteCol);
+drawFourPointStar($imgStyle, 520, 1920, 11, $whiteCol);
+
+// Slots definition (Same dimensions and rotations)
+$styleSlots = [
+    ['cx' => 270, 'cy' => 480, 'w' => 430, 'h' => 322, 'rot' => -7, 'cap' => 'smile today! :)'],
+    ['cx' => 330, 'cy' => 890, 'w' => 430, 'h' => 322, 'rot' => 7, 'cap' => 'favorite look <3'],
+    ['cx' => 270, 'cy' => 1300, 'w' => 430, 'h' => 322, 'rot' => -5, 'cap' => 'good vibes only'],
+    ['cx' => 330, 'cy' => 1710, 'w' => 430, 'h' => 322, 'rot' => 8, 'cap' => 'happy memory *']
+];
+
+// 7. Draw Polaroid Boards (with shadows)
+foreach ($styleSlots as $s) {
+    drawRotatedPolaroidCard($imgStyle, $s['cx'], $s['cy'], $s['w'], $s['h'], $s['rot'], $shadowCol, $whiteCol, $lightGrey);
+}
+
+// 8. Draw Polaroid Captions (Rotated Centered Text on the bottom board)
+foreach ($styleSlots as $s) {
+    drawRotatedCenteredText($imgStyle, $s['cx'], $s['cy'], 202, $s['cap'], 14, $s['rot'], $darkGrey, 'segoescb');
+}
+
+// 9. Draw Corner Washi Tapes (crossing polaroid corners)
+$tapeYellow = imagecolorallocatealpha($imgStyle, 245, 235, 175, 45);
+$borderYellow = imagecolorallocatealpha($imgStyle, 220, 205, 135, 60);
+
+$tapeGreen = imagecolorallocatealpha($imgStyle, 195, 235, 200, 45);
+$borderGreen = imagecolorallocatealpha($imgStyle, 160, 205, 165, 60);
+
+$tapePink = imagecolorallocatealpha($imgStyle, 245, 200, 215, 45);
+$borderPink = imagecolorallocatealpha($imgStyle, 215, 165, 185, 60);
+
+// Card 0 (Top-left tape)
+$c0 = getRotatedCorner(270, 480, -240, -186, -7);
+drawWashiTape($imgStyle, $c0[0], $c0[1], 90, 32, -35, $tapeYellow, $borderYellow);
+
+// Card 1 (Top-right tape)
+$c1 = getRotatedCorner(330, 890, 240, -186, 7);
+drawWashiTape($imgStyle, $c1[0], $c1[1], 90, 32, 25, $tapeGreen, $borderGreen);
+
+// Card 2 (Top-left tape)
+$c2 = getRotatedCorner(270, 1300, -240, -186, -5);
+drawWashiTape($imgStyle, $c2[0], $c2[1], 90, 32, -25, $tapePink, $borderPink);
+
+// Card 3 (Bottom-right tape)
+$c3 = getRotatedCorner(330, 1710, 240, 236, 8);
+drawWashiTape($imgStyle, $c3[0], $c3[1], 90, 32, 40, $tapeYellow, $borderYellow);
+
+
+// 10. Set alphablending = false and Cut Photo Slots
+imagealphablending($imgStyle, false);
+$transColor = imagecolorallocatealpha($imgStyle, 0, 0, 0, 127);
+foreach ($styleSlots as $s) {
+    cutoutRotatedSlot($imgStyle, $s['cx'], $s['cy'], $s['w'], $s['h'], $s['rot'], $transColor);
+}
+imagealphablending($imgStyle, true);
+
+imagepng($imgStyle, $outputDir . 'my_style_stacked.png');
+imagedestroy($imgStyle);
+
+echo "All frames generated successfully!\n";
 ?>
