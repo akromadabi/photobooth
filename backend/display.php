@@ -41,7 +41,7 @@ if (file_exists($queueFile)) {
             --bg-color: #0a0a0d;
             --card-bg: #121217;
             --primary-red: #e63946;
-            --primary-gold: #f7b801;
+            --primary-accent: #ff4b4b;
             --text-main: #f8f9fa;
             --text-muted: #8e8e9f;
             --border-color: #22222a;
@@ -220,7 +220,7 @@ if (file_exists($queueFile)) {
             transform: translate(-50%, -50%);
             width: 104%;
             height: 104%;
-            background: linear-gradient(135deg, var(--primary-red), var(--primary-gold));
+            background: linear-gradient(135deg, var(--primary-red), var(--primary-accent));
             border-radius: 32px;
             filter: blur(15px);
             opacity: 0.35;
@@ -280,7 +280,7 @@ if (file_exists($queueFile)) {
         .qr-arrow {
             font-size: 1.5rem;
             animation: bounceY 1.5s infinite;
-            color: var(--primary-gold);
+            color: var(--primary-accent);
         }
 
         @keyframes bounceY {

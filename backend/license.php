@@ -84,7 +84,7 @@ $verified = !empty($photoFile) && $metaData !== null;
             --bg-color: #08080a;
             --card-bg: rgba(20, 20, 28, 0.65);
             --primary-red: #e63946;
-            --primary-gold: #f7b801;
+            --primary-accent: #ff4b4b;
             --text-main: #f8f9fa;
             --text-muted: #8e8e9f;
             --border-color: rgba(255, 255, 255, 0.08);
@@ -251,9 +251,9 @@ $verified = !empty($photoFile) && $metaData !== null;
         }
 
         .image-frame:hover {
-            border-color: var(--primary-gold);
+            border-color: var(--primary-accent);
             transform: scale(1.02);
-            box-shadow: 0 20px 40px rgba(247, 184, 1, 0.15);
+            box-shadow: 0 20px 40px rgba(255, 77, 77, 0.15);
         }
 
         .image-frame img {
@@ -316,7 +316,7 @@ $verified = !empty($photoFile) && $metaData !== null;
         .meta-val.serial {
             font-family: monospace;
             font-size: 0.95rem;
-            color: var(--primary-gold);
+            color: var(--primary-accent);
             letter-spacing: 0.5px;
         }
 
@@ -340,8 +340,8 @@ $verified = !empty($photoFile) && $metaData !== null;
 
         .seal-stamp i {
             font-size: 1.5rem;
-            color: var(--primary-gold);
-            text-shadow: 0 0 10px rgba(247, 184, 1, 0.3);
+            color: var(--primary-accent);
+            text-shadow: 0 0 10px rgba(255, 77, 77, 0.3);
         }
 
         .btn-download {

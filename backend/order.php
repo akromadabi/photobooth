@@ -238,7 +238,7 @@ if ($isRemoteMode) {
             --bg-color: #0c0c0f;
             --card-bg: #14141a;
             --primary-red: #e63946;
-            --primary-gold: #f7b801;
+            --primary-accent: #ff4b4b;
             --text-main: #f8f9fa;
             --text-muted: #8d8d9f;
             --border-color: #22222a;
@@ -253,26 +253,26 @@ if ($isRemoteMode) {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 12px;
         }
 
         .header {
             width: 100%;
             max-width: 480px;
             text-align: center;
-            margin-bottom: 24px;
-            margin-top: 10px;
+            margin-bottom: 12px;
+            margin-top: 5px;
         }
 
         .logo {
             font-weight: 800;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             letter-spacing: -0.5px;
         }
         .logo span { color: var(--primary-red); }
 
         .subtitle {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -285,11 +285,11 @@ if ($isRemoteMode) {
             max-width: 480px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 12px;
         }
 
         .section-title {
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -299,7 +299,7 @@ if ($isRemoteMode) {
         /* ─── PACKAGE SELECTOR ROW ─── */
         .package-selector-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
             margin-top: 6px;
         }
@@ -308,13 +308,13 @@ if ($isRemoteMode) {
             flex: 1;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 14px 8px;
+            border-radius: 12px;
+            padding: 10px 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
@@ -329,21 +329,21 @@ if ($isRemoteMode) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(247, 184, 1, 0.15), rgba(230, 57, 70, 0.15));
+            background: linear-gradient(135deg, rgba(255, 75, 75, 0.15), rgba(230, 57, 70, 0.15));
             opacity: 0;
             transition: opacity 0.25s ease;
         }
 
         .package-select-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(247, 184, 1, 0.4);
+            border-color: rgba(255, 75, 75, 0.4);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         .package-select-card.active {
-            border-color: var(--primary-gold);
-            background: linear-gradient(135deg, #f7b801, #e63946);
-            box-shadow: 0 8px 24px rgba(247, 184, 1, 0.25);
+            border-color: var(--primary-accent);
+            background: linear-gradient(135deg, var(--primary-accent), var(--primary-red));
+            box-shadow: 0 8px 24px rgba(255, 75, 75, 0.25);
             transform: scale(1.02);
         }
         
@@ -352,7 +352,7 @@ if ($isRemoteMode) {
         }
 
         .package-select-icon {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             margin-bottom: 2px;
             transition: transform 0.25s ease;
         }
@@ -362,7 +362,7 @@ if ($isRemoteMode) {
         }
 
         .package-select-name {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 800;
             color: var(--text-main);
             line-height: 1.2;
@@ -370,29 +370,30 @@ if ($isRemoteMode) {
         }
         
         .package-select-card.active .package-select-name {
-            color: #000;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
         .package-select-price {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
-            color: var(--primary-gold);
+            color: var(--primary-accent);
             transition: color 0.25s ease;
         }
         
         .package-select-card.active .package-select-price {
-            color: #000;
-            font-weight: 900;
+            color: #fff;
+            font-weight: 800;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
         /* ─── DETAILS PANEL ─── */
         .details-panel {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 16px;
-            min-height: 100px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            min-height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -402,7 +403,7 @@ if ($isRemoteMode) {
         }
 
         .details-placeholder {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
             text-align: center;
             font-style: italic;
@@ -412,7 +413,7 @@ if ($isRemoteMode) {
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
             animation: fadeInDetails 0.3s ease forwards;
         }
 
@@ -422,20 +423,20 @@ if ($isRemoteMode) {
         }
 
         .details-title {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 800;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 6px;
+            padding-bottom: 4px;
             text-align: left;
         }
 
         .details-grid {
             display: grid;
             grid-template-columns: repeat(1, 1fr);
-            gap: 6px;
+            gap: 4px;
         }
         
         @media(min-width: 380px) {
@@ -447,8 +448,8 @@ if ($isRemoteMode) {
         .detail-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
+            gap: 6px;
+            font-size: 0.75rem;
             font-weight: 600;
         }
 
@@ -462,31 +463,31 @@ if ($isRemoteMode) {
         }
 
         .detail-icon {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 800;
         }
 
         /* ─── BTN ORDER ─── */
         .btn-order {
-            background: linear-gradient(135deg, var(--primary-gold), #e63946);
-            color: black;
-            font-size: 1rem;
+            background: linear-gradient(135deg, var(--primary-accent), var(--primary-red));
+            color: white;
+            font-size: 0.9rem;
             font-weight: 800;
-            padding: 14px;
-            border-radius: 16px;
+            padding: 12px;
+            border-radius: 12px;
             border: none;
             cursor: pointer;
             width: 100%;
             font-family: inherit;
             transition: all 0.25s ease;
-            box-shadow: 0 4px 15px rgba(247, 184, 1, 0.2);
+            box-shadow: 0 4px 15px rgba(255, 75, 75, 0.25);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-top: 6px;
         }
 
         .btn-order:hover:not(:disabled) {
-            box-shadow: 0 6px 20px rgba(247, 184, 1, 0.4);
+            box-shadow: 0 6px 20px rgba(255, 75, 75, 0.4);
             transform: translateY(-1px);
         }
 
@@ -772,11 +773,11 @@ if ($isRemoteMode) {
         }
 
         .selected-layout-badge span {
-            color: var(--primary-gold);
-            background-color: rgba(247, 184, 1, 0.1);
+            color: var(--primary-accent);
+            background-color: rgba(255, 77, 77, 0.1);
             padding: 3px 8px;
             border-radius: 4px;
-            border: 1px solid rgba(247, 184, 1, 0.2);
+            border: 1px solid rgba(255, 77, 77, 0.2);
         }
 
         .frame-scroll-select {
@@ -801,7 +802,7 @@ if ($isRemoteMode) {
             border-radius: 10px;
         }
         .frame-scroll-select::-webkit-scrollbar-thumb:hover {
-            background: rgba(247, 184, 1, 0.5);
+            background: rgba(255, 77, 77, 0.5);
         }
 
         .frame-item-card {
@@ -840,9 +841,9 @@ if ($isRemoteMode) {
         }
 
         .frame-item-card.active {
-            border-color: var(--primary-gold);
-            background-color: rgba(247, 184, 1, 0.04);
-            box-shadow: 0 8px 24px rgba(247, 184, 1, 0.15);
+            border-color: var(--primary-accent);
+            background-color: rgba(255, 77, 77, 0.04);
+            box-shadow: 0 8px 24px rgba(255, 77, 77, 0.15);
             transform: scale(1.02);
         }
 
@@ -894,17 +895,17 @@ if ($isRemoteMode) {
         }
 
         .frame-item-card.active .frame-item-name {
-            color: var(--primary-gold);
+            color: var(--primary-accent);
             font-weight: 700;
         }
 
         .frame-item-card.active:hover .frame-item-name {
-            color: var(--primary-gold);
+            color: var(--primary-accent);
         }
 
         /* Glowing red capture button */
         .btn-capture-glowing {
-            background: linear-gradient(135deg, var(--primary-red), #ff6b6b);
+            background: linear-gradient(135deg, var(--primary-red), var(--primary-accent));
             color: white;
             font-size: 1.25rem;
             font-weight: 900;
@@ -958,9 +959,9 @@ if ($isRemoteMode) {
             transition: all 0.2s ease;
         }
         .category-tab-btn.active {
-            background: var(--primary-gold);
-            color: black;
-            border-color: var(--primary-gold);
+            background: var(--primary-accent);
+            color: #fff;
+            border-color: var(--primary-accent);
         }
     </style>
 </head>

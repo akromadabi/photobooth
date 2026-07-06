@@ -695,26 +695,26 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 12px;
         }
 
         .payment-card {
             width: 100%;
-            max-width: 440px;
+            max-width: 420px;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 30px;
+            border-radius: 16px;
+            padding: 20px 16px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 12px;
         }
 
         .header {
             text-align: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 16px;
+            padding-bottom: 10px;
         }
 
         .logo {
@@ -725,20 +725,20 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         .logo span { color: var(--primary-red); }
 
         .title {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 700;
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .bill-details {
             background-color: #0c0c0f;
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            font-size: 0.9rem;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.85rem;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
         }
 
         .bill-row {
@@ -750,27 +750,27 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         .bill-val { font-weight: 600; }
 
         .price-tag {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--primary-red);
             text-align: center;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .qris-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-            padding: 10px 0;
+            gap: 8px;
+            padding: 5px 0;
         }
 
         .qris-box {
             background-color: white;
-            border-radius: 16px;
-            padding: 16px;
-            width: 220px;
-            height: 220px;
+            border-radius: 12px;
+            padding: 10px;
+            width: 180px;
+            height: 180px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -804,12 +804,12 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             background-color: #25D366;
             color: white;
             font-weight: 700;
-            padding: 16px;
-            border-radius: 12px;
+            padding: 12px;
+            border-radius: 10px;
             border: none;
             cursor: pointer;
             font-family: inherit;
-            font-size: 1rem;
+            font-size: 0.9rem;
             box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);
             transition: all 0.25s;
             text-align: center;
@@ -822,10 +822,10 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         }
 
         .instruction {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             text-align: center;
-            line-height: 1.5;
+            line-height: 1.3;
         }
 
         /* Camera Scanner Styles */
@@ -940,11 +940,11 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         </div>
 
         <!-- Tab Navigation for Payment Methods -->
-        <div class="payment-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-top: 15px;">
-            <button class="pay-tab active" id="tab-btn-online" onclick="switchPayTab('online')" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+        <div class="payment-tabs" style="display: flex; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 8px;">
+            <button class="pay-tab active" id="tab-btn-online" onclick="switchPayTab('online')" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
                 📱 <span>QRIS / Online</span>
             </button>
-            <button class="pay-tab" id="tab-btn-coupon" onclick="switchPayTab('coupon')" style="flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+            <button class="pay-tab" id="tab-btn-coupon" onclick="switchPayTab('coupon')" style="flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
                 🎫 <span>Kupon Tunai</span>
             </button>
         </div>
@@ -966,7 +966,7 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
                         <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
                     </div>
                     
-                    <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.85rem; padding: 12px;">Cek Status Pembayaran Manual</button>
+                    <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.8rem; padding: 10px; border-radius: 10px;">Cek Status Pembayaran Manual</button>
 
                     <div class="instruction">
                         *Menunggu pembayaran terdeteksi secara otomatis... Halaman ini akan dialihkan setelah transaksi sukses.
@@ -988,7 +988,7 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
                         <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
                     </div>
                     
-                    <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.85rem; padding: 12px;">Cek Status Pembayaran Manual</button>
+                    <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.8rem; padding: 10px; border-radius: 10px;">Cek Status Pembayaran Manual</button>
 
                     <div class="instruction">
                         *Menunggu pembayaran terdeteksi secara otomatis... Halaman ini akan dialihkan setelah transaksi sukses.
@@ -1015,11 +1015,11 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         </div>
 
         <!-- COUPON METHOD VIEW -->
-        <div id="payment-view-coupon" style="display: none; flex-direction: column; gap: 16px;">
-            <div style="text-align: center; display: flex; flex-direction: column; gap: 6px; margin: 10px 0;">
-                <div style="font-size: 1.5rem;">🎟️</div>
-                <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Gunakan Kupon Pembayaran</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; max-width: 280px; margin: 0 auto;">
+        <div id="payment-view-coupon" style="display: none; flex-direction: column; gap: 10px;">
+            <div style="text-align: center; display: flex; flex-direction: column; gap: 4px; margin: 5px 0;">
+                <div style="font-size: 1.3rem;">🎟️</div>
+                <div style="font-size: 0.9rem; font-weight: 700; color: #fff;">Gunakan Kupon Pembayaran</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.3; max-width: 280px; margin: 0 auto;">
                     Bayar cash ke kasir untuk mendapatkan struk kupon, lalu masukkan kodenya di bawah ini.
                 </div>
             </div>
@@ -1031,9 +1031,9 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
                 <div class="scanner-status" id="scanner-status">Menginisialisasi kamera...</div>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <input type="text" id="coupon_code_input" placeholder="MASUKKAN KODE KUPON" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: #fff; padding: 14px; border-radius: 12px; font-size: 1.05rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; width: 100%; box-sizing: border-box; font-family: monospace; outline: none; transition: border-color 0.2s;" maxlength="20">
-                <div id="coupon-error-msg" style="font-size: 0.8rem; font-weight: 600; text-align: center; display: none; line-height: 1.3;"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <input type="text" id="coupon_code_input" placeholder="MASUKKAN KODE KUPON" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; width: 100%; box-sizing: border-box; font-family: monospace; outline: none; transition: border-color 0.2s;" maxlength="20">
+                <div id="coupon-error-msg" style="font-size: 0.75rem; font-weight: 600; text-align: center; display: none; line-height: 1.3;"></div>
             </div>
 
             <button class="btn-verify" id="btnRedeemCoupon" onclick="redeemCoupon()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">GUNAKAN KUPON</button>
