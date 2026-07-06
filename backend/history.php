@@ -14,11 +14,30 @@ if (!file_exists($uploadsDir)) {
     exit;
 }
 
-// Find all files matching the photo pattern
+// 1. Scan all timelapses once to avoid expensive glob calls inside the loop
+$timelapseFiles = glob($uploadsDir . '*_timelapse.*');
+$timelapseMap = [];
+if ($timelapseFiles) {
+    foreach ($timelapseFiles as $tlFile) {
+        $tlFilename = basename($tlFile);
+        $tlParts = explode('_', $tlFilename);
+        if (count($tlParts) > 0) {
+            $tlSessionId = $tlParts[0];
+            $timelapseMap[$tlSessionId] = $tlFilename;
+        }
+    }
+}
+
+// 2. Find all photo files
 $files = glob($uploadsDir . '*_photo.png');
 $history = [];
 
 if ($files) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'];
+    $baseDir = dirname($_SERVER['SCRIPT_NAME']);
+    $baseDir = ($baseDir === '\\' || $baseDir === '/') ? '' : $baseDir;
+    
     // Collect file information
     foreach ($files as $file) {
         $filename = basename($file);
@@ -29,19 +48,13 @@ if ($files) {
         $sessionId = $parts[0];
         $mtime = filemtime($file);
         
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-        $host = $_SERVER['HTTP_HOST'];
-        $baseDir = dirname($_SERVER['SCRIPT_NAME']);
-        $baseDir = ($baseDir === '\\' || $baseDir === '/') ? '' : $baseDir;
-        
         $photoUrl = $protocol . $host . $baseDir . '/uploads/' . $filename;
         $downloadUrl = $protocol . $host . $baseDir . '/index.php?id=' . $sessionId;
         
-        // Check if matching timelapse exists
+        // 3. Fast O(1) lookup in memory instead of O(N) filesystem call
         $timelapseUrl = null;
-        $timelapseMatches = glob($uploadsDir . $sessionId . '_timelapse.*');
-        if (!empty($timelapseMatches)) {
-            $timelapseUrl = $protocol . $host . $baseDir . '/uploads/' . basename($timelapseMatches[0]);
+        if (isset($timelapseMap[$sessionId])) {
+            $timelapseUrl = $protocol . $host . $baseDir . '/uploads/' . $timelapseMap[$sessionId];
         }
         
         $history[] = [
@@ -57,6 +70,12 @@ if ($files) {
     usort($history, function($a, $b) {
         return $b['timestamp'] - $a['timestamp'];
     });
+    
+    // Limit to the newest 200 items to prevent network payload bloat and mobile rendering lag
+    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 200;
+    if ($limit > 0 && count($history) > $limit) {
+        $history = array_slice($history, 0, $limit);
+    }
 }
 
 echo json_encode($history);

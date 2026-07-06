@@ -964,18 +964,9 @@ private fun stitchPhotos(
         }
     }
     
-    var finalBitmap = template
-    if (isReceiptPackage) {
-        val grayscaleBitmap = Bitmap.createBitmap(template.width, template.height, Bitmap.Config.ARGB_8888)
-        val grayscaleCanvas = Canvas(grayscaleBitmap)
-        val grayscalePaint = Paint().apply {
-            val cm = android.graphics.ColorMatrix()
-            cm.setSaturation(0f)
-            colorFilter = ColorMatrixColorFilter(cm)
-        }
-        grayscaleCanvas.drawBitmap(template, 0f, 0f, grayscalePaint)
-        finalBitmap = grayscaleBitmap
-    }
+    val finalBitmap = template
+    // Grayscale conversion removed to keep the digital download in color.
+    // The thermal printer driver will automatically handle dithered monochrome conversion for printing.
 
     // Save final composite strip with a unique timestamp to bypass caching
     val outputFile = File(context.cacheDir, "final_stitched_strip_${System.currentTimeMillis()}.png")
