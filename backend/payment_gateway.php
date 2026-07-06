@@ -676,6 +676,7 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg-color: #0f0f12;
@@ -907,11 +908,11 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         <div class="header">
             <div class="logo">Creative<span>Studio</span></div>
             <?php if ($settings['payment_mode'] === 'midtrans'): ?>
-                <div class="title">💳 SECURE CHECKOUT (MIDTRANS)</div>
+                <div class="title"><i class="fa-solid fa-shield-halved" style="color: var(--primary-red); margin-right: 6px;"></i> SECURE CHECKOUT (MIDTRANS)</div>
             <?php elseif ($settings['payment_mode'] === 'siapp_pay'): ?>
-                <div class="title">💳 SECURE CHECKOUT (SIAPPPAY)</div>
+                <div class="title"><i class="fa-solid fa-shield-halved" style="color: var(--primary-red); margin-right: 6px;"></i> SECURE CHECKOUT (SIAPPPAY)</div>
             <?php else: ?>
-                <div class="title">💵 GERBANG PEMBAYARAN SIMULASI</div>
+                <div class="title"><i class="fa-solid fa-wallet" style="color: var(--primary-red); margin-right: 6px;"></i> GERBANG PEMBAYARAN SIMULASI</div>
             <?php endif; ?>
         </div>
 
@@ -942,10 +943,10 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         <!-- Tab Navigation for Payment Methods -->
         <div class="payment-tabs" style="display: flex; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 8px;">
             <button class="pay-tab active" id="tab-btn-online" onclick="switchPayTab('online')" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-                📱 <span>QRIS / Online</span>
+                <i class="fa-solid fa-qrcode" style="font-size: 0.9rem;"></i> <span>QRIS / Online</span>
             </button>
             <button class="pay-tab" id="tab-btn-coupon" onclick="switchPayTab('coupon')" style="flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-                🎫 <span>Kupon Tunai</span>
+                <i class="fa-solid fa-ticket" style="font-size: 0.9rem;"></i> <span>Kupon Tunai</span>
             </button>
         </div>
 
@@ -954,7 +955,7 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             <?php if ($settings['payment_mode'] === 'midtrans'): ?>
                 <?php if ($midtransError): ?>
                     <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
-                        <div style="color: #ef4444; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
+                        <div style="color: #ef4444; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;"><i class="fa-solid fa-circle-xmark" style="margin-right: 6px;"></i>Gagal Memulai Pembayaran</div>
                         <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; line-height: 1.4;"><?php echo htmlspecialchars($midtransError); ?></div>
                         <button class="btn-verify" onclick="window.location.reload()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">Coba Lagi</button>
                     </div>
@@ -976,7 +977,7 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             <?php elseif ($settings['payment_mode'] === 'siapp_pay'): ?>
                 <?php if ($siappPayError): ?>
                     <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
-                        <div style="color: #ef4444; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">❌ Gagal Memulai Pembayaran</div>
+                        <div style="color: #ef4444; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;"><i class="fa-solid fa-circle-xmark" style="margin-right: 6px;"></i>Gagal Memulai Pembayaran</div>
                         <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; line-height: 1.4;"><?php echo htmlspecialchars($siappPayError); ?></div>
                         <button class="btn-verify" onclick="window.location.reload()" style="background-color: var(--primary-red); box-shadow: 0 4px 15px rgba(230, 57, 70, 0.25);">Coba Lagi</button>
                     </div>
@@ -1017,7 +1018,7 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         <!-- COUPON METHOD VIEW -->
         <div id="payment-view-coupon" style="display: none; flex-direction: column; gap: 10px;">
             <div style="text-align: center; display: flex; flex-direction: column; gap: 4px; margin: 5px 0;">
-                <div style="font-size: 1.3rem;">🎟️</div>
+                <div style="font-size: 1.3rem; color: var(--primary-red); margin-bottom: 4px;"><i class="fa-solid fa-ticket-simple"></i></div>
                 <div style="font-size: 0.9rem; font-weight: 700; color: #fff;">Gunakan Kupon Pembayaran</div>
                 <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.3; max-width: 280px; margin: 0 auto;">
                     Bayar cash ke kasir untuk mendapatkan struk kupon, lalu masukkan kodenya di bawah ini.

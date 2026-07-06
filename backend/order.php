@@ -233,6 +233,7 @@ if ($isRemoteMode) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg-color: #0c0c0f;
@@ -306,20 +307,21 @@ if ($isRemoteMode) {
 
         .package-select-card {
             flex: 1;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 10px 6px;
+            padding: 14px 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 6px;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
 
         .package-select-card::before {
@@ -329,76 +331,98 @@ if ($isRemoteMode) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(255, 75, 75, 0.15), rgba(230, 57, 70, 0.15));
+            background: radial-gradient(circle at top right, rgba(255, 75, 75, 0.12), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .package-select-card::after {
+            content: '\f058';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.72rem;
+            color: var(--primary-accent);
             opacity: 0;
             transition: opacity 0.25s ease;
         }
 
         .package-select-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(255, 75, 75, 0.4);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 75, 75, 0.3);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
 
         .package-select-card.active {
             border-color: var(--primary-accent);
-            background: linear-gradient(135deg, var(--primary-accent), var(--primary-red));
-            box-shadow: 0 8px 24px rgba(255, 75, 75, 0.25);
+            background: rgba(255, 77, 77, 0.06);
+            box-shadow: 0 0 20px rgba(255, 75, 75, 0.2), inset 0 0 10px rgba(255, 75, 75, 0.15);
             transform: scale(1.02);
         }
         
-        .package-select-card.active::before {
+        .package-select-card.active::before,
+        .package-select-card.active::after {
             opacity: 1;
         }
 
         .package-select-icon {
             font-size: 1.4rem;
+            color: var(--text-muted);
+            opacity: 0.7;
             margin-bottom: 2px;
-            transition: transform 0.25s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .package-select-card.active .package-select-icon {
-            transform: scale(1.15) rotate(-5deg);
+            color: var(--primary-accent);
+            opacity: 1;
+            transform: scale(1.15) rotate(-3deg);
+            filter: drop-shadow(0 0 8px rgba(255, 75, 75, 0.4));
         }
 
         .package-select-name {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--text-main);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-muted);
             line-height: 1.2;
             transition: color 0.25s ease;
         }
         
         .package-select-card.active .package-select-name {
-            color: #fff;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+            color: var(--text-main);
+            font-weight: 700;
         }
 
         .package-select-price {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--primary-accent);
-            transition: color 0.25s ease;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            opacity: 0.8;
+            transition: all 0.25s ease;
         }
         
         .package-select-card.active .package-select-price {
-            color: #fff;
+            color: var(--primary-accent);
+            opacity: 1;
             font-weight: 800;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
         /* ─── DETAILS PANEL ─── */
         .details-panel {
-            background: var(--card-bg);
+            background: rgba(20, 20, 26, 0.7);
+            backdrop-filter: blur(8px);
             border: 1px solid var(--border-color);
             border-radius: 14px;
-            padding: 12px 14px;
+            padding: 14px;
             min-height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             width: 100%;
         }
 
@@ -1002,9 +1026,9 @@ if ($isRemoteMode) {
                         <div class="package-select-card" data-package-id="<?php echo htmlspecialchars($pkg['id']); ?>" onclick="selectPackage('<?php echo htmlspecialchars($pkg['id']); ?>')">
                             <div class="package-select-icon">
                                 <?php 
-                                    if ($flow === 'RECEIPT') echo '🖨️';
-                                    elseif ($flow === 'COLOR_PRINT') echo '🎨';
-                                    else echo '🪪'; 
+                                    if ($flow === 'RECEIPT') echo '<i class="fa-solid fa-print"></i>';
+                                    elseif ($flow === 'COLOR_PRINT') echo '<i class="fa-solid fa-palette"></i>';
+                                    else echo '<i class="fa-solid fa-id-card"></i>'; 
                                 ?>
                             </div>
                             <div class="package-select-name"><?php echo htmlspecialchars($pkg['name']); ?></div>
@@ -1042,15 +1066,21 @@ if ($isRemoteMode) {
                             <div class="details-title">Fitur Paket <?php echo htmlspecialchars($pkg['name']); ?>:</div>
                             <div class="details-grid">
                                 <div class="detail-item <?php echo $pkg['features']['print']?'active':'inactive'; ?>">
-                                    <span class="detail-icon"><?php echo $pkg['features']['print'] ? '✓' : '✗'; ?></span>
+                                    <span class="detail-icon">
+                                        <?php echo $pkg['features']['print'] ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-xmark"></i>'; ?>
+                                    </span>
                                     <span>Cetak Struk Fisik</span>
                                 </div>
                                 <div class="detail-item <?php echo $pkg['features']['download']?'active':'inactive'; ?>">
-                                    <span class="detail-icon"><?php echo $pkg['features']['download'] ? '✓' : '✗'; ?></span>
+                                    <span class="detail-icon">
+                                        <?php echo $pkg['features']['download'] ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-xmark"></i>'; ?>
+                                    </span>
                                     <span>Download Foto Strip</span>
                                 </div>
                                 <div class="detail-item <?php echo $pkg['features']['gif']?'active':'inactive'; ?>">
-                                    <span class="detail-icon"><?php echo $pkg['features']['gif'] ? '✓' : '✗'; ?></span>
+                                    <span class="detail-icon">
+                                        <?php echo $pkg['features']['gif'] ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-xmark"></i>'; ?>
+                                    </span>
                                     <span>Live Animated GIF</span>
                                 </div>
                             </div>
