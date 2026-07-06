@@ -170,7 +170,6 @@ fun AdminScreen(
     var backendUrl by remember { mutableStateOf(configManager.backendUrl) }
     var adminPin by remember { mutableStateOf(configManager.adminPin) }
     var countdownSeconds by remember { mutableStateOf(configManager.countdownSeconds.toString()) }
-    var totalShots by remember { mutableStateOf(configManager.totalShots.toString()) }
     var printerType by remember { mutableStateOf(configManager.printerType) }
     var historyListState by remember { mutableStateOf(configManager.getPrinterHistory()) }
     val isThermalEnabled = remember(printerType) { printerType == "AUTO" || printerType == "THERMAL" }
@@ -712,19 +711,6 @@ fun AdminScreen(
                                     ),
                                     modifier = Modifier.fillMaxWidth()
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                OutlinedTextField(
-                                    value = totalShots,
-                                    onValueChange = { totalShots = it },
-                                    label = { Text("Jumlah Jepretan Foto per Sesi") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = White,
-                                        unfocusedTextColor = White,
-                                        focusedBorderColor = Color(0xFFE63946)
-                                    ),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 
                             }
@@ -1109,9 +1095,7 @@ fun AdminScreen(
                                     configManager.useBiometric = useBiometric
                                     
                                     val cd = countdownSeconds.toIntOrNull() ?: 5
-                                    val ts = totalShots.toIntOrNull() ?: 4
                                     configManager.countdownSeconds = cd
-                                    configManager.totalShots = ts
                                     
                                     configManager.kioskMode = kioskMode
                                     configManager.activeEventId = activeEventId

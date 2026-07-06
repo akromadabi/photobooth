@@ -222,7 +222,14 @@ fun CameraCaptureLayout(
     
     // Flash & Capture States
     var showFlashOverlay by remember { mutableStateOf(false) }
-    val mediaSound = remember { MediaActionSound().apply { load(MediaActionSound.SHUTTER_CLICK); load(MediaActionSound.FOCUS_COMPLETE) } }
+    val mediaSound = remember {
+        try {
+            MediaActionSound().apply { load(MediaActionSound.SHUTTER_CLICK); load(MediaActionSound.FOCUS_COMPLETE) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     // CameraX elements
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
@@ -236,66 +243,98 @@ fun CameraCaptureLayout(
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
 
     LaunchedEffect(cameraProviderFuture) {
-        val cameraProvider = cameraProviderFuture.get()
-        val preview = Preview.Builder()
-            .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
-            .build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
-
-        val imageAnalysis = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
-
-        val options = FaceDetectorOptions.Builder()
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .build()
-        val detector = FaceDetection.getClient(options)
-
-        imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
-            @OptIn(ExperimentalGetImage::class)
-            val mediaImage = imageProxy.image
-            if (mediaImage != null) {
-                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                detector.process(image)
-                    .addOnSuccessListener { faces ->
-                        if (isWaitingForSmile) {
-                            for (face in faces) {
-                                val smileProb = face.smilingProbability ?: 0f
-                                if (smileProb > 0.75f) {
-                                    isWaitingForSmile = false
-                                    scope.launch(Dispatchers.Main) {
-                                        voiceManager.speak("Senyuman terdeteksi! Bersiap...")
-                                        delay(800)
-                                        isTimerActive = true
-                                    }
-                                    break
-                                }
-                            }
-                        }
-                        imageProxy.close()
-                    }
-                    .addOnFailureListener {
-                        imageProxy.close()
-                    }
-            } else {
-                imageProxy.close()
-            }
-        }
-
-        val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA // Front camera for photobooth
-
         try {
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder()
+                .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+                .build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
+
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+
+            val options = FaceDetectorOptions.Builder()
+                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                .build()
+            val detector = try {
+                FaceDetection.getClient(options)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+
+            if (detector == null) {
+                // If FaceDetection fails to load (e.g. library architecture mismatch), bypass smile detection
+                scope.launch(Dispatchers.Main) {
+                    isWaitingForSmile = false
+                    isTimerActive = true
+                }
+            } else {
+                imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                    @OptIn(ExperimentalGetImage::class)
+                    val mediaImage = imageProxy.image
+                    if (mediaImage != null) {
+                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                        detector.process(image)
+                            .addOnSuccessListener { faces ->
+                                if (isWaitingForSmile) {
+                                    for (face in faces) {
+                                        val smileProb = face.smilingProbability ?: 0f
+                                        if (smileProb > 0.75f) {
+                                            isWaitingForSmile = false
+                                            scope.launch(Dispatchers.Main) {
+                                                voiceManager.speak("Senyuman terdeteksi! Bersiap...")
+                                                delay(800)
+                                                isTimerActive = true
+                                            }
+                                            break
+                                        }
+                                    }
+                                }
+                                imageProxy.close()
+                            }
+                            .addOnFailureListener {
+                                imageProxy.close()
+                            }
+                    } else {
+                        imageProxy.close()
+                    }
+                }
+            }
+
+            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA // Front camera for photobooth
+
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
                 preview,
                 imageCapture,
-                imageAnalysis
+                if (detector != null) imageAnalysis else null
             )
         } catch (e: Exception) {
             e.printStackTrace()
+            // If binding fails, try to fallback without image analysis
+            try {
+                val cameraProvider = cameraProviderFuture.get()
+                val preview = Preview.Builder()
+                    .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+                    .build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+                val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
         }
     }
 
@@ -319,7 +358,11 @@ fun CameraCaptureLayout(
             
             while (countdownValue > 0) {
                 if (countdownValue > 0) {
-                    mediaSound.play(MediaActionSound.FOCUS_COMPLETE)
+                    try {
+                        mediaSound?.play(MediaActionSound.FOCUS_COMPLETE)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
                 
                 // Friendly audio countdown
@@ -337,7 +380,11 @@ fun CameraCaptureLayout(
             
             // Trigger Flash & Capture
             showFlashOverlay = true
-            mediaSound.play(MediaActionSound.SHUTTER_CLICK)
+            try {
+                mediaSound?.play(MediaActionSound.SHUTTER_CLICK)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             
             val tempFile = File(context.cacheDir, "temp_shot_${currentShotIndex}.jpg")
             val outputOptions = ImageCapture.OutputFileOptions.Builder(tempFile).build()
@@ -381,27 +428,43 @@ fun CameraCaptureLayout(
                                     }
                                 }
 
-                                val inputImg = InputImage.fromBitmap(bitmap, 0)
+                                 val inputImg = InputImage.fromBitmap(bitmap, 0)
                                 val faceDetectorOptions = FaceDetectorOptions.Builder()
                                     .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
                                     .build()
-                                val detector = FaceDetection.getClient(faceDetectorOptions)
-                                
-                                try {
-                                    val faces = Tasks.await(detector.process(inputImg))
-                                    val rects = faces.map { it.boundingBox }
-                                    val processedBitmap = BeautyFilter.applyBeautyFilter(bitmap, rects)
-                                    
-                                    FileOutputStream(tempFile).use { out ->
-                                        processedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-                                    }
-                                    if (processedBitmap != bitmap) {
-                                        processedBitmap.recycle()
-                                    }
+                                val detector = try {
+                                    FaceDetection.getClient(faceDetectorOptions)
                                 } catch (e: Exception) {
                                     e.printStackTrace()
-                                } finally {
-                                    detector.close()
+                                    null
+                                }
+                                
+                                if (detector != null) {
+                                    try {
+                                        val faces = Tasks.await(detector.process(inputImg))
+                                        val rects = faces.map { it.boundingBox }
+                                        val processedBitmap = BeautyFilter.applyBeautyFilter(bitmap, rects)
+                                        
+                                        FileOutputStream(tempFile).use { out ->
+                                            processedBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                        }
+                                        if (processedBitmap != bitmap) {
+                                            processedBitmap.recycle()
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        // Fallback to saving original bitmap
+                                        FileOutputStream(tempFile).use { out ->
+                                            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                        }
+                                    } finally {
+                                        detector.close()
+                                    }
+                                } else {
+                                    // Fallback to saving original bitmap
+                                    FileOutputStream(tempFile).use { out ->
+                                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                                    }
                                 }
                                 bitmap.recycle()
                             }
@@ -437,7 +500,11 @@ fun CameraCaptureLayout(
     DisposableEffect(Unit) {
         onDispose {
             cameraExecutor.shutdown()
-            mediaSound.release()
+            try {
+                mediaSound?.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

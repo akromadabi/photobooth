@@ -10,26 +10,35 @@ class VoiceManager(context: Context) : TextToSpeech.OnInitListener {
     private val speechQueue = LinkedList<String>()
 
     init {
-        tts = TextToSpeech(context, this)
+        try {
+            tts = TextToSpeech(context, this)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            tts = null
+        }
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val idLocale = Locale("id", "ID")
-            val result = tts?.setLanguage(idLocale)
-            if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
-                isInitialized = true
-                // Optimizations for a cheerful, friendly voice
-                tts?.setPitch(1.05f) // Slightly higher pitch for friendliness
-                tts?.setSpeechRate(1.05f) // Slightly faster natural pacing
-                
-                // Flush queue
-                while (speechQueue.isNotEmpty()) {
-                    val text = speechQueue.poll()
-                    if (text != null) {
-                        speakDirectly(text)
+            try {
+                val idLocale = Locale("id", "ID")
+                val result = tts?.setLanguage(idLocale)
+                if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
+                    isInitialized = true
+                    // Optimizations for a cheerful, friendly voice
+                    tts?.setPitch(1.05f) // Slightly higher pitch for friendliness
+                    tts?.setSpeechRate(1.05f) // Slightly faster natural pacing
+                    
+                    // Flush queue
+                    while (speechQueue.isNotEmpty()) {
+                        val text = speechQueue.poll()
+                        if (text != null) {
+                            speakDirectly(text)
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -43,12 +52,20 @@ class VoiceManager(context: Context) : TextToSpeech.OnInitListener {
     }
 
     private fun speakDirectly(text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "KioskVoiceGuidance")
+        try {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "KioskVoiceGuidance")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun shutdown() {
-        tts?.stop()
-        tts?.shutdown()
+        try {
+            tts?.stop()
+            tts?.shutdown()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         isInitialized = false
     }
 }
