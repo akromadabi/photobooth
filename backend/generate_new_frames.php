@@ -2385,5 +2385,543 @@ imagealphablending($imgStyle, true);
 imagepng($imgStyle, $outputDir . 'my_style_stacked.png');
 imagedestroy($imgStyle);
 
+// ==========================================
+// 21. SOCIAL MEDIA FEED (social_media_feed.png) - STATIC REDESIGN
+// ==========================================
+echo "Generating social_media_feed.png...\n";
+
+$imgSocial = imagecreatetruecolor(600, 2400);
+imagealphablending($imgSocial, true);
+imagesavealpha($imgSocial, true);
+
+// === COLORS ===
+$colBg1   = [250, 240, 245]; // soft peach (top)
+$colBg2   = [230, 240, 252]; // soft lavender-blue (bottom)
+
+// 1. Smooth vertical gradient background
+for ($gy = 0; $gy < 2400; $gy++) {
+    $t = $gy / 2399.0;
+    $r = intval($colBg1[0] * (1 - $t) + $colBg2[0] * $t);
+    $g = intval($colBg1[1] * (1 - $t) + $colBg2[1] * $t);
+    $b = intval($colBg1[2] * (1 - $t) + $colBg2[2] * $t);
+    $lineCol = imagecolorallocate($imgSocial, $r, $g, $b);
+    imageline($imgSocial, 0, $gy, 599, $gy, $lineCol);
+}
+
+// 2. Subtle dot pattern (polka dots) over background
+$dotCol = imagecolorallocatealpha($imgSocial, 255, 255, 255, 105);
+for ($px = 20; $px < 600; $px += 30) {
+    for ($py = 20; $py < 2400; $py += 30) {
+        imagefilledellipse($imgSocial, $px, $py, 4, 4, $dotCol);
+    }
+}
+
+// 3. Top header bar — minimal & clean, baked-in
+$colDark   = imagecolorallocate($imgSocial, 30, 30, 40);
+$colMid    = imagecolorallocate($imgSocial, 100, 110, 130);
+$colWhite  = imagecolorallocate($imgSocial, 255, 255, 255);
+$colPink   = imagecolorallocate($imgSocial, 240, 100, 140);
+$colRed    = imagecolorallocate($imgSocial, 237, 73, 86);
+$colBlue   = imagecolorallocate($imgSocial, 60, 150, 245);
+$colGold   = imagecolorallocate($imgSocial, 220, 170, 60);
+$colCardBg = imagecolorallocate($imgSocial, 255, 255, 255);
+$colBorder = imagecolorallocate($imgSocial, 226, 228, 235);
+$colShadow = imagecolorallocatealpha($imgSocial, 0, 0, 0, 100);
+
+// Header area height: y = 0 to 160
+// White frosted top bar
+$topBarBg = imagecolorallocatealpha($imgSocial, 255, 255, 255, 20);
+imagefilledrectangle($imgSocial, 0, 0, 599, 155, $topBarBg);
+
+// Groovy Studio logo avatar (solid circle)
+$avatarGrad = imagecolorallocate($imgSocial, 240, 110, 160);
+imagefilledellipse($imgSocial, 50, 80, 64, 64, $colPink);    // Ring
+imagefilledellipse($imgSocial, 50, 80, 56, 56, $colCardBg);  // White gap
+imagefilledellipse($imgSocial, 50, 80, 48, 48, $colPink);    // Avatar fill
+
+// "GS" initials inside avatar
+drawText($imgSocial, 13, 0, 31, 87, $colWhite, 'arialbd', 'GS');
+
+// Studio name & handle
+drawText($imgSocial, 16, 0, 90, 63, $colDark, 'arialbd', 'groovy.studio');
+drawText($imgSocial, 10, 0, 91, 90, $colMid, 'arial', 'Photo Booth Experience');
+
+// Right-side icons: three dots + X
+imagefilledellipse($imgSocial, 522, 75, 5, 5, $colDark);
+imagefilledellipse($imgSocial, 532, 75, 5, 5, $colDark);
+imagefilledellipse($imgSocial, 542, 75, 5, 5, $colDark);
+imageline($imgSocial, 548, 62, 562, 76, $colDark);
+imageline($imgSocial, 562, 62, 548, 76, $colDark);
+
+// Story progress bars (4 bars, first is "active")
+imagefilledrectangle($imgSocial, 20, 130, 156, 133, $colPink);      // Active bar (filled)
+imagefilledrectangle($imgSocial, 162, 130, 298, 133, $colBorder);
+imagefilledrectangle($imgSocial, 304, 130, 440, 133, $colBorder);
+imagefilledrectangle($imgSocial, 446, 130, 580, 133, $colBorder);
+
+// Thin separator under header
+imageline($imgSocial, 0, 155, 599, 155, $colBorder);
+
+// Helper function for rotated polygon
+if (!function_exists('drawRotatedPolygon')) {
+    function drawRotatedPolygon($img, $cx, $cy, $pts, $rotation, $color, $fill = true) {
+        $rad = deg2rad($rotation);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        $rotatedPts = [];
+        foreach ($pts as $p) {
+            $rx = $p[0] * $cos - $p[1] * $sin;
+            $ry = $p[0] * $sin + $p[1] * $cos;
+            $rotatedPts[] = intval($cx + $rx);
+            $rotatedPts[] = intval($cy + $ry);
+        }
+        if ($fill) {
+            imagefilledpolygon($img, $rotatedPts, $color);
+        } else {
+            imagepolygon($img, $rotatedPts, $color);
+        }
+    }
+}
+
+// 4. Define card layout
+// Each card: white rounded rect, tall enough for header + photo slot + footer
+// Photo slot = 460 x 345 at center
+// Card total h ≈ header (55px) + photo (345px) + footer (55px) = 455px
+// With generous padding, card h = 490, card w = 540
+
+$socialCards = [
+    [
+        'cx'     => 300, 'cy' => 460,
+        'rot'    => -3,
+        'handle' => '@today_was_good',
+        'loc'    => 'Photobooth Session  ♥',
+        'likes'  => '1,492 likes',
+        'caption'=> 'Loved every second  ✨',
+        'avatarColor' => [255, 180, 200],
+    ],
+    [
+        'cx'     => 300, 'cy' => 980,
+        'rot'    => 3,
+        'handle' => '@aesthetic.vibes',
+        'loc'    => 'Captured Moments',
+        'likes'  => '2,083 likes',
+        'caption'=> 'Happy mood always  ☀',
+        'avatarColor' => [180, 210, 255],
+    ],
+    [
+        'cx'     => 300, 'cy' => 1500,
+        'rot'    => -2,
+        'handle' => '@besties_forever',
+        'loc'    => 'Good Vibes Only',
+        'likes'  => '894 likes',
+        'caption'=> 'Friends make life fun  💫',
+        'avatarColor' => [200, 255, 210],
+    ],
+    [
+        'cx'     => 300, 'cy' => 2020,
+        'rot'    => 2,
+        'handle' => '@story_of_us',
+        'loc'    => 'Sweet Memories',
+        'likes'  => '3,102 likes',
+        'caption'=> 'Cherish every moment  🌸',
+        'avatarColor' => [255, 220, 180],
+    ],
+];
+
+// Photo slot dimensions (must match config.json slots)
+$slotW = 460;
+$slotH = 345;
+
+// Card is slightly larger than photo slot to show header + footer
+$cardW = $slotW + 40;  // 500
+$cardH = $slotH + 110; // 455
+
+foreach ($socialCards as $card) {
+    $cx  = $card['cx'];
+    $cy  = $card['cy'];
+    $rot = $card['rot'];
+    $cos = cos(deg2rad($rot));
+    $sin = sin(deg2rad($rot));
+
+    $hw = $cardW / 2;
+    $hh = $cardH / 2;
+
+    // Shadow (offset +5,+5)
+    $shPts = [
+        [-$hw + 5, -$hh + 5],
+        [ $hw + 5, -$hh + 5],
+        [ $hw + 5,  $hh + 5],
+        [-$hw + 5,  $hh + 5],
+    ];
+    drawRotatedPolygon($imgSocial, $cx, $cy, $shPts, $rot, $colShadow, true);
+
+    // Card white body
+    $cardPts = [
+        [-$hw, -$hh],
+        [ $hw, -$hh],
+        [ $hw,  $hh],
+        [-$hw,  $hh],
+    ];
+    drawRotatedPolygon($imgSocial, $cx, $cy, $cardPts, $rot, $colCardBg, true);
+    drawRotatedPolygon($imgSocial, $cx, $cy, $cardPts, $rot, $colBorder, false);
+
+    // --- CARD HEADER (above photo slot) ---
+    // Header zone: from -hh to -hh + 55  (relative to card center)
+    $headerY = -$hh + 27; // center of 55px header zone
+
+    // Avatar circle (left side of header)
+    $avatarDx = -$hw + 30;
+    $avatarDy = $headerY;
+    $avRx = $avatarDx * $cos - $avatarDy * $sin;
+    $avRy = $avatarDx * $sin + $avatarDy * $cos;
+    $avCx = intval($cx + $avRx);
+    $avCy = intval($cy + $avRy);
+    $avCol = imagecolorallocate($imgSocial, $card['avatarColor'][0], $card['avatarColor'][1], $card['avatarColor'][2]);
+    imagefilledellipse($imgSocial, $avCx, $avCy, 34, 34, $avCol);
+    imageellipse($imgSocial, $avCx, $avCy, 34, 34, $colBorder);
+
+    // Username text
+    $uDx = -$hw + 62;
+    $uDy = $headerY - 9;
+    $uRx = $uDx * $cos - $uDy * $sin;
+    $uRy = $uDx * $sin + $uDy * $cos;
+    drawText($imgSocial, 11, -$rot, $cx + $uRx, $cy + $uRy, $colDark, 'arialbd', $card['handle']);
+
+    // Location text
+    $lDx = -$hw + 62;
+    $lDy = $headerY + 7;
+    $lRx = $lDx * $cos - $lDy * $sin;
+    $lRy = $lDx * $sin + $lDy * $cos;
+    drawText($imgSocial, 9, -$rot, $cx + $lRx, $cy + $lRy, $colMid, 'arial', $card['loc']);
+
+    // Three dots (top-right of header)
+    foreach ([18, 24, 30] as $dotOffset) {
+        $dDx = $hw - $dotOffset;
+        $dDy = $headerY;
+        $dRx = $dDx * $cos - $dDy * $sin;
+        $dRy = $dDx * $sin + $dDy * $cos;
+        imagefilledellipse($imgSocial, intval($cx + $dRx), intval($cy + $dRy), 4, 4, $colMid);
+    }
+
+    // Thin separator line below header
+    $sepY1 = -$hh + 55;
+    $sepX1 = -$hw;
+    $sepX2 = $hw;
+    $s1Rx = $sepX1 * $cos - $sepY1 * $sin;
+    $s1Ry = $sepX1 * $sin + $sepY1 * $cos;
+    $s2Rx = $sepX2 * $cos - $sepY1 * $sin;
+    $s2Ry = $sepX2 * $sin + $sepY1 * $cos;
+    imageline($imgSocial, intval($cx + $s1Rx), intval($cy + $s1Ry), intval($cx + $s2Rx), intval($cy + $s2Ry), $colBorder);
+
+    // --- CARD FOOTER (below photo slot) ---
+    // Footer zone: from hh - 55 to hh
+    $footerY = $hh - 27;
+
+    // Red heart icon
+    $hDx = -$hw + 22;
+    $hDy = $footerY - 10;
+    $hRx = $hDx * $cos - $hDy * $sin;
+    $hRy = $hDx * $sin + $hDy * $cos;
+    drawHeart($imgSocial, $cx + $hRx, $cy + $hRy, 16, $colRed);
+
+    // Comment icon (circle)
+    $cDx = -$hw + 48;
+    $cDy = $footerY - 10;
+    $cRx = $cDx * $cos - $cDy * $sin;
+    $cRy = $cDx * $sin + $cDy * $cos;
+    imageellipse($imgSocial, intval($cx + $cRx), intval($cy + $cRy), 14, 14, $colDark);
+
+    // Bookmark icon (right side)
+    $bmDx = $hw - 22;
+    $bmDy = $footerY - 10;
+    $bm1 = getRotatedCorner($cx, $cy, $bmDx - 6, $footerY - 18, $rot);
+    $bm2 = getRotatedCorner($cx, $cy, $bmDx + 6, $footerY - 18, $rot);
+    $bm3 = getRotatedCorner($cx, $cy, $bmDx + 6, $footerY - 2,  $rot);
+    $bm4 = getRotatedCorner($cx, $cy, $bmDx,     $footerY - 8,  $rot);
+    $bm5 = getRotatedCorner($cx, $cy, $bmDx - 6, $footerY - 2,  $rot);
+    imagepolygon($imgSocial, [$bm1[0], $bm1[1], $bm2[0], $bm2[1], $bm3[0], $bm3[1], $bm4[0], $bm4[1], $bm5[0], $bm5[1]], $colDark);
+
+    // Thin separator line above footer
+    $fsepY = $hh - 55;
+    $f1Rx = $sepX1 * $cos - $fsepY * $sin;
+    $f1Ry = $sepX1 * $sin + $fsepY * $cos;
+    $f2Rx = $sepX2 * $cos - $fsepY * $sin;
+    $f2Ry = $sepX2 * $sin + $fsepY * $cos;
+    imageline($imgSocial, intval($cx + $f1Rx), intval($cy + $f1Ry), intval($cx + $f2Rx), intval($cy + $f2Ry), $colBorder);
+
+    // Likes count text (left below footer line)
+    $likeDx = -$hw + 15;
+    $likeDy = $footerY + 12;
+    $likeRx = $likeDx * $cos - $likeDy * $sin;
+    $likeRy = $likeDx * $sin + $likeDy * $cos;
+    drawText($imgSocial, 9, -$rot, $cx + $likeRx, $cy + $likeRy, $colDark, 'arialbd', $card['likes']);
+
+    // Caption text (below likes)
+    $capDx = -$hw + 15;
+    $capDy = $footerY + 24;
+    $capRx = $capDx * $cos - $capDy * $sin;
+    $capRy = $capDx * $sin + $capDy * $cos;
+    drawText($imgSocial, 9, -$rot, $cx + $capRx, $cy + $capRy, $colMid, 'arial', $card['caption']);
+}
+
+// 5. Bottom branding footer
+$footerBg = imagecolorallocatealpha($imgSocial, 255, 255, 255, 20);
+imagefilledrectangle($imgSocial, 0, 2250, 599, 2400, $footerBg);
+imageline($imgSocial, 0, 2250, 599, 2250, $colBorder);
+
+// Groovy Studio wordmark
+drawText($imgSocial, 22, 0, -1, 2290, $colDark, 'arialbd', 'GROOVY STUDIO');
+drawText($imgSocial, 11, 0, -1, 2325, $colMid, 'arial', 'Photo Booth Experience');
+
+// Decorative 4-point stars flanking brand name
+drawFourPointStar($imgSocial, 100, 2305, 10, $colPink);
+drawFourPointStar($imgSocial, 500, 2305, 10, $colPink);
+
+// Hashtag sticker
+$hashBg = imagecolorallocatealpha($imgSocial, 255, 100, 140, 100);
+imagefilledrectangle($imgSocial, 175, 2350, 425, 2385, $hashBg);
+imagefilledellipse($imgSocial, 175, 2367, 35, 35, $hashBg);
+imagefilledellipse($imgSocial, 425, 2367, 35, 35, $hashBg);
+imageline($imgSocial, 175, 2350, 425, 2350, $colPink);
+imageline($imgSocial, 175, 2385, 425, 2385, $colPink);
+drawText($imgSocial, 12, 0, -1, 2358, $colWhite, 'arialbd', '#photobooth #memories');
+
+// 6. Cut out transparent photo slots
+imagealphablending($imgSocial, false);
+$transColor = imagecolorallocatealpha($imgSocial, 0, 0, 0, 127);
+foreach ($socialCards as $s) {
+    // Photo slot is centered vertically inside card — offset from card center:
+    // Header=55px, Photo=345px, Footer=55px, total=455px, half=227.5
+    // Photo center relative to card center = -227.5 + 55 + 172.5 = 0
+    // So photo center == card center (cx, cy)
+    cutoutRotatedSlot($imgSocial, $s['cx'], $s['cy'], $slotW, $slotH, $s['rot'], $transColor);
+}
+imagealphablending($imgSocial, true);
+
+imagepng($imgSocial, $outputDir . 'social_media_feed.png');
+imagedestroy($imgSocial);
+
+echo "All frames generated successfully!\n";
+?>
+
+    $r = intval(252 * (1 - $ratio) + 232 * $ratio);
+    $g = intval(234 * (1 - $ratio) + 240 * $ratio);
+    $b = intval(230 * (1 - $ratio) + 254 * $ratio);
+    $color = imagecolorallocate($imgSocial, $r, $g, $b);
+    imageline($imgSocial, 0, $y, 599, $y, $color);
+}
+
+// 2. Blueprint Grid Lines
+$gridColor = imagecolorallocatealpha($imgSocial, 255, 255, 255, 110);
+for ($gx = 0; $gx < 600; $gx += 40) {
+    imageline($imgSocial, $gx, 0, $gx, 2400, $gridColor);
+}
+for ($gy = 0; $gy < 2400; $gy += 40) {
+    imageline($imgSocial, 0, $gy, 600, $gy, $gridColor);
+}
+
+// 3. Instagram Story Progress Bars
+$barBg = imagecolorallocatealpha($imgSocial, 255, 255, 255, 70);
+$barActive = imagecolorallocatealpha($imgSocial, 255, 255, 255, 10);
+imagefilledrectangle($imgSocial, 20, 25, 156, 29, $barActive);
+imagefilledrectangle($imgSocial, 161, 25, 297, 29, $barBg);
+imagefilledrectangle($imgSocial, 302, 25, 438, 29, $barBg);
+imagefilledrectangle($imgSocial, 443, 25, 579, 29, $barBg);
+
+// 4. Instagram Story Header Icons
+$iconColor = imagecolorallocate($imgSocial, 26, 29, 32);
+$storyRingColor = imagecolorallocate($imgSocial, 255, 75, 125);
+
+// Active story ring around avatar (coordinates for logo are x:60, y:80, w:60, h:60)
+imageellipse($imgSocial, 90, 110, 68, 68, $storyRingColor);
+imageellipse($imgSocial, 90, 110, 70, 70, $storyRingColor);
+imageellipse($imgSocial, 90, 110, 72, 72, $storyRingColor);
+
+// Menu dots
+imagefilledellipse($imgSocial, 490, 110, 5, 5, $iconColor);
+imagefilledellipse($imgSocial, 496, 110, 5, 5, $iconColor);
+imagefilledellipse($imgSocial, 502, 110, 5, 5, $iconColor);
+
+// Close X
+imageline($imgSocial, 532, 102, 546, 116, $iconColor);
+imageline($imgSocial, 546, 102, 532, 116, $iconColor);
+
+// 5. Helper function for rotated polygon (local)
+if (!function_exists('drawRotatedPolygon')) {
+    function drawRotatedPolygon($img, $cx, $cy, $pts, $rotation, $color, $fill = true) {
+        $rad = deg2rad($rotation);
+        $cos = cos($rad);
+        $sin = sin($rad);
+        $rotatedPts = [];
+        foreach ($pts as $p) {
+            $rx = $p[0] * $cos - $p[1] * $sin;
+            $ry = $p[0] * $sin + $p[1] * $cos;
+            $rotatedPts[] = intval($cx + $rx);
+            $rotatedPts[] = intval($cy + $ry);
+        }
+        if ($fill) {
+            imagefilledpolygon($img, $rotatedPts, $color);
+        } else {
+            imagepolygon($img, $rotatedPts, $color);
+        }
+    }
+}
+
+// 6. Define Card Slots & Details
+$cardSlots = [
+    ['cx' => 300, 'cy' => 460, 'w' => 460, 'h' => 345, 'rot' => -3, 'handle' => 'today_was_good', 'loc' => 'Photobooth Session', 'likes' => '1,492 likes'],
+    ['cx' => 300, 'cy' => 980, 'w' => 460, 'h' => 345, 'rot' => 3, 'handle' => 'aesthetic_vibes', 'loc' => 'Captured Moments', 'likes' => '2,083 likes'],
+    ['cx' => 300, 'cy' => 1500, 'w' => 460, 'h' => 345, 'rot' => -2, 'handle' => 'besties_forever', 'loc' => 'Good Vibes Only', 'likes' => '894 likes'],
+    ['cx' => 300, 'cy' => 2020, 'w' => 460, 'h' => 345, 'rot' => 2, 'handle' => 'story_of_us', 'loc' => 'Sweet Memories', 'likes' => '3,102 likes']
+];
+
+$whiteCard = imagecolorallocate($imgSocial, 255, 255, 255);
+$lightGrey = imagecolorallocate($imgSocial, 220, 224, 230);
+$darkGrey = imagecolorallocate($imgSocial, 74, 85, 104);
+$shadowCol = imagecolorallocatealpha($imgSocial, 0, 0, 0, 15);
+
+// Render each Instagram Feed Post Card
+foreach ($cardSlots as $s) {
+    $cx = $s['cx'];
+    $cy = $s['cy'];
+    $rotation = $s['rot'];
+    $handle = $s['handle'];
+    $loc = $s['loc'];
+    $likes = $s['likes'];
+    
+    $cos = cos(deg2rad($rotation));
+    $sin = sin(deg2rad($rotation));
+    
+    // Card coordinates relative to slot center (cx, cy)
+    $cardPts = [
+        [-245, -222],
+        [245, -222],
+        [245, 238],
+        [-245, 238]
+    ];
+    
+    // Card drop shadow coordinates relative to slot center (cx, cy)
+    $shadowPts = [
+        [-241, -218],
+        [249, -218],
+        [249, 242],
+        [-241, 242]
+    ];
+    
+    // 6a. Drop Shadow
+    drawRotatedPolygon($imgSocial, $cx, $cy, $shadowPts, $rotation, $shadowCol, true);
+    
+    // 6b. White Card Body
+    drawRotatedPolygon($imgSocial, $cx, $cy, $cardPts, $rotation, $whiteCard, true);
+    
+    // 6c. Card Border
+    drawRotatedPolygon($imgSocial, $cx, $cy, $cardPts, $rotation, $lightGrey, false);
+    
+    // 6d. Card Header Avatar
+    $avatarCol = imagecolorallocate($imgSocial, 255, 200, 210);
+    $rx = -215 * $cos - (-195) * $sin;
+    $ry = -215 * $sin + (-195) * $cos;
+    imagefilledellipse($imgSocial, intval($cx + $rx), intval($cy + $ry), 26, 26, $avatarCol);
+    imageellipse($imgSocial, intval($cx + $rx), intval($cy + $ry), 26, 26, $lightGrey);
+    
+    // 6e. Card Header Username
+    $rx = -190 * $cos - (-203) * $sin;
+    $ry = -190 * $sin + (-203) * $cos;
+    drawText($imgSocial, 10, -$rotation, $cx + $rx, $cy + $ry, $iconColor, 'arialbd', '@' . $handle);
+    
+    // 6f. Card Header Location
+    $rx = -190 * $cos - (-186) * $sin;
+    $ry = -190 * $sin + (-186) * $cos;
+    drawText($imgSocial, 8, -$rotation, $cx + $rx, $cy + $ry, $darkGrey, 'arial', $loc);
+    
+    // 6g. Three dots menu on card
+    foreach ([215, 221, 227] as $dx) {
+        $rx = $dx * $cos - (-195) * $sin;
+        $ry = $dx * $sin + (-195) * $cos;
+        imagefilledellipse($imgSocial, intval($cx + $rx), intval($cy + $ry), 4, 4, $iconColor);
+    }
+    
+    // 6h. Footer Icons
+    // Red heart (Liked)
+    $redCol = imagecolorallocate($imgSocial, 255, 75, 75);
+    $rx = -220 * $cos - 195 * $sin;
+    $ry = -220 * $sin + 195 * $cos;
+    drawHeart($imgSocial, $cx + $rx, $cy + $ry, 18, $redCol);
+    
+    // Comment bubble icon
+    $rxComment = -185 * $cos - 195 * $sin;
+    $ryComment = -185 * $sin + 195 * $cos;
+    imageellipse($imgSocial, intval($cx + $rxComment), intval($cy + $ryComment), 16, 16, $iconColor);
+    $t1 = getRotatedCorner($cx, $cy, -191, 201, $rotation);
+    $t2 = getRotatedCorner($cx, $cy, -193, 205, $rotation);
+    $t3 = getRotatedCorner($cx, $cy, -187, 201, $rotation);
+    imagefilledpolygon($imgSocial, [$t1[0], $t1[1], $t2[0], $t2[1], $t3[0], $t3[1]], $iconColor);
+    
+    // Share icon
+    $p1 = getRotatedCorner($cx, $cy, -142, 188, $rotation);
+    $p2 = getRotatedCorner($cx, $cy, -155, 194, $rotation);
+    $p3 = getRotatedCorner($cx, $cy, -150, 196, $rotation);
+    $p4 = getRotatedCorner($cx, $cy, -151, 203, $rotation);
+    imagepolygon($imgSocial, [$p1[0], $p1[1], $p2[0], $p2[1], $p3[0], $p3[1], $p4[0], $p4[1]], $iconColor);
+    
+    // Bookmark icon
+    $b1 = getRotatedCorner($cx, $cy, 212, 187, $rotation);
+    $b2 = getRotatedCorner($cx, $cy, 224, 187, $rotation);
+    $b3 = getRotatedCorner($cx, $cy, 224, 205, $rotation);
+    $b4 = getRotatedCorner($cx, $cy, 218, 199, $rotation);
+    $b5 = getRotatedCorner($cx, $cy, 212, 205, $rotation);
+    imagepolygon($imgSocial, [$b1[0], $b1[1], $b2[0], $b2[1], $b3[0], $b3[1], $b4[0], $b4[1], $b5[0], $b5[1]], $iconColor);
+    
+    // 6i. Likes Text
+    $rx = -220 * $cos - 222 * $sin;
+    $ry = -220 * $sin + 222 * $cos;
+    drawText($imgSocial, 9, -$rotation, $cx + $rx, $cy + $ry, $iconColor, 'arialbd', $likes);
+}
+
+// 7. Sticker Background for Hashtag
+$stickerBg = imagecolorallocatealpha($imgSocial, 255, 255, 255, 90);
+$stickerBorder = imagecolorallocate($imgSocial, 255, 255, 255);
+imagefilledrectangle($imgSocial, 210, 2190, 390, 2230, $stickerBg);
+imagefilledellipse($imgSocial, 210, 2210, 40, 40, $stickerBg);
+imagefilledellipse($imgSocial, 390, 2210, 40, 40, $stickerBg);
+imageellipse($imgSocial, 210, 2210, 40, 40, $stickerBorder);
+imageellipse($imgSocial, 390, 2210, 40, 40, $stickerBorder);
+imageline($imgSocial, 210, 2190, 390, 2190, $stickerBorder);
+imageline($imgSocial, 210, 2230, 390, 2230, $stickerBorder);
+
+// 8. Story Footer Reply Box & Icons
+$replyBg = imagecolorallocatealpha($imgSocial, 255, 255, 255, 40);
+$replyBorder = imagecolorallocatealpha($imgSocial, 255, 255, 255, 80);
+imagefilledrectangle($imgSocial, 80, 2280, 410, 2335, $replyBg);
+imagefilledellipse($imgSocial, 80, 2307, 55, 55, $replyBg);
+imagefilledellipse($imgSocial, 410, 2307, 55, 55, $replyBg);
+imageellipse($imgSocial, 80, 2307, 55, 55, $replyBorder);
+imageellipse($imgSocial, 410, 2307, 55, 55, $replyBorder);
+imageline($imgSocial, 80, 2280, 410, 2280, $replyBorder);
+imageline($imgSocial, 80, 2335, 410, 2335, $replyBorder);
+
+$textWhite = imagecolorallocate($imgSocial, 255, 255, 255);
+drawText($imgSocial, 11, 0, 75, 2315, $textWhite, 'arial', 'Send message...');
+
+drawHeart($imgSocial, 485, 2305, 20, $textWhite);
+
+$p1 = [555, 2298];
+$p2 = [533, 2308];
+$p3 = [542, 2312];
+$p4 = [545, 2322];
+imagepolygon($imgSocial, [$p1[0], $p1[1], $p2[0], $p2[1], $p3[0], $p3[1], $p4[0], $p4[1]], $textWhite);
+
+// 9. Cut out transparent slots
+imagealphablending($imgSocial, false);
+$transColor = imagecolorallocatealpha($imgSocial, 0, 0, 0, 127);
+foreach ($cardSlots as $s) {
+    cutoutRotatedSlot($imgSocial, $s['cx'], $s['cy'], $s['w'], $s['h'], $s['rot'], $transColor);
+}
+imagealphablending($imgSocial, true);
+
+// 10. Save and Clean up
+imagepng($imgSocial, $outputDir . 'social_media_feed.png');
+imagedestroy($imgSocial);
+
 echo "All frames generated successfully!\n";
 ?>

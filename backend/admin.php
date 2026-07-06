@@ -378,6 +378,35 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
                 justify-content: center;
                 gap: 8px;
             }
+            .btn-apk {
+                width: 100%;
+                padding: 16px;
+                font-size: 0.95rem;
+                font-weight: 700;
+                border-radius: 16px;
+                border: none;
+                cursor: pointer;
+                background-color: #10b981;
+                color: white;
+                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+                font-family: inherit;
+                transition: all 0.25s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                text-decoration: none;
+                box-sizing: border-box;
+                margin-top: 16px;
+            }
+            .btn-apk:hover {
+                background-color: #059669;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+            }
+            .btn-apk:active {
+                transform: translateY(0);
+            }
         </style>
     </head>
     <body>
@@ -403,6 +432,14 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
                     <i class="fa-solid fa-right-to-bracket"></i> MASUK DASHBOARD
                 </button>
             </form>
+            
+            <?php if (file_exists(__DIR__ . '/app-debug.apk')): ?>
+                <div style="margin-top: 16px; border-top: 1px dashed rgba(226, 232, 240, 0.8); padding-top: 16px;">
+                    <a href="app-debug.apk" download class="btn-apk">
+                        <i class="fa-brands fa-android"></i> DOWNLOAD APK ANDROID
+                    </a>
+                </div>
+            <?php endif; ?>
             
             <?php if (isset($loginError)): ?>
                 <div class="error-message">
@@ -518,7 +555,45 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
-    header('Location: admin.php?status=saved');
+    
+    // Handle APK file upload
+    $apkUploaded = false;
+    $apkError = '';
+    if (isset($_FILES['apk_file']) && $_FILES['apk_file']['error'] === UPLOAD_ERR_OK) {
+        $fileTmpPath = $_FILES['apk_file']['tmp_name'];
+        $fileName = $_FILES['apk_file']['name'];
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        if ($fileExtension === 'apk') {
+            $destPath = __DIR__ . '/app-debug.apk';
+            
+            // To ensure files don't accumulate/pile up, we overwrite the existing app-debug.apk
+            if (move_uploaded_file($fileTmpPath, $destPath)) {
+                $apkUploaded = true;
+            } else {
+                $apkError = 'Gagal menyimpan file APK ke server.';
+            }
+        } else {
+            $apkError = 'Format file tidak didukung. Harap upload file .apk.';
+        }
+    } else if (isset($_FILES['apk_file']) && $_FILES['apk_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $errCode = $_FILES['apk_file']['error'];
+        if ($errCode === UPLOAD_ERR_INI_SIZE) {
+            $apkError = 'Ukuran file APK melebihi batas maksimum upload server (upload_max_filesize di php.ini).';
+        } else if ($errCode === UPLOAD_ERR_FORM_SIZE) {
+            $apkError = 'Ukuran file APK melebihi batas maksimum form.';
+        } else {
+            $apkError = 'Terjadi kesalahan upload APK (Kode: ' . $errCode . ').';
+        }
+    }
+
+    if ($apkError) {
+        header('Location: admin.php?status=saved&apk_error=' . urlencode($apkError));
+    } else if ($apkUploaded) {
+        header('Location: admin.php?status=saved&apk_status=uploaded');
+    } else {
+        header('Location: admin.php?status=saved');
+    }
     exit;
 }
 
@@ -3518,16 +3593,30 @@ foreach ($weeklyStats as $date => $cnt) {
                 <!-- TAB: Settings -->
                 <div class="tab-pane" id="tab-settings">
                     <?php if (isset($_GET['status']) && $_GET['status'] === 'saved'): ?>
-                        <div class="alert-status alert-saved" style="margin-bottom: 20px;">
-                            <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i>
-                            <span>Remote kiosk configuration successfully updated and synced!</span>
+                        <div class="alert-status alert-saved" style="margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 20px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-circle-check" style="font-size: 1.1rem; color: #047857;"></i>
+                                <span style="font-weight: 600;">Remote kiosk configuration successfully updated and synced!</span>
+                            </div>
+                            <?php if (isset($_GET['apk_status']) && $_GET['apk_status'] === 'uploaded'): ?>
+                                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #047857; margin-left: 26px; margin-top: 4px; border-top: 1px dashed rgba(4, 120, 87, 0.2); padding-top: 6px; width: 100%;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span>File APK baru berhasil diupload dan memperbarui aplikasi Android!</span>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (isset($_GET['apk_error']) && !empty($_GET['apk_error'])): ?>
+                                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #b91c1c; margin-left: 26px; margin-top: 4px; border-top: 1px dashed rgba(185, 28, 28, 0.2); padding-top: 6px; width: 100%;">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span>Peringatan APK: <?php echo htmlspecialchars($_GET['apk_error']); ?></span>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                     <div class="card-section">
                         <div class="card-header">
                             <div class="card-title"><i class="fa-solid fa-sliders"></i> Pengaturan Kontrol Kiosk</div>
                         </div>
-                        <form action="admin.php" method="POST">
+                        <form action="admin.php" method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="action" value="update_settings">
                             
                             <div class="form-grid">
@@ -4044,6 +4133,36 @@ foreach ($weeklyStats as $date => $cnt) {
                                         <label for="fal_key">Fal.ai API Key</label>
                                         <input type="password" id="fal_key" name="fal_key" class="form-input" value="<?php echo htmlspecialchars(isset($settings['fal_key']) ? $settings['fal_key'] : ''); ?>" placeholder="fal_key_...">
                                         <small style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; display: block;">API Key dari fal.ai diperlukan untuk fitur face-swap katalog karakter.</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- APK Upload Section -->
+                            <div id="apk-upload-section" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 24px;">
+                                <h4 style="margin-bottom: 16px; color: var(--primary); font-size: 1rem;"><i class="fa-brands fa-android"></i> Hubungkan / Upload Aplikasi Android (APK)</h4>
+                                <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label for="apk_file">Upload APK Baru</label>
+                                        <input type="file" id="apk_file" name="apk_file" class="form-input" accept=".apk" style="padding: 6px 12px; height: auto;">
+                                        <small style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; display: block;">
+                                            Upload file `.apk` baru ke server. File ini akan menggantikan file `app-debug.apk` yang lama tanpa menumpuk.
+                                        </small>
+                                        <?php 
+                                        $apkPath = __DIR__ . '/app-debug.apk';
+                                        if (file_exists($apkPath)): 
+                                            $apkSizeMB = round(filesize($apkPath) / (1024 * 1024), 2);
+                                            $apkTime = date("d M Y H:i:s", filemtime($apkPath));
+                                        ?>
+                                            <div style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; font-size: 0.85rem; color: #10b981; display: inline-flex; align-items: center; gap: 8px;">
+                                                <i class="fa-solid fa-circle-check"></i>
+                                                <span>APK Aktif: <strong>app-debug.apk</strong> (<?php echo $apkSizeMB; ?> MB) - Diperbarui pada <?php echo $apkTime; ?></span>
+                                            </div>
+                                        <?php else: ?>
+                                            <div style="margin-top: 10px; padding: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; font-size: 0.85rem; color: #ef4444; display: inline-flex; align-items: center; gap: 8px;">
+                                                <i class="fa-solid fa-circle-exclamation"></i>
+                                                <span>Belum ada file APK aktif di server (app-debug.apk tidak ditemukan).</span>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
