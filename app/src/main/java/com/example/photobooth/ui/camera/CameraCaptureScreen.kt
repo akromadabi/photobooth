@@ -64,6 +64,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import coil.compose.AsyncImage
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Rect
@@ -386,6 +387,14 @@ fun CameraCaptureLayout(
                 e.printStackTrace()
             }
             
+            // Adjust target rotation to match the current display rotation
+            try {
+                val displayRotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
+                imageCapture.targetRotation = displayRotation
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             val tempFile = File(context.cacheDir, "temp_shot_${currentShotIndex}.jpg")
             val outputOptions = ImageCapture.OutputFileOptions.Builder(tempFile).build()
             
@@ -397,19 +406,40 @@ fun CameraCaptureLayout(
                         try {
                             val filePath = tempFile.absolutePath
                             
-                            // Read EXIF orientation to correct rotation
+                            // Read EXIF orientation to correct rotation and mirroring
                             var rotationDegrees = 0
+                            var flipHorizontal = false
                             try {
                                 val exif = android.media.ExifInterface(filePath)
                                 val orientation = exif.getAttributeInt(
                                     android.media.ExifInterface.TAG_ORIENTATION,
                                     android.media.ExifInterface.ORIENTATION_NORMAL
                                 )
-                                rotationDegrees = when (orientation) {
-                                    android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90
-                                    android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180
-                                    android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270
-                                    else -> 0
+                                when (orientation) {
+                                    android.media.ExifInterface.ORIENTATION_ROTATE_90 -> {
+                                        rotationDegrees = 90
+                                    }
+                                    android.media.ExifInterface.ORIENTATION_ROTATE_180 -> {
+                                        rotationDegrees = 180
+                                    }
+                                    android.media.ExifInterface.ORIENTATION_ROTATE_270 -> {
+                                        rotationDegrees = 270
+                                    }
+                                    android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> {
+                                        flipHorizontal = true
+                                    }
+                                    android.media.ExifInterface.ORIENTATION_TRANSPOSE -> {
+                                        rotationDegrees = 270
+                                        flipHorizontal = true
+                                    }
+                                    android.media.ExifInterface.ORIENTATION_TRANSVERSE -> {
+                                        rotationDegrees = 90
+                                        flipHorizontal = true
+                                    }
+                                    android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                                        rotationDegrees = 180
+                                        flipHorizontal = true
+                                    }
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -418,9 +448,15 @@ fun CameraCaptureLayout(
                             val opt = BitmapFactory.Options().apply { inMutable = true }
                             var bitmap = BitmapFactory.decodeFile(filePath, opt)
                             if (bitmap != null) {
-                                // Physically rotate the bitmap based on EXIF rotation degrees
-                                if (rotationDegrees != 0) {
-                                    val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                                // Physically rotate and/or flip the bitmap based on EXIF orientation
+                                if (rotationDegrees != 0 || flipHorizontal) {
+                                    val matrix = android.graphics.Matrix()
+                                    if (rotationDegrees != 0) {
+                                        matrix.postRotate(rotationDegrees.toFloat())
+                                    }
+                                    if (flipHorizontal) {
+                                        matrix.postScale(-1f, 1f)
+                                    }
                                     val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
                                     if (rotated != bitmap) {
                                         bitmap.recycle()
@@ -1065,27 +1101,16 @@ fun FilmstripSlotCard(
             contentAlignment = Alignment.Center
         ) {
             if (isCaptured && capturedPath != null) {
-                // Load captured thumbnail
-                val bitmap = remember(capturedPath) {
-                    try {
-                        BitmapFactory.decodeFile(capturedPath)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        null
-                    }
-                }
-                if (bitmap != null) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn(animationSpec = tween(500))
-                    ) {
-                        androidx.compose.foundation.Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Pose ${index + 1}",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(500))
+                ) {
+                    AsyncImage(
+                        model = File(capturedPath),
+                        contentDescription = "Pose ${index + 1}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             } else if (isActive) {
                 if (isTimerActive && countdownValue > 0) {

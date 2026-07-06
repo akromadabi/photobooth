@@ -399,7 +399,6 @@ fun PreviewResultScreen(
                 )
             }
         } else {
-            // Landscape Layout
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -407,93 +406,7 @@ fun PreviewResultScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Side: Preview Photo Container
-                Box(
-                    modifier = Modifier
-                        .weight(1.6f)
-                        .fillMaxHeight()
-                        .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    PreviewPhotoContainer(
-                        photoStates = photoStates,
-                        frame = activeFrame,
-                        selectedFilter = selectedFilter,
-                        activeTab = activeTab,
-                        swapMode = swapMode,
-                        selectedSwapIndex = selectedSwapIndex,
-                        onPhotoClick = { clickedIndex ->
-                            val currentSelected = selectedSwapIndex
-                            if (currentSelected == null) {
-                                selectedSwapIndex = clickedIndex
-                            } else {
-                                if (currentSelected != clickedIndex) {
-                                    val temp = photoStates[currentSelected]
-                                    photoStates[currentSelected] = photoStates[clickedIndex]
-                                    photoStates[clickedIndex] = temp
-                                }
-                                selectedSwapIndex = null
-                            }
-                        },
-                        onPhotoTransform = { index, newOffset, newScale ->
-                            if (index < photoStates.size) {
-                                photoStates[index] = photoStates[index].copy(
-                                    normalizedX = newOffset.x,
-                                    normalizedY = newOffset.y,
-                                    scale = newScale
-                                )
-                            }
-                        },
-                        doodleLines = doodleLines,
-                        activePenColor = activePenColor,
-                        activeStrokeWidth = activeStrokeWidth,
-                        stickers = stickers,
-                        selectedStickerId = selectedStickerId,
-                        onStickerSelected = { selectedStickerId = it },
-                        isReceiptPackage = isReceiptPackage
-                    )
-
-                    // Floating Swap Mode Button
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(12.dp)
-                    ) {
-                        Button(
-                            onClick = { 
-                                swapMode = !swapMode 
-                                selectedSwapIndex = null
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (swapMode) Color(0xFFEF4444) else Color.Black.copy(alpha = 0.7f)
-                            ),
-                            shape = RoundedCornerShape(50.dp),
-                            border = BorderStroke(
-                                width = 1.5.dp,
-                                color = if (swapMode) Color(0xFFFCA5A5) else AppTheme.colors.primary.copy(alpha = 0.8f)
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            modifier = Modifier
-                                .height(38.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (swapMode) Icons.Default.Check else Icons.Default.Refresh,
-                                contentDescription = "Tukar",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (swapMode) "Selesai" else "Tukar Foto",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                // Right Side: Control Panels & Action Buttons
+                // Left Side: Control Panels & Action Buttons
                 Column(
                     modifier = Modifier
                         .weight(1.4f)
@@ -565,6 +478,92 @@ fun PreviewResultScreen(
                             }
                         }
                     )
+                }
+
+                // Right Side: Preview Photo Container
+                Box(
+                    modifier = Modifier
+                        .weight(1.6f)
+                        .fillMaxHeight()
+                        .padding(end = 16.dp, top = 4.dp, bottom = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    PreviewPhotoContainer(
+                        photoStates = photoStates,
+                        frame = activeFrame,
+                        selectedFilter = selectedFilter,
+                        activeTab = activeTab,
+                        swapMode = swapMode,
+                        selectedSwapIndex = selectedSwapIndex,
+                        onPhotoClick = { clickedIndex ->
+                            val currentSelected = selectedSwapIndex
+                            if (currentSelected == null) {
+                                selectedSwapIndex = clickedIndex
+                            } else {
+                                if (currentSelected != clickedIndex) {
+                                    val temp = photoStates[currentSelected]
+                                    photoStates[currentSelected] = photoStates[clickedIndex]
+                                    photoStates[clickedIndex] = temp
+                                }
+                                selectedSwapIndex = null
+                            }
+                        },
+                        onPhotoTransform = { index, newOffset, newScale ->
+                            if (index < photoStates.size) {
+                                photoStates[index] = photoStates[index].copy(
+                                    normalizedX = newOffset.x,
+                                    normalizedY = newOffset.y,
+                                    scale = newScale
+                                )
+                            }
+                        },
+                        doodleLines = doodleLines,
+                        activePenColor = activePenColor,
+                        activeStrokeWidth = activeStrokeWidth,
+                        stickers = stickers,
+                        selectedStickerId = selectedStickerId,
+                        onStickerSelected = { selectedStickerId = it },
+                        isReceiptPackage = isReceiptPackage
+                    )
+
+                    // Floating Swap Mode Button
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                    ) {
+                        Button(
+                            onClick = { 
+                                swapMode = !swapMode 
+                                selectedSwapIndex = null
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (swapMode) Color(0xFFEF4444) else Color.Black.copy(alpha = 0.7f)
+                            ),
+                            shape = RoundedCornerShape(50.dp),
+                            border = BorderStroke(
+                                width = 1.5.dp,
+                                color = if (swapMode) Color(0xFFEF4444) else AppTheme.colors.primary.copy(alpha = 0.8f)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(38.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (swapMode) Icons.Default.Check else Icons.Default.Refresh,
+                                contentDescription = "Tukar",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (swapMode) "Selesai" else "Tukar Foto",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -717,8 +716,62 @@ private fun stitchPhotos(
         if (!photoFile.exists()) continue
         
         // Decode photo and crop to match scaled slot dimensions
-        val srcBmp = BitmapFactory.decodeFile(photoFile.absolutePath)
+        var srcBmp = BitmapFactory.decodeFile(photoFile.absolutePath)
         if (srcBmp != null) {
+            // Read EXIF orientation to correct rotation and mirroring
+            var rotationDegrees = 0
+            var flipHorizontal = false
+            try {
+                val exif = android.media.ExifInterface(photoFile.absolutePath)
+                val orientation = exif.getAttributeInt(
+                    android.media.ExifInterface.TAG_ORIENTATION,
+                    android.media.ExifInterface.ORIENTATION_NORMAL
+                )
+                when (orientation) {
+                    android.media.ExifInterface.ORIENTATION_ROTATE_90 -> {
+                        rotationDegrees = 90
+                    }
+                    android.media.ExifInterface.ORIENTATION_ROTATE_180 -> {
+                        rotationDegrees = 180
+                    }
+                    android.media.ExifInterface.ORIENTATION_ROTATE_270 -> {
+                        rotationDegrees = 270
+                    }
+                    android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> {
+                        flipHorizontal = true
+                    }
+                    android.media.ExifInterface.ORIENTATION_TRANSPOSE -> {
+                        rotationDegrees = 270
+                        flipHorizontal = true
+                    }
+                    android.media.ExifInterface.ORIENTATION_TRANSVERSE -> {
+                        rotationDegrees = 90
+                        flipHorizontal = true
+                    }
+                    android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                        rotationDegrees = 180
+                        flipHorizontal = true
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            
+            if (rotationDegrees != 0 || flipHorizontal) {
+                val matrix = android.graphics.Matrix()
+                if (rotationDegrees != 0) {
+                    matrix.postRotate(rotationDegrees.toFloat())
+                }
+                if (flipHorizontal) {
+                    matrix.postScale(-1f, 1f)
+                }
+                val rotated = Bitmap.createBitmap(srcBmp, 0, 0, srcBmp.width, srcBmp.height, matrix, true)
+                if (rotated != srcBmp) {
+                    srcBmp.recycle()
+                    srcBmp = rotated
+                }
+            }
+
             val targetW = slot.width * multiplier
             val targetH = slot.height * multiplier
             val cropped = getCroppedBitmapWithState(srcBmp, targetW, targetH, photoState)
@@ -1120,7 +1173,26 @@ fun PreviewPhotoContainer(
                         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                         BitmapFactory.decodeFile(photoState.path, options)
                         if (options.outWidth > 0 && options.outHeight > 0) {
-                            options.outWidth.toFloat() / options.outHeight.toFloat()
+                            var swapWidthHeight = false
+                            try {
+                                val exif = android.media.ExifInterface(photoState.path)
+                                val orientation = exif.getAttributeInt(
+                                    android.media.ExifInterface.TAG_ORIENTATION,
+                                    android.media.ExifInterface.ORIENTATION_NORMAL
+                                )
+                                swapWidthHeight = orientation == android.media.ExifInterface.ORIENTATION_ROTATE_90 ||
+                                        orientation == android.media.ExifInterface.ORIENTATION_ROTATE_270 ||
+                                        orientation == android.media.ExifInterface.ORIENTATION_TRANSPOSE ||
+                                        orientation == android.media.ExifInterface.ORIENTATION_TRANSVERSE
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                            
+                            if (swapWidthHeight) {
+                                options.outHeight.toFloat() / options.outWidth.toFloat()
+                            } else {
+                                options.outWidth.toFloat() / options.outHeight.toFloat()
+                            }
                         } else {
                             1f
                         }
