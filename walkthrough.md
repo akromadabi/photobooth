@@ -524,3 +524,20 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
   * `event_subtitle` ➔ Sub-judul / detail tanggal & tempat event.
   * `event_hashtag` ➔ Hashtag / teks promosi event.
   * `logo` ➔ Slot Logo bulat/stiker di pojok kanan bawah footer (`x: 440`, `y: 2020`, `w: 110`, `h: 110`).
+
+---
+
+## Update: Perbaikan Pemotongan Foto Portrait (v1.28.3)
+
+### 1. Pemotongan Foto Otomatis ke Rasio Slot Kamera
+* **Masalah**: Ketika tablet dipasang dalam posisi portrait, foto jepretan CameraX yang disimpan pada memori cache perangkat memiliki rasio aspek portrait (3:4). Ketika diaplikasikan pada bingkai yang memiliki slot landscape (seperti `social_media_feed` dengan slot 460x345), terjadi bug visual di mana bagian bawah slot menampilkan blok abu-abu gelap padat karena foto tidak menutupi seluruh tinggi slot secara merata.
+* **Solusi**:
+  * Memodifikasi fungsi `takePicture` di dalam [CameraCaptureScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/camera/CameraCaptureScreen.kt).
+  * Menambahkan kalkulasi pemotongan bitmap (`Bitmap.createBitmap`) secara otomatis ke rasio aspek target (`slotAspectRatio`) tepat setelah rotasi orientasi fisik dilakukan dan sebelum ML Kit Face Detection dijalankan.
+  * Hal ini menjamin file foto yang tersimpan di disk sudah memiliki rasio aspek landscape yang presisi sesuai slot bingkai, sehingga hasil pratinjau Compose (`AsyncImage` tanpa offset) dan penggabungan bitmap (`stitchPhotos`) tidak menyisakan area kosong atau blok abu-abu gelap.
+
+### 2. Bumping Versi Kiosk & Build (v1.28.3)
+* Mendaftarkan `versionName = "1.28.3"` dan `versionCode = 47` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle clean release untuk memperbarui `backend/app-debug.apk` dan berkas manifest `backend/update.json`.
+* Mencadangkan salinan APK rilis ke root: `app-debug_v1.28.3.apk`.
+

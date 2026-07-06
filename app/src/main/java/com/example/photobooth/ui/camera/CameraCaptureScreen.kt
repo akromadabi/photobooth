@@ -464,6 +464,31 @@ fun CameraCaptureLayout(
                                     }
                                 }
 
+                                // Crop the bitmap to match the slot aspect ratio
+                                val bmpW = bitmap.width
+                                val bmpH = bitmap.height
+                                val bmpRatio = bmpW.toFloat() / bmpH.toFloat()
+                                val targetRatio = slotAspectRatio
+                                
+                                val cropW: Int
+                                val cropH: Int
+                                if (bmpRatio > targetRatio) {
+                                    cropH = bmpH
+                                    cropW = (bmpH * targetRatio).toInt()
+                                } else {
+                                    cropW = bmpW
+                                    cropH = (bmpW / targetRatio).toInt()
+                                }
+                                
+                                val cropX = kotlin.math.max(0, (bmpW - cropW) / 2)
+                                val cropY = kotlin.math.max(0, (bmpH - cropH) / 2)
+                                
+                                val cropped = Bitmap.createBitmap(bitmap, cropX, cropY, cropW, cropH)
+                                if (cropped != bitmap) {
+                                    bitmap.recycle()
+                                    bitmap = cropped
+                                }
+
                                  val inputImg = InputImage.fromBitmap(bitmap, 0)
                                 val faceDetectorOptions = FaceDetectorOptions.Builder()
                                     .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
@@ -566,83 +591,113 @@ fun CameraCaptureLayout(
             .background(themeColors.background)
     ) {
         if (isLandscape) {
-            // --- LANDSCAPE MODE: Original Fullscreen Layout ---
-            // Fullscreen Camera Preview
-            AndroidView(
-                factory = { 
-                    previewView.apply {
-                        scaleType = PreviewView.ScaleType.FILL_CENTER
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // Guide Frame transparent overlay (gives the feeling of a photobooth border)
-            Box(
+            // --- LANDSCAPE MODE: Bounded Layout with Side filmstrip ---
+            Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.2f))
-            )
-
-            // Close Button (to abort)
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
                     .statusBarsPadding()
-                    .padding(16.dp)
-                    .align(Alignment.TopStart)
-                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(imageVector = Icons.Default.Close, contentDescription = "Abort", tint = Color.White)
-            }
-
-            // Floating Badge showing current slot (e.g. "FOTO 1 / 4")
-            Card(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(16.dp)
-                    .align(Alignment.TopEnd),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f))
-            ) {
-                Text(
-                    text = "FOTO ${currentShotIndex + 1} / $totalShots",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-
-            // Big Countdown Timer Overlay
-            AnimatedVisibility(
-                visible = countdownValue > 0 && isTimerActive,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
-                modifier = Modifier.align(Alignment.Center)
-            ) {
+                // Left Part: Camera Preview Container
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
-                        .background(themeColors.primary.copy(alpha = 0.85f), CircleShape),
+                        .weight(1f)
+                        .fillMaxHeight(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = countdownValue.toString(),
-                        color = themeColors.buttonContent,
-                        fontSize = 80.sp,
-                        fontWeight = FontWeight.Black,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        border = BorderStroke(3.dp, cameraBorderGlow),
+                        colors = CardDefaults.cardColors(containerColor = Color.Black),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(slotAspectRatio, matchHeightConstraintsFirst = true)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Camera preview bounded inside the card
+                            AndroidView(
+                                factory = { 
+                                    previewView.apply {
+                                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
 
-            // Camera Shutter Flash effect (white flash overlay)
-            if (showFlashOverlay) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
+                            // Flash Overlay (Inside preview box)
+                            if (showFlashOverlay) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.White)
+                                )
+                            }
+
+                            // Floating current slot indicator (e.g. "FOTO 1 / 4")
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(12.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "FOTO ${currentShotIndex + 1} / $totalShots",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Center Big Countdown Timer (Inside preview box)
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = countdownValue > 0 && isTimerActive,
+                                enter = fadeIn() + scaleIn(),
+                                exit = fadeOut() + scaleOut(),
+                                modifier = Modifier.align(Alignment.Center)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(96.dp)
+                                        .background(themeColors.primary.copy(alpha = 0.85f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = countdownValue.toString(),
+                                        color = themeColors.buttonContent,
+                                        fontSize = 48.sp,
+                                        fontWeight = FontWeight.Black,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Floating Close Button (Top-Left of the Camera Preview container)
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Abort", tint = Color.White)
+                    }
+                }
+
+                // Right Part: Filmstrip Progress (vertical list of taken photos)
+                VerticalFilmstripProgress(
+                    totalShots = totalShots,
+                    currentShotIndex = currentShotIndex,
+                    capturedPaths = capturedPaths,
+                    countdownValue = countdownValue,
+                    isTimerActive = isTimerActive,
+                    slotAspectRatio = slotAspectRatio,
+                    modifier = Modifier.fillMaxHeight()
                 )
             }
         } else {
@@ -1143,6 +1198,190 @@ fun FilmstripSlotCard(
                     text = (index + 1).toString(),
                     color = themeColors.onCardBackground.copy(alpha = 0.3f),
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun VerticalFilmstripProgress(
+    totalShots: Int,
+    currentShotIndex: Int,
+    capturedPaths: List<String>,
+    countdownValue: Int,
+    isTimerActive: Boolean,
+    slotAspectRatio: Float,
+    modifier: Modifier = Modifier
+) {
+    val themeColors = AppTheme.colors
+    val sidebarWidth = remember(slotAspectRatio) {
+        if (slotAspectRatio > 1f) {
+            160.dp
+        } else {
+            120.dp
+        }
+    }
+    
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = themeColors.cardBackground.copy(alpha = 0.9f)),
+        border = BorderStroke(1.dp, themeColors.border.copy(alpha = 0.3f)),
+        modifier = modifier
+            .width(sidebarWidth)
+            .padding(vertical = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "GALERI POSE",
+                color = themeColors.onCardBackground.copy(alpha = 0.6f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                for (index in 0 until totalShots) {
+                    val isCaptured = index < capturedPaths.size
+                    val isActive = index == currentShotIndex
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FilmstripSlotCardVertical(
+                            index = index,
+                            isCaptured = isCaptured,
+                            isActive = isActive,
+                            capturedPath = capturedPaths.getOrNull(index),
+                            countdownValue = countdownValue,
+                            isTimerActive = isTimerActive,
+                            slotAspectRatio = slotAspectRatio
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FilmstripSlotCardVertical(
+    index: Int,
+    isCaptured: Boolean,
+    isActive: Boolean,
+    capturedPath: String?,
+    countdownValue: Int,
+    isTimerActive: Boolean,
+    slotAspectRatio: Float
+) {
+    val themeColors = AppTheme.colors
+    val infiniteTransition = rememberInfiniteTransition()
+
+    val activeBorderGlow by infiniteTransition.animateColor(
+        initialValue = themeColors.primary.copy(alpha = 0.4f),
+        targetValue = themeColors.primary,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val activeScale by infiniteTransition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val cardBorder = when {
+        isCaptured -> BorderStroke(1.5.dp, themeColors.primary)
+        isActive -> BorderStroke(2.dp, activeBorderGlow)
+        else -> BorderStroke(1.dp, themeColors.border.copy(alpha = 0.5f))
+    }
+
+    val cardScale = if (isActive && isTimerActive) activeScale else 1f
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        border = cardBorder,
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isCaptured -> Color.Black
+                isActive -> themeColors.primary.copy(alpha = 0.15f)
+                else -> Color.Black.copy(alpha = 0.3f)
+            }
+        ),
+        modifier = Modifier
+            .fillMaxHeight()
+            .aspectRatio(slotAspectRatio, matchHeightConstraintsFirst = true)
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isCaptured && capturedPath != null) {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(500))
+                ) {
+                    AsyncImage(
+                        model = File(capturedPath),
+                        contentDescription = "Pose ${index + 1}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            } else if (isActive) {
+                if (isTimerActive && countdownValue > 0) {
+                    Text(
+                        text = countdownValue.toString(),
+                        color = themeColors.primary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                } else {
+                    val pulseAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.4f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800, easing = EaseInOut),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                    Text(
+                        text = "📸",
+                        fontSize = 16.sp,
+                        modifier = Modifier.graphicsLayer { alpha = pulseAlpha }
+                    )
+                }
+            } else {
+                Text(
+                    text = (index + 1).toString(),
+                    color = themeColors.onCardBackground.copy(alpha = 0.3f),
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
             }

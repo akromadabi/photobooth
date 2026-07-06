@@ -296,78 +296,199 @@ if ($isRemoteMode) {
             color: var(--text-muted);
         }
 
-        .package-card {
-            background-color: var(--card-bg);
+        /* ─── PACKAGE SELECTOR ROW ─── */
+        .package-selector-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        .package-select-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 14px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .package-select-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(247, 184, 1, 0.15), rgba(230, 57, 70, 0.15));
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .package-select-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(247, 184, 1, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .package-select-card.active {
+            border-color: var(--primary-gold);
+            background: linear-gradient(135deg, #f7b801, #e63946);
+            box-shadow: 0 8px 24px rgba(247, 184, 1, 0.25);
+            transform: scale(1.02);
+        }
+        
+        .package-select-card.active::before {
+            opacity: 1;
+        }
+
+        .package-select-icon {
+            font-size: 1.6rem;
+            margin-bottom: 2px;
+            transition: transform 0.25s ease;
+        }
+        
+        .package-select-card.active .package-select-icon {
+            transform: scale(1.15) rotate(-5deg);
+        }
+
+        .package-select-name {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.2;
+            transition: color 0.25s ease;
+        }
+        
+        .package-select-card.active .package-select-name {
+            color: #000;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .package-select-price {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primary-gold);
+            transition: color 0.25s ease;
+        }
+        
+        .package-select-card.active .package-select-price {
+            color: #000;
+            font-weight: 900;
+        }
+
+        /* ─── DETAILS PANEL ─── */
+        .details-panel {
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 20px;
+            padding: 16px;
+            min-height: 100px;
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-            cursor: pointer;
-            transition: all 0.25s;
+            align-items: center;
+            justify-content: center;
             position: relative;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+            width: 100%;
         }
 
-        .package-card:hover {
-            border-color: var(--primary-red);
-            transform: translateY(-2px);
+        .details-placeholder {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-style: italic;
         }
 
-        .package-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .package-name {
-            font-size: 1.25rem;
-            font-weight: 800;
-        }
-
-        .package-price {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary-red);
-        }
-
-        .features-list {
+        .package-details-content {
+            width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 14px;
+            gap: 10px;
+            animation: fadeInDetails 0.3s ease forwards;
         }
 
-        .feature-item {
-            font-size: 0.85rem;
+        @keyframes fadeInDetails {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .details-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 6px;
+            text-align: left;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 6px;
+        }
+        
+        @media(min-width: 380px) {
+            .details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .detail-item {
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        .feature-icon {
-            font-size: 1rem;
+        .detail-item.active {
+            color: #10b981;
         }
 
-        .feature-active { color: #52b788; }
-        .feature-inactive { color: #555; text-decoration: line-through; }
+        .detail-item.inactive {
+            color: rgba(255,255,255,0.15);
+            text-decoration: line-through;
+        }
 
+        .detail-icon {
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        /* ─── BTN ORDER ─── */
         .btn-order {
-            background-color: var(--primary-red);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-gold), #e63946);
+            color: black;
             font-size: 1rem;
-            font-weight: 700;
+            font-weight: 800;
             padding: 14px;
-            border-radius: 12px;
+            border-radius: 16px;
             border: none;
             cursor: pointer;
             width: 100%;
-            transition: background-color 0.25s;
             font-family: inherit;
-            margin-top: 10px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(247, 184, 1, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
         }
-        .btn-order:hover { background-color: #d62d3a; }
+
+        .btn-order:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(247, 184, 1, 0.4);
+            transform: translateY(-1px);
+        }
 
         .package-card.disabled {
             opacity: 0.4;
@@ -854,28 +975,6 @@ if ($isRemoteMode) {
         <!-- CATALOG SCREEN -->
         <div class="catalog-container">
             
-            <!-- Event Verification Form -->
-            <div class="event-code-box" style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 24px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Punya Kode Akses Event?</span>
-                <form action="order.php" method="GET" style="display: flex; gap: 10px; width: 100%;">
-                    <input type="text" name="event_code" placeholder="Masukkan Kode Event (misal: BUDI17)" value="<?php echo htmlspecialchars($eventCode); ?>" style="flex: 1; padding: 12px 14px; background: #0c0c0f; border: 1px solid var(--border-color); border-radius: 12px; color: white; text-transform: uppercase; font-family: inherit; font-size: 0.9rem; outline: none;">
-                    <button type="submit" style="width: auto; padding: 12px 20px; margin: 0; background-color: var(--primary-gold); color: black; border: none; font-weight: 700; border-radius: 12px; cursor: pointer;">Verifikasi</button>
-                </form>
-                <?php if (!empty($eventCode)): ?>
-                    <?php if ($resolvedEvent): ?>
-                        <div style="font-size: 0.85rem; color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                            <i class="fa-solid fa-circle-check"></i> Event Terkunci: <?php echo htmlspecialchars($resolvedEvent['name']); ?>
-                            <?php if ($isFreeActive): ?>
-                                 <span style="color: var(--primary-gold);">(Gratis / Free Play Aktif!)</span>
-                            <?php endif; ?>
-                        </div>
-                    <?php else: ?>
-                        <div style="font-size: 0.85rem; color: var(--primary-red); font-weight: 600; display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                            <i class="fa-solid fa-circle-xmark"></i> Kode Event tidak valid atau sudah kedaluwarsa.
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
 
             <div class="section-title" style="margin-top: 10px;">Pilih Paket Foto:</div>
             
@@ -884,7 +983,8 @@ if ($isRemoteMode) {
                 <input type="hidden" id="selectedPackageInput" name="package_id" value="">
                 <input type="hidden" name="event_id" value="<?php echo htmlspecialchars($eventId); ?>">
                 
-                <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Package Selector Row -->
+                <div class="package-selector-row">
                     <?php foreach ($packages as $pkg): 
                         $flow = isset($pkg['print_flow']) ? $pkg['print_flow'] : '';
                         $isAvailable = true;
@@ -894,31 +994,63 @@ if ($isRemoteMode) {
                             $isAvailable = false;
                         }
                         
-                        // Hide package if the required printer is disabled
                         if (!$isAvailable) {
                             continue;
                         }
                     ?>
-                        <div class="package-card" onclick="selectPackage('<?php echo htmlspecialchars($pkg['id']); ?>', this)">
-                            <div class="package-header">
-                                <div class="package-name"><?php echo htmlspecialchars($pkg['name']); ?></div>
-                                <div class="package-price">
-                                    <?php if ($isFreeActive): ?>
-                                        <span style="color: #10b981; font-weight: 800;">GRATIS</span>
-                                    <?php else: ?>
-                                        Rp <?php echo number_format($pkg['price'], 0, ',', '.'); ?>
-                                    <?php endif; ?>
-                                </div>
+                        <div class="package-select-card" data-package-id="<?php echo htmlspecialchars($pkg['id']); ?>" onclick="selectPackage('<?php echo htmlspecialchars($pkg['id']); ?>')">
+                            <div class="package-select-icon">
+                                <?php 
+                                    if ($flow === 'RECEIPT') echo '🖨️';
+                                    elseif ($flow === 'COLOR_PRINT') echo '🎨';
+                                    else echo '🪪'; 
+                                ?>
                             </div>
-                            <div class="features-list">
-                                <div class="feature-item <?php echo $pkg['features']['print']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon"><?php echo $pkg['features']['print'] ? '✓' : '✗'; ?></span> Cetak Struk Fisik
+                            <div class="package-select-name"><?php echo htmlspecialchars($pkg['name']); ?></div>
+                            <div class="package-select-price">
+                                <?php if ($isFreeActive): ?>
+                                    <span style="color: #10b981;">GRATIS</span>
+                                <?php else: ?>
+                                    Rp <?php echo number_format($pkg['price'], 0, ',', '.'); ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Dynamic Details Panel -->
+                <div class="details-panel" id="detailsPanel">
+                    <div class="details-placeholder" id="detailsPlaceholder">
+                        Silakan pilih paket foto di atas untuk melihat detail fitur.
+                    </div>
+                    
+                    <?php foreach ($packages as $pkg): 
+                        $flow = isset($pkg['print_flow']) ? $pkg['print_flow'] : '';
+                        $isAvailable = true;
+                        if (($flow === 'COLOR_PRINT' || $flow === 'ID_CARD') && !$colorActive) {
+                            $isAvailable = false;
+                        } elseif ($flow === 'RECEIPT' && !$thermalActive) {
+                            $isAvailable = false;
+                        }
+                        
+                        if (!$isAvailable) {
+                            continue;
+                        }
+                    ?>
+                        <div class="package-details-content" id="details-<?php echo htmlspecialchars($pkg['id']); ?>" style="display: none;">
+                            <div class="details-title">Fitur Paket <?php echo htmlspecialchars($pkg['name']); ?>:</div>
+                            <div class="details-grid">
+                                <div class="detail-item <?php echo $pkg['features']['print']?'active':'inactive'; ?>">
+                                    <span class="detail-icon"><?php echo $pkg['features']['print'] ? '✓' : '✗'; ?></span>
+                                    <span>Cetak Struk Fisik</span>
                                 </div>
-                                <div class="feature-item <?php echo $pkg['features']['download']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon"><?php echo $pkg['features']['download'] ? '✓' : '✗'; ?></span> Download Foto Strip
+                                <div class="detail-item <?php echo $pkg['features']['download']?'active':'inactive'; ?>">
+                                    <span class="detail-icon"><?php echo $pkg['features']['download'] ? '✓' : '✗'; ?></span>
+                                    <span>Download Foto Strip</span>
                                 </div>
-                                <div class="feature-item <?php echo $pkg['features']['gif']?'feature-active':'feature-inactive'; ?>">
-                                    <span class="feature-icon"><?php echo $pkg['features']['gif'] ? '✓' : '✗'; ?></span> Live Animated GIF
+                                <div class="detail-item <?php echo $pkg['features']['gif']?'active':'inactive'; ?>">
+                                    <span class="detail-icon"><?php echo $pkg['features']['gif'] ? '✓' : '✗'; ?></span>
+                                    <span>Live Animated GIF</span>
                                 </div>
                             </div>
                         </div>
@@ -930,12 +1062,43 @@ if ($isRemoteMode) {
         </div>
 
         <script>
-            function selectPackage(id, element) {
+            function selectPackage(id) {
+                // Update hidden input
                 document.getElementById('selectedPackageInput').value = id;
-                document.querySelectorAll('.package-card').forEach(c => c.style.borderColor = 'var(--border-color)');
-                element.style.borderColor = 'var(--primary-red)';
+                
+                // Toggle active card styling
+                document.querySelectorAll('.package-select-card').forEach(card => {
+                    if (card.getAttribute('data-package-id') === id) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
+                
+                // Hide placeholder
+                const placeholder = document.getElementById('detailsPlaceholder');
+                if (placeholder) placeholder.style.display = 'none';
+                
+                // Toggle details content visibility
+                document.querySelectorAll('.package-details-content').forEach(detail => {
+                    if (detail.id === 'details-' + id) {
+                        detail.style.display = 'flex';
+                    } else {
+                        detail.style.display = 'none';
+                    }
+                });
+                
+                // Enable button
                 document.getElementById('btnOrderSubmit').disabled = false;
             }
+
+            // Auto-select first package on load
+            window.addEventListener('DOMContentLoaded', () => {
+                const firstCard = document.querySelector('.package-select-card');
+                if (firstCard) {
+                    firstCard.click();
+                }
+            });
         </script>
 
     <?php else: ?>

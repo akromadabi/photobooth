@@ -1,6 +1,6 @@
 {
-  "versionCode": 46,
-  "versionName": "1.28.2",
+  "versionCode": 47,
+  "versionName": "1.28.3",
   "apkUrl": "app-debug.apk",
   "changeLog": "Pembaruan otomatis dari Gradle build."
 }
