@@ -24,12 +24,52 @@ git reset --hard origin/main
 if [ -d "backend" ]; then
     echo "--> 2. Syncing backend PHP files (excluding uploads)..."
     cp backend/*.php . 2>/dev/null || true
-    cp backend/*.json . 2>/dev/null || true
+    
+    # Sync JSON files selectively without overwriting active production configurations
+    for f in backend/*.json; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            if [ "$filename" = "settings.json" ] || [ "$filename" = "packages.json" ] || [ "$filename" = "coupons.json" ] || [ "$filename" = "queue.json" ]; then
+                if [ ! -f "$filename" ]; then
+                    echo "    Copying default $filename (file does not exist)"
+                    cp "$f" . 2>/dev/null || true
+                else
+                    echo "    Skipping $filename (keeping existing production file)"
+                fi
+            else
+                cp "$f" . 2>/dev/null || true
+            fi
+        fi
+    done
+
     cp backend/*.html . 2>/dev/null || true
     cp backend/*.png . 2>/dev/null || true
     cp backend/*.apk . 2>/dev/null || true
-    cp -r backend/characters . 2>/dev/null || true
-    cp -r backend/frames . 2>/dev/null || true
+    
+    if [ -d "backend/characters" ]; then
+        cp -r backend/characters . 2>/dev/null || true
+    fi
+
+    # Sync frames directory structure and assets, but preserve config.json if it exists
+    if [ -d "backend/frames" ]; then
+        mkdir -p frames
+        # Copy everything except config.json
+        for item in backend/frames/*; do
+            if [ -e "$item" ]; then
+                name=$(basename "$item")
+                if [ "$name" != "config.json" ]; then
+                    cp -r "$item" frames/ 2>/dev/null || true
+                fi
+            fi
+        done
+        # Handle frames/config.json separately
+        if [ ! -f "frames/config.json" ] && [ -f "backend/frames/config.json" ]; then
+            echo "    Copying default frames/config.json (file does not exist)"
+            cp backend/frames/config.json frames/config.json 2>/dev/null || true
+        else
+            echo "    Skipping frames/config.json (keeping existing production file)"
+        fi
+    fi
 else
     echo "--> 2. Warning: 'backend' directory not found."
 fi
