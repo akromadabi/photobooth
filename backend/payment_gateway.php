@@ -696,50 +696,50 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 12px;
+            padding: 6px;
         }
 
         .payment-card {
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px 16px;
+            border-radius: 14px;
+            padding: 14px 12px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .header {
             text-align: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            padding-bottom: 6px;
         }
 
         .logo {
             font-weight: 800;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             letter-spacing: -0.5px;
         }
         .logo span { color: var(--primary-red); }
 
         .title {
-            font-size: 0.95rem;
+            font-size: 0.8rem;
             font-weight: 700;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .bill-details {
             background-color: #0c0c0f;
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-size: 0.85rem;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .bill-row {
@@ -751,27 +751,27 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         .bill-val { font-weight: 600; }
 
         .price-tag {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 800;
             color: var(--primary-red);
             text-align: center;
-            margin-top: 2px;
+            margin-top: 0px;
         }
 
         .qris-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            padding: 5px 0;
+            gap: 6px;
+            padding: 2px 0;
         }
 
         .qris-box {
             background-color: white;
-            border-radius: 12px;
-            padding: 10px;
-            width: 180px;
-            height: 180px;
+            border-radius: 8px;
+            padding: 6px;
+            width: 150px;
+            height: 150px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -789,28 +789,28 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             position: absolute;
             background-color: rgba(230, 57, 70, 0.9);
             color: white;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             font-weight: 800;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 50px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-15deg);
-            border: 2px solid white;
+            border: 1.5px solid white;
         }
 
         .btn-verify {
             background-color: #25D366;
             color: white;
             font-weight: 700;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);
             transition: all 0.25s;
             text-align: center;
@@ -823,10 +823,10 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         }
 
         .instruction {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
             text-align: center;
-            line-height: 1.3;
+            line-height: 1.2;
         }
 
         /* Camera Scanner Styles */
@@ -941,12 +941,12 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
         </div>
 
         <!-- Tab Navigation for Payment Methods -->
-        <div class="payment-tabs" style="display: flex; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 8px;">
-            <button class="pay-tab active" id="tab-btn-online" onclick="switchPayTab('online')" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-                <i class="fa-solid fa-qrcode" style="font-size: 0.9rem;"></i> <span>QRIS / Online</span>
+        <div class="payment-tabs" style="display: flex; gap: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-top: 4px;">
+            <button class="pay-tab active" id="tab-btn-online" onclick="switchPayTab('online')" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                <i class="fa-solid fa-qrcode" style="font-size: 0.85rem;"></i> <span>QRIS / Online</span>
             </button>
-            <button class="pay-tab" id="tab-btn-coupon" onclick="switchPayTab('coupon')" style="flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-                <i class="fa-solid fa-ticket" style="font-size: 0.9rem;"></i> <span>Kupon Tunai</span>
+            <button class="pay-tab" id="tab-btn-coupon" onclick="switchPayTab('coupon')" style="flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                <i class="fa-solid fa-ticket" style="font-size: 0.85rem;"></i> <span>Kupon Tunai</span>
             </button>
         </div>
 
