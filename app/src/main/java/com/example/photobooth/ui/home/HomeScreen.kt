@@ -186,18 +186,23 @@ fun HomeScreen(
         }
     }
 
-    // Dynamic Event Name and Logo Resolution
-    val resolvedEventName = remember(syncedFramesJsonState, configManager.activeEventId, configManager.kioskMode, unlockedEventId) {
+    // Resolve active event info
+    val activeEventInfo = remember(syncedFramesJsonState, configManager.activeEventId, configManager.kioskMode, unlockedEventId) {
         val activeId = if (configManager.kioskMode == "DEDICATED") configManager.activeEventId else unlockedEventId
         if (activeId == "general") null
         else {
             try {
                 val config = com.google.gson.Gson().fromJson(syncedFramesJsonState, com.example.photobooth.data.FrameConfig::class.java)
-                config?.events?.firstOrNull { it.id == activeId }?.name
+                config?.events?.firstOrNull { it.id == activeId }
             } catch (e: Exception) {
                 null
             }
         }
+    }
+
+    // Dynamic Event Name and Logo Resolution
+    val resolvedEventName = remember(activeEventInfo) {
+        activeEventInfo?.name
     }
 
     val logoTextPart1 = remember(resolvedEventName) {
@@ -283,6 +288,70 @@ fun HomeScreen(
                 e.printStackTrace()
             }
             delay(1000) // Poll every 1 second
+        }
+    }
+
+    var remainingTimeText by remember { mutableStateOf("") }
+
+    LaunchedEffect(activeEventInfo, configManager.backendUrl) {
+        val event = activeEventInfo
+        val backendUrl = configManager.backendUrl
+        if (event != null && event.billingType == "RENTAL_DURATION" && backendUrl.isNotEmpty()) {
+            // First check: if rentalStartTime is null or empty, trigger startRentalTimer on server
+            if (event.rentalStartTime.isNullOrEmpty()) {
+                try {
+                    val api = com.example.photobooth.api.NetworkClient.getApi(backendUrl)
+                    api.startEventRental(event.id)
+                    // Trigger sync to fetch updated config with start/end time
+                    com.example.photobooth.api.CatalogSync.syncFramesFromBackend(context, backendUrl, configManager)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            
+            while (true) {
+                // Read latest event end time from shared config/state
+                val currentConfig = try {
+                    com.google.gson.Gson().fromJson(configManager.syncedFramesJson, com.example.photobooth.data.FrameConfig::class.java)
+                } catch (e: Exception) {
+                    null
+                }
+                val latestEvent = currentConfig?.events?.firstOrNull { it.id == event.id }
+                val start = latestEvent?.rentalStartTime
+                val end = latestEvent?.rentalEndTime
+                
+                if (!start.isNullOrEmpty() && !end.isNullOrEmpty()) {
+                    try {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                        val endTime = sdf.parse(end)?.time ?: 0L
+                        val now = System.currentTimeMillis()
+                        val diff = endTime - now
+                        
+                        if (diff <= 0) {
+                            remainingTimeText = "Sewa Habis"
+                            // Exit event mode!
+                            if (configManager.kioskMode == "DEDICATED") {
+                                configManager.kioskMode = "MULTI_EVENT"
+                                configManager.activeEventId = "general"
+                            }
+                            unlockedEventId = "general"
+                            break // Stop countdown loop
+                        } else {
+                            val hours = diff / (3600 * 1000)
+                            val minutes = (diff % (3600 * 1000)) / (60 * 1000)
+                            val seconds = (diff % (60 * 1000)) / 1000
+                            remainingTimeText = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                } else {
+                    remainingTimeText = "Belum Mulai"
+                }
+                delay(1000)
+            }
+        } else {
+            remainingTimeText = ""
         }
     }
 
@@ -467,6 +536,31 @@ fun HomeScreen(
             }
         }
 
+        // Floating rental timer badge overlay
+        if (remainingTimeText.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 24.dp)
+                    .background(Color(0xE61E1E24), RoundedCornerShape(20.dp))
+                    .border(1.dp, Color(0xFFE63946), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("⏱️", color = Color(0xFFE63946), fontSize = 16.sp)
+                    Text(
+                        text = "Sewa Aktif: $remainingTimeText",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
         // Admin PIN Dialog
         if (showPinDialog) {
             PinEntryDialog(
@@ -585,6 +679,17 @@ fun HomeScreen(
                                         unlockedEventId = matchedEvent.id
                                         showEventCodeDialog = false
                                         showUnlockSuccessAnim = true
+                                        
+                                        // Start rental timer on server & sync configuration
+                                        scope.launch {
+                                            try {
+                                                val api = com.example.photobooth.api.NetworkClient.getApi(configManager.backendUrl)
+                                                api.startEventRental(matchedEvent.id)
+                                                com.example.photobooth.api.CatalogSync.syncFramesFromBackend(context, configManager.backendUrl, configManager)
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
                                     } else if (eventCodeInput.equals("UMUM", ignoreCase = true)) {
                                         unlockedEventId = "general"
                                         showEventCodeDialog = false

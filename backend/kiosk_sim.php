@@ -726,6 +726,42 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
             to { opacity: 1; }
         }
 
+        /* Rental timer badge floating globally in the corner */
+        .rental-timer-badge {
+            position: absolute;
+            top: 32px;
+            right: 12px;
+            z-index: 999;
+            background: rgba(15, 15, 20, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            max-width: fit-content;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .rental-timer-badge i {
+            color: #ff3366;
+            animation: pulse-timer-spin 2.5s infinite linear;
+        }
+
+        @keyframes pulse-timer-spin {
+            0% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+            50% { transform: scale(1.15) rotate(180deg); opacity: 1; }
+            100% { transform: scale(1) rotate(360deg); opacity: 0.8; }
+        }
+
         /* Capture overlay countdown */
         .countdown-overlay {
             position: absolute;
@@ -4671,6 +4707,11 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                         </div>
                     </div>
 
+                    <!-- Floating Rental Timer Badge -->
+                    <div id="rentalTimerBadge" class="rental-timer-badge" style="display: none;">
+                        <i class="fa-solid fa-hourglass-half"></i> <span id="rentalTimerText">00:00:00</span>
+                    </div>
+
                     <!-- SCREEN 1: HOME SCREEN -->
                     <div class="kiosk-screen screen-home active" id="screenHome">
                         <!-- Floating Particles for CREATIVE_DYNAMIC -->
@@ -4686,7 +4727,6 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                             <div class="home-logo-part2" id="logoPart2">Jepret</div>
                         </div>
 
-                        <!-- Center section -->
                         <div class="home-center">
                             <button class="btn-start" onclick="startSession()">START</button>
                             <div class="home-slogan" id="homeSlogan">All You need is special</div>
@@ -5001,6 +5041,44 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
         function onPackageSelectChange() {
             activePackageId = document.getElementById('kioskPackageSelect').value;
         }
+
+        // Dynamic Packages Select update inside Simulator sidebar
+        function updateSimulatorPackageSelect() {
+            const selectEl = document.getElementById('kioskPackageSelect');
+            if (!selectEl) return;
+            
+            let targetId = kioskMode === 'DEDICATED' ? activeEventId : currentSessionEventId;
+            let activeEvent = null;
+            if (serverConfig && serverConfig.events) {
+                activeEvent = serverConfig.events.find(e => e.id === targetId) || null;
+            }
+            
+            selectEl.innerHTML = '';
+            
+            let filteredPackages = packagesList;
+            if (activeEvent && activeEvent.billing_type === 'PAY_PER_SESSION' && activeEvent.allowed_packages && Array.isArray(activeEvent.allowed_packages) && activeEvent.allowed_packages.length > 0) {
+                filteredPackages = packagesList.filter(p => activeEvent.allowed_packages.includes(p.id));
+            }
+            
+            if (filteredPackages.length > 0) {
+                filteredPackages.forEach(pkg => {
+                    const opt = document.createElement('option');
+                    opt.value = pkg.id;
+                    opt.innerText = pkg.name;
+                    selectEl.appendChild(opt);
+                });
+                if (!filteredPackages.some(p => p.id === activePackageId)) {
+                    activePackageId = filteredPackages[0].id;
+                }
+                selectEl.value = activePackageId;
+            } else {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.innerText = 'Tidak ada paket kustom';
+                selectEl.appendChild(opt);
+                activePackageId = '';
+            }
+        }
         
         let logoTaps = 0;
         let logoTapsTimeout;
@@ -5024,10 +5102,11 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
 
         // Initialization
         window.addEventListener('load', () => {
-            // Update clock
+            // Update clock and rental duration timer
             setInterval(() => {
                 const now = new Date();
                 document.getElementById('statusClock').innerText = now.toTimeString().split(' ')[0].substring(0, 5);
+                updateRentalTimerCountdown();
             }, 1000);
             
             // Set up drawing canvas events
@@ -5038,6 +5117,11 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
 
             // Apply theme accessories
             applyThemeUIAccessories(appTheme);
+            
+            // Start rental timer if dedicated mode is active on load
+            if (kioskMode === 'DEDICATED') {
+                startRentalTimerIfNeeded(activeEventId);
+            }
         });
 
         // Set Kiosk Mode
@@ -5055,6 +5139,7 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                 const sel = document.getElementById('kioskEventSelect');
                 activeEventId = sel.value || 'general';
                 currentSessionEventId = activeEventId;
+                startRentalTimerIfNeeded(activeEventId);
             } else {
                 activeEventId = 'general';
                 currentSessionEventId = 'general';
@@ -5068,6 +5153,7 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
             if (kioskMode === 'DEDICATED') {
                 activeEventId = document.getElementById('kioskEventSelect').value;
                 currentSessionEventId = activeEventId;
+                startRentalTimerIfNeeded(activeEventId);
                 updateHomeScreenBranding();
             }
         }
@@ -5079,15 +5165,32 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
             let targetId = kioskMode === 'DEDICATED' ? activeEventId : currentSessionEventId;
 
             let brandSource = null;
+            let specificEvent = null;
             if (serverConfig && serverConfig.events) {
                 // Try active specific event first
                 if (targetId && targetId !== 'general') {
-                    brandSource = serverConfig.events.find(e => e.id === targetId) || null;
+                    specificEvent = serverConfig.events.find(e => e.id === targetId) || null;
+                    brandSource = specificEvent;
                 }
                 // Fall back to general service profile
                 if (!brandSource) {
                     brandSource = serverConfig.events.find(e => e.id === 'general') || null;
                 }
+            }
+
+            // Update package selections in simulator panel
+            updateSimulatorPackageSelect();
+
+            // Handle countdown for RENTAL_DURATION
+            if (specificEvent && specificEvent.billing_type === 'RENTAL_DURATION') {
+                startEventCountdown(specificEvent);
+            } else {
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+                const badge = document.getElementById('eventTimerBadge');
+                if (badge) badge.style.display = 'none';
             }
 
             // ── 2. Extract branding fields ──────────────────────────────────
@@ -5414,6 +5517,9 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                 closeTicketModal();
                 currentSessionEventId = matchedEvent.id;
                 
+                // Start rental timer on server if needed
+                startRentalTimerIfNeeded(matchedEvent.id);
+                
                 // Show Golden successful verification dialog
                 document.getElementById('ticketSuccessDesc').innerHTML = `Selamat Datang di<br>✨ ${matchedEvent.name} ✨`;
                 document.getElementById('ticketSuccessModal').style.display = 'flex';
@@ -5438,6 +5544,101 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                 utterance.lang = 'id-ID';
                 window.speechSynthesis.speak(utterance);
             }
+        }
+
+        function startRentalTimerIfNeeded(eventId) {
+            if (!eventId || eventId === 'general') return;
+            if (!serverConfig || !serverConfig.events) return;
+            const event = serverConfig.events.find(e => e.id === eventId);
+            if (event && event.billing_type === 'RENTAL_DURATION') {
+                // Call backend API to activate rental
+                const formData = new FormData();
+                formData.append('action', 'start_event_rental');
+                formData.append('event_id', eventId);
+                
+                fetch('admin.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the local event object with start/end time
+                        event.rental_start_time = data.rental_start_time;
+                        event.rental_end_time = data.rental_end_time;
+                    }
+                })
+                .catch(err => console.error("Error starting rental:", err));
+            }
+        }
+
+        function updateRentalTimerCountdown() {
+            let targetId = kioskMode === 'DEDICATED' ? activeEventId : currentSessionEventId;
+            const badge = document.getElementById('rentalTimerBadge');
+            const txt = document.getElementById('rentalTimerText');
+            
+            if (targetId && targetId !== 'general') {
+                if (serverConfig && serverConfig.events) {
+                    const event = serverConfig.events.find(e => e.id === targetId);
+                    if (event && event.billing_type === 'RENTAL_DURATION') {
+                        if (event.rental_start_time && event.rental_end_time) {
+                            const endTime = new Date(event.rental_end_time.replace(' ', 'T')).getTime();
+                            const now = Date.now();
+                            const diff = endTime - now;
+                            
+                            if (diff <= 0) {
+                                // Expired!
+                                if (badge) badge.style.display = 'none';
+                                speakAssistiveCue("Durasi sewa telah habis. Kiosk kembali ke mode normal.");
+                                alert("⌛ Durasi Sewa Event telah habis! Kiosk otomatis kembali ke mode normal / keluar dari event.");
+                                
+                                // Exit event mode
+                                if (kioskMode === 'DEDICATED') {
+                                    kioskMode = 'MULTI_EVENT';
+                                    document.getElementById('modeMultiEvent').classList.add('active');
+                                    document.getElementById('modeDedicated').classList.remove('active');
+                                    document.getElementById('eventSelectBox').style.display = 'none';
+                                    document.getElementById('ticketLauncher').style.display = 'flex';
+                                    document.getElementById('statusBarMode').innerText = `Kiosk Mode: Multi-Event`;
+                                    activeEventId = 'general';
+                                }
+                                currentSessionEventId = 'general';
+                                updateHomeScreenBranding();
+                            } else {
+                                // Calculate remaining
+                                const hours = Math.floor(diff / (3600 * 1000));
+                                const minutes = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
+                                const seconds = Math.floor((diff % (60 * 1000)) / 1000);
+                                
+                                const pad = (num) => String(num).padStart(2, '0');
+                                const timeFormatted = hours > 0 
+                                    ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` 
+                                    : `${pad(minutes)}:${pad(seconds)}`;
+                                
+                                if (txt) txt.innerText = timeFormatted;
+                                if (badge) {
+                                    badge.style.display = 'inline-flex';
+                                    // Make border/color dynamic for critical time (less than 5 mins)
+                                    if (diff < 5 * 60 * 1000) {
+                                        badge.style.border = "1.5px solid rgba(255, 51, 102, 0.6)";
+                                        badge.style.background = "rgba(255, 51, 102, 0.15)";
+                                        txt.style.color = "#ff3366";
+                                    } else {
+                                        badge.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+                                        badge.style.background = "rgba(15, 15, 20, 0.75)";
+                                        txt.style.color = "#ffffff";
+                                    }
+                                }
+                            }
+                        } else {
+                            if (txt) txt.innerText = "Mulai...";
+                            if (badge) badge.style.display = 'inline-flex';
+                        }
+                        return;
+                    }
+                }
+            }
+            if (badge) badge.style.display = 'none';
         }
 
         // Start session navigation

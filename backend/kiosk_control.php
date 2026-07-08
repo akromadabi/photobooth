@@ -165,6 +165,89 @@ switch ($action) {
         }
         break;
 
+    case 'start_event_rental':
+        $eventId = isset($_GET['event_id']) ? $_GET['event_id'] : '';
+        $eventCode = isset($_GET['event_code']) ? strtoupper(trim($_GET['event_code'])) : '';
+        
+        if (!$eventId && !$eventCode) {
+            echo json_encode(['success' => false, 'message' => 'Event ID or Event Code required']);
+            break;
+        }
+        
+        $configPath = __DIR__ . '/frames/config.json';
+        if (!file_exists($configPath)) {
+            echo json_encode(['success' => false, 'message' => 'Config file not found']);
+            break;
+        }
+        
+        $config = json_decode(file_get_contents($configPath), true);
+        $foundIndex = -1;
+        
+        if (isset($config['events'])) {
+            foreach ($config['events'] as $index => $evt) {
+                if ($eventId && $evt['id'] === $eventId) {
+                    $foundIndex = $index;
+                    break;
+                }
+                if ($eventCode && isset($evt['code']) && strtoupper($evt['code']) === $eventCode) {
+                    $foundIndex = $index;
+                    break;
+                }
+            }
+        }
+        
+        if ($foundIndex === -1) {
+            echo json_encode(['success' => false, 'message' => 'Event not found']);
+            break;
+        }
+        
+        $evt = $config['events'][$foundIndex];
+        if (!isset($evt['billing_type']) || $evt['billing_type'] !== 'RENTAL_DURATION') {
+            echo json_encode(['success' => false, 'message' => 'Event is not duration rental type']);
+            break;
+        }
+        
+        // Calculate rental times if they are not already set and active
+        $now = time();
+        $start = $evt['rental_start_time'] ?? '';
+        $end = $evt['rental_end_time'] ?? '';
+        $isCurrentlyActive = false;
+        
+        if ($start && $end) {
+            $startTime = strtotime($start);
+            $endTime = strtotime($end);
+            if ($now >= $startTime && $now <= $endTime) {
+                $isCurrentlyActive = true;
+            }
+        }
+        
+        if (!$isCurrentlyActive) {
+            // Start the rental timer!
+            $durationHours = intval($evt['rental_duration_hours'] ?? 1);
+            $durationMins = intval($evt['rental_duration_minutes'] ?? 0);
+            
+            $startTimeStr = date('Y-m-d H:i:s');
+            $endTimeStr = date('Y-m-d H:i:s', time() + ($durationHours * 3600) + ($durationMins * 60));
+            
+            $config['events'][$foundIndex]['rental_start_time'] = $startTimeStr;
+            $config['events'][$foundIndex]['rental_end_time'] = $endTimeStr;
+            
+            $config['version'] = isset($config['version']) ? intval($config['version']) + 1 : 1;
+            file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
+            
+            $start = $startTimeStr;
+            $end = $endTimeStr;
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Rental timer started successfully',
+            'event_id' => $evt['id'],
+            'rental_start_time' => $start,
+            'rental_end_time' => $end
+        ]);
+        break;
+
     case 'create_coupon':
         require_once __DIR__ . '/coupon_helper.php';
         $packageId = isset($_REQUEST['package_id']) ? $_REQUEST['package_id'] : 'any';

@@ -784,6 +784,53 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event_frames') {
     exit;
 }
 
+// Action: Start Event Rental (AJAX)
+if (isset($_POST['action']) && $_POST['action'] === 'start_event_rental') {
+    header('Content-Type: application/json');
+    $eventId = $_POST['event_id'] ?? '';
+    
+    $configPath = __DIR__ . '/frames/config.json';
+    if (file_exists($configPath)) {
+        $config = json_decode(file_get_contents($configPath), true);
+        $found = false;
+        $activeEvt = null;
+        if (isset($config['events'])) {
+            foreach ($config['events'] as &$evt) {
+                if ($evt['id'] === $eventId) {
+                    if (empty($evt['rental_start_time'])) {
+                        $durationHours = intval($evt['rental_duration_hours'] ?? 1);
+                        $durationMinutes = intval($evt['rental_duration_minutes'] ?? 0);
+                        $totalSeconds = ($durationHours * 3600) + ($durationMinutes * 60);
+                        
+                        $startTime = date('Y-m-d H:i:s');
+                        $endTime = date('Y-m-d H:i:s', time() + $totalSeconds);
+                        
+                        $evt['rental_start_time'] = $startTime;
+                        $evt['rental_end_time'] = $endTime;
+                    }
+                    $activeEvt = $evt;
+                    $found = true;
+                    break;
+                }
+            }
+        }
+        if ($found && $activeEvt) {
+            $config['version'] = isset($config['version']) ? intval($config['version']) + 1 : 1;
+            file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
+            echo json_encode([
+                'success' => true,
+                'rental_start_time' => $activeEvt['rental_start_time'],
+                'rental_end_time' => $activeEvt['rental_end_time']
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Event tidak ditemukan']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Config file tidak ditemukan']);
+    }
+    exit;
+}
+
 // Action: Save Event
 if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
     $eventName = trim($_POST['event_name']);
@@ -866,22 +913,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
     }
     
     $billingType = trim($_POST['billing_type'] ?? 'PAY_PER_SESSION');
-    $rentalStartTime = trim($_POST['rental_start_time'] ?? '');
-    $rentalEndTime = trim($_POST['rental_end_time'] ?? '');
+    $rentalDurationHours = intval($_POST['rental_duration_hours'] ?? 1);
+    $rentalDurationMinutes = intval($_POST['rental_duration_minutes'] ?? 0);
+    $resetRentalTimer = isset($_POST['reset_rental_timer']) && $_POST['reset_rental_timer'] == '1';
     $limitPrintsPerSession = intval($_POST['limit_prints_per_session'] ?? 1);
     $allowedFrames = $_POST['allowed_frames'] ?? [];
+    $allowedPackages = $_POST['allowed_packages'] ?? [];
     
-    if ($rentalStartTime) {
-        $rentalStartTime = str_replace('T', ' ', $rentalStartTime);
-        if (strlen($rentalStartTime) === 16) {
-            $rentalStartTime .= ':00';
-        }
-    }
-    if ($rentalEndTime) {
-        $rentalEndTime = str_replace('T', ' ', $rentalEndTime);
-        if (strlen($rentalEndTime) === 16) {
-            $rentalEndTime .= ':00';
-        }
+    $rentalStartTime = '';
+    $rentalEndTime = '';
+    
+    if ($eventIndex !== -1 && !$resetRentalTimer) {
+        $rentalStartTime = $config['events'][$eventIndex]['rental_start_time'] ?? '';
+        $rentalEndTime = $config['events'][$eventIndex]['rental_end_time'] ?? '';
     }
 
     $newEvent = [
@@ -896,10 +940,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_event') {
         'event_date' => $eventDate,
         'event_location' => $eventLocation,
         'billing_type' => $billingType,
+        'rental_duration_hours' => $rentalDurationHours,
+        'rental_duration_minutes' => $rentalDurationMinutes,
         'rental_start_time' => $rentalStartTime,
         'rental_end_time' => $rentalEndTime,
         'limit_prints_per_session' => $limitPrintsPerSession,
-        'allowed_frames' => $allowedFrames
+        'allowed_frames' => $allowedFrames,
+        'allowed_packages' => $allowedPackages
     ];
     
     if ($eventIndex !== -1) {
@@ -5265,20 +5312,81 @@ foreach ($weeklyStats as $date => $cnt) {
                 <span>Pilih Bingkai Sesi Foto</span>
             </div>
             
-            <!-- Quick Actions -->
-            <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                <button type="button" class="btn-secondary" onclick="selectAllFrames(true)" style="padding: 6px 12px; font-size: 0.8rem;">
-                    <i class="fa-solid fa-check-double"></i> Pilih Semua Bingkai
-                </button>
-                <button type="button" class="btn-secondary" onclick="selectAllFrames(false)" style="padding: 6px 12px; font-size: 0.8rem;">
-                    <i class="fa-solid fa-square"></i> Kosongkan Semua Pilihan
-                </button>
+            <!-- Filter & Quick Actions Bar -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px; margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid var(--border-color);">
+                <!-- Search & Filters -->
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%;">
+                    <!-- Search Input -->
+                    <div style="flex: 1; min-width: 200px; position: relative; display: flex; align-items: center;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; color: #94a3b8; font-size: 0.85rem;"></i>
+                        <input type="text" id="modalFrameSearch" placeholder="Cari nama bingkai..." style="width: 100%; padding: 6px 10px 6px 30px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 6px; outline: none; background: white;" oninput="filterModalFrames()">
+                    </div>
+                    <!-- Type/Format Filter -->
+                    <div style="width: 130px;">
+                        <select id="modalFrameTypeFilter" style="width: 100%; padding: 6px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 6px; outline: none; background: white; cursor: pointer;" onchange="filterModalFrames()">
+                            <option value="all">Semua Format</option>
+                            <option value="strip">Vertical Strip</option>
+                            <option value="grid">Collage Grid</option>
+                            <option value="postcard">Postcard</option>
+                        </select>
+                    </div>
+                    <!-- Category Filter -->
+                    <div style="width: 130px;">
+                        <select id="modalFrameCategoryFilter" style="width: 100%; padding: 6px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 6px; outline: none; background: white; cursor: pointer;" onchange="filterModalFrames()">
+                            <option value="all">Semua Kategori</option>
+                            <?php 
+                            $uniqueCats = [];
+                            foreach ($framesList as $f) {
+                                $c = isset($f['category']) ? trim($f['category']) : 'Classic';
+                                if ($c !== '' && !in_array($c, $uniqueCats)) {
+                                    $uniqueCats[] = $c;
+                                }
+                            }
+                            sort($uniqueCats);
+                            foreach ($uniqueCats as $c): 
+                            ?>
+                                <option value="<?php echo htmlspecialchars($c); ?>"><?php echo htmlspecialchars($c); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <!-- Selection State Filter -->
+                    <div style="display: flex; align-items: center; gap: 6px; margin-left: 4px; font-size: 0.8rem; color: var(--text-main); font-weight: 600; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="modalFrameSelectedOnly" style="cursor: pointer; width: 14px; height: 14px;" onchange="filterModalFrames()">
+                        <label for="modalFrameSelectedOnly" style="cursor: pointer; margin-bottom: 0;">Terpilih Saja</label>
+                    </div>
+                    <!-- Dynamic Nature Filter -->
+                    <div style="display: flex; align-items: center; gap: 6px; margin-left: 4px; font-size: 0.8rem; color: var(--text-main); font-weight: 600; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="modalFrameDynamicOnly" style="cursor: pointer; width: 14px; height: 14px;" onchange="filterModalFrames()">
+                        <label for="modalFrameDynamicOnly" style="cursor: pointer; margin-bottom: 0;">Dinamis Saja</label>
+                    </div>
+                </div>
+                <!-- Quick Actions -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 4px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-secondary" onclick="selectAllFrames(true)" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px;">
+                            <i class="fa-solid fa-check-double"></i> Pilih Semua
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="selectAllFrames(false)" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px;">
+                            <i class="fa-solid fa-square"></i> Kosongkan
+                        </button>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;" id="modalFrameCountLabel">
+                        Menampilkan semua bingkai
+                    </div>
+                </div>
             </div>
             
             <!-- Scrollable Frame Categories -->
-            <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 20px;">
+            <div id="modalFramesScrollContainer" style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 20px;">
+                <!-- Empty Placeholder -->
+                <div id="modalFramesEmptyPlaceholder" style="display: none; text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                    <i class="fa-regular fa-image" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 12px; display: block;"></i>
+                    <span style="font-weight: 600; display: block;">Tidak ada bingkai yang cocok dengan pencarian Anda.</span>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Coba ubah kata kunci atau filter Anda.</p>
+                </div>
+
                 <!-- Category: Dinamis -->
-                <div>
+                <div id="dynamicCategorySection">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
                         <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
                             <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Bingkai Dinamis
@@ -5295,8 +5403,8 @@ foreach ($weeklyStats as $date => $cnt) {
                         });
                         foreach ($dynamicFrames as $f): 
                         ?>
-                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="dynamic" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
-                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames_checkbox[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
+                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="dynamic" data-type="<?php echo htmlspecialchars(strtolower($f['type'])); ?>" data-category-name="<?php echo htmlspecialchars(isset($f['category']) ? trim($f['category']) : 'Classic'); ?>" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
+                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames_checkbox[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>'); filterModalFrames();" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
                                 <div class="frame-select-preview">
                                     <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
                                 </div>
@@ -5313,7 +5421,7 @@ foreach ($weeklyStats as $date => $cnt) {
                 </div>
                 
                 <!-- Category: Statis -->
-                <div>
+                <div id="staticCategorySection">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 10px;">
                         <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
                             <i class="fa-solid fa-image" style="color: #64748b;"></i> Bingkai Statis
@@ -5330,8 +5438,8 @@ foreach ($weeklyStats as $date => $cnt) {
                         });
                         foreach ($staticFrames as $f): 
                         ?>
-                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="static" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
-                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames_checkbox[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>')" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
+                            <div class="frame-select-card" data-frame-id="<?php echo htmlspecialchars($f['id']); ?>" data-category="static" data-type="<?php echo htmlspecialchars(strtolower($f['type'])); ?>" data-category-name="<?php echo htmlspecialchars(isset($f['category']) ? trim($f['category']) : 'Classic'); ?>" onclick="toggleFrameCardSelection('<?php echo htmlspecialchars($f['id']); ?>')">
+                                <input type="checkbox" class="rental-frame-checkbox" name="allowed_frames_checkbox[]" value="<?php echo htmlspecialchars($f['id']); ?>" onclick="event.stopPropagation(); updateFrameCardStyle('<?php echo htmlspecialchars($f['id']); ?>'); filterModalFrames();" style="position: absolute; top: 6px; right: 6px; accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;">
                                 <div class="frame-select-preview">
                                     <img src="<?php echo htmlspecialchars($f['image_url']); ?>?v=<?php echo isset($configData['version'])?$configData['version']:'1'; ?>" onerror="this.src='https://placehold.co/100x120/121212/ffffff?text=No+Preview'">
                                 </div>
@@ -5563,30 +5671,59 @@ foreach ($weeklyStats as $date => $cnt) {
                         </div>
                     </div>
 
+                    <?php if (!empty($packagesList)): ?>
+                    <div id="payPerSessionFields" style="display: none; flex-direction: column; gap: 12px; border: 1px dashed var(--border-color); padding: 16px; border-radius: 12px; background: rgba(0,0,0,0.02); margin-bottom: 16px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;"><i class="fa-solid fa-box" style="color: var(--primary);"></i> Paket yang Ditampilkan</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <?php foreach ($packagesList as $pkg): ?>
+                                <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; cursor: pointer; color: var(--text-dark); user-select: none;">
+                                    <input type="checkbox" class="event-package-checkbox" name="allowed_packages[]" value="<?php echo htmlspecialchars($pkg['id']); ?>" checked style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                                    <span><strong><?php echo htmlspecialchars($pkg['name']); ?></strong> (Rp <?php echo number_format($pkg['price'], 0, ',', '.'); ?>)</span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; display: block;">Centang paket yang ingin ditampilkan di Kiosk / Halaman Pemesanan untuk event ini. Jika tidak dicentang semua, maka otomatis semua paket akan ditampilkan.</span>
+                    </div>
+                    <?php endif; ?>
+
                     <div id="rentalDurationFields" style="display: none; flex-direction: column; gap: 16px; border: 1px dashed var(--border-color); padding: 16px; border-radius: 12px; background: rgba(0,0,0,0.02);">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div class="form-group">
-                                <label for="event_rental_start_time">Waktu Mulai Sewa</label>
-                                <input type="datetime-local" id="event_rental_start_time" name="rental_start_time" class="form-input" style="background: white;">
+                                <label for="event_rental_duration_hours">Durasi Sewa (Jam)</label>
+                                <select id="event_rental_duration_hours" name="rental_duration_hours" class="form-input" style="background: white;">
+                                    <?php for($i=0; $i<=23; $i++) {
+                                        echo "<option value='$i'>$i Jam</option>";
+                                    } ?>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <label for="event_rental_end_time">Waktu Selesai Sewa</label>
-                                <input type="datetime-local" id="event_rental_end_time" name="rental_end_time" class="form-input" style="background: white;">
+                                <label for="event_rental_duration_minutes">Durasi Sewa (Menit)</label>
+                                <select id="event_rental_duration_minutes" name="rental_duration_minutes" class="form-input" style="background: white;">
+                                    <?php for($i=0; $i<=59; $i++) {
+                                        echo "<option value='$i'>$i Menit</option>";
+                                    } ?>
+                                </select>
                             </div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end;">
-                            <div class="form-group">
-                                <label for="event_limit_prints_per_session">Batas Cetak per Sesi Foto</label>
-                                <input type="number" id="event_limit_prints_per_session" name="limit_prints_per_session" class="form-input" value="1" min="1" style="background: white;">
-                                <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Mencegah spam print per sesi tamu.</span>
-                            </div>
-                            <div class="form-group">
-                                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Bingkai Sesi Foto</label>
-                                <button type="button" class="btn-secondary" onclick="openFramesModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 600; border-radius: 8px; width: 100%; background: white; border: 1px solid var(--border-color); justify-content: center; cursor: pointer; transition: all 0.2s ease;">
-                                    <i class="fa-solid fa-images" style="color: var(--primary);"></i>
-                                    <span id="selectedFramesCountLabel">Kelola Bingkai Sesi (Semua Terpilih)</span>
-                                </button>
-                            </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="event_reset_rental_timer" name="reset_rental_timer" value="1" style="width: 16px; height: 16px; cursor: pointer;">
+                            <label for="event_reset_rental_timer" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Reset / Mulai Ulang Timer Sewa (Timer berjalan saat di-unlock di Kiosk)</label>
+                        </div>
+                        <div id="activeRentalTimerStatus" style="font-size: 0.75rem; color: var(--primary-accent); font-weight: bold; display: none; margin-top: -8px;"></div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end; margin-top: 16px;">
+                        <div class="form-group">
+                            <label for="event_limit_prints_per_session">Batas Cetak per Sesi Foto</label>
+                            <input type="number" id="event_limit_prints_per_session" name="limit_prints_per_session" class="form-input" value="1" min="1" style="background: white;">
+                            <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Mencegah spam print per sesi tamu.</span>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Bingkai Sesi Foto</label>
+                            <button type="button" class="btn-secondary" onclick="openFramesModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 600; border-radius: 8px; width: 100%; background: white; border: 1px solid var(--border-color); justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+                                <i class="fa-solid fa-images" style="color: var(--primary);"></i>
+                                <span id="selectedFramesCountLabel">Kelola Bingkai Sesi (Semua Terpilih)</span>
+                            </button>
                         </div>
                     </div>
                     
@@ -7830,12 +7967,37 @@ function editFrame(frame) {
             }
             
             document.getElementById('event_billing_type').value = evt.billing_type || 'PAY_PER_SESSION';
-            let startVal = evt.rental_start_time || '';
-            let endVal = evt.rental_end_time || '';
-            if (startVal) startVal = startVal.replace(' ', 'T').substring(0, 16);
-            if (endVal) endVal = endVal.replace(' ', 'T').substring(0, 16);
-            document.getElementById('event_rental_start_time').value = startVal;
-            document.getElementById('event_rental_end_time').value = endVal;
+            
+            // Populate duration
+            let hours = 1;
+            let minutes = 0;
+            if (evt.rental_duration_hours !== undefined) {
+                hours = evt.rental_duration_hours;
+                minutes = evt.rental_duration_minutes || 0;
+            } else if (evt.rental_start_time && evt.rental_end_time) {
+                let start = new Date(evt.rental_start_time.replace(' ', 'T'));
+                let end = new Date(evt.rental_end_time.replace(' ', 'T'));
+                let diffMs = end - start;
+                if (diffMs > 0) {
+                    let totalMins = Math.floor(diffMs / 60000);
+                    hours = Math.floor(totalMins / 60);
+                    minutes = totalMins % 60;
+                }
+            }
+            document.getElementById('event_rental_duration_hours').value = hours;
+            document.getElementById('event_rental_duration_minutes').value = minutes;
+            document.getElementById('event_reset_rental_timer').checked = false; // default unchecked
+            
+            // Show active timer status
+            const statusEl = document.getElementById('activeRentalTimerStatus');
+            if (evt.rental_start_time && evt.rental_end_time) {
+                statusEl.innerText = "Sewa Sedang Berjalan: " + evt.rental_start_time + " s.d " + evt.rental_end_time;
+                statusEl.style.display = "block";
+            } else {
+                statusEl.innerText = "Status Sewa: Belum Dimulai (Akan berjalan saat di-unlock di Kiosk)";
+                statusEl.style.display = "block";
+            }
+            
             document.getElementById('event_limit_prints_per_session').value = evt.limit_prints_per_session !== undefined ? evt.limit_prints_per_session : 1;
             toggleBillingFields();
 
@@ -7861,6 +8023,24 @@ function editFrame(frame) {
             }
             updateSelectedFramesCount();
             syncHiddenAllowedFrames();
+
+            // Load allowed packages
+            document.querySelectorAll('.event-package-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            if (evt.allowed_packages && Array.isArray(evt.allowed_packages)) {
+                evt.allowed_packages.forEach(pkgId => {
+                    const cb = document.querySelector(`.event-package-checkbox[value="${pkgId}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                    }
+                });
+            } else {
+                // If allowed_packages is not set (e.g. legacy/new events), check all by default
+                document.querySelectorAll('.event-package-checkbox').forEach(cb => {
+                    cb.checked = true;
+                });
+            }
 
             document.getElementById('eventIsEditing').value = '1';
             
@@ -7892,9 +8072,17 @@ function editFrame(frame) {
             document.getElementById('secondaryColorPicker').value = '#ffffff';
             
             document.getElementById('event_billing_type').value = 'PAY_PER_SESSION';
-            document.getElementById('event_rental_start_time').value = '';
-            document.getElementById('event_rental_end_time').value = '';
+            document.getElementById('event_rental_duration_hours').value = '1';
+            document.getElementById('event_rental_duration_minutes').value = '0';
+            document.getElementById('event_reset_rental_timer').checked = false;
+            document.getElementById('activeRentalTimerStatus').style.display = 'none';
             document.getElementById('event_limit_prints_per_session').value = '1';
+            
+            // Check all packages by default when resetting
+            document.querySelectorAll('.event-package-checkbox').forEach(cb => {
+                cb.checked = true;
+            });
+            
             toggleBillingFields();
 
             // Check all frames by default when resetting/creating a new event
@@ -7912,14 +8100,13 @@ function editFrame(frame) {
         function toggleBillingFields() {
             const billingType = document.getElementById('event_billing_type').value;
             const fieldsContainer = document.getElementById('rentalDurationFields');
+            const payPerSessionContainer = document.getElementById('payPerSessionFields');
             if (billingType === 'RENTAL_DURATION') {
                 fieldsContainer.style.display = 'flex';
-                document.getElementById('event_rental_start_time').setAttribute('required', 'required');
-                document.getElementById('event_rental_end_time').setAttribute('required', 'required');
+                if (payPerSessionContainer) payPerSessionContainer.style.display = 'none';
             } else {
                 fieldsContainer.style.display = 'none';
-                document.getElementById('event_rental_start_time').removeAttribute('required');
-                document.getElementById('event_rental_end_time').removeAttribute('required');
+                if (payPerSessionContainer) payPerSessionContainer.style.display = 'flex';
             }
         }
 
@@ -7942,6 +8129,20 @@ function editFrame(frame) {
             isOpenedFromRow = false;
             activeEditFramesEventId = null;
             backupCheckedStates();
+            
+            // Reset filters
+            const searchInput = document.getElementById('modalFrameSearch');
+            const typeSelect = document.getElementById('modalFrameTypeFilter');
+            const categorySelect = document.getElementById('modalFrameCategoryFilter');
+            const selectedOnlyCheckbox = document.getElementById('modalFrameSelectedOnly');
+            const dynamicOnlyCheckbox = document.getElementById('modalFrameDynamicOnly');
+            if (searchInput) searchInput.value = '';
+            if (typeSelect) typeSelect.value = 'all';
+            if (categorySelect) categorySelect.value = 'all';
+            if (selectedOnlyCheckbox) selectedOnlyCheckbox.checked = false;
+            if (dynamicOnlyCheckbox) dynamicOnlyCheckbox.checked = false;
+            filterModalFrames();
+
             document.getElementById('eventFramesModal').classList.add('active');
         }
 
@@ -7975,6 +8176,19 @@ function editFrame(frame) {
             }
             updateSelectedFramesCount();
             
+            // Reset filters
+            const searchInput = document.getElementById('modalFrameSearch');
+            const typeSelect = document.getElementById('modalFrameTypeFilter');
+            const categorySelect = document.getElementById('modalFrameCategoryFilter');
+            const selectedOnlyCheckbox = document.getElementById('modalFrameSelectedOnly');
+            const dynamicOnlyCheckbox = document.getElementById('modalFrameDynamicOnly');
+            if (searchInput) searchInput.value = '';
+            if (typeSelect) typeSelect.value = 'all';
+            if (categorySelect) categorySelect.value = 'all';
+            if (selectedOnlyCheckbox) selectedOnlyCheckbox.checked = false;
+            if (dynamicOnlyCheckbox) dynamicOnlyCheckbox.checked = false;
+            filterModalFrames();
+
             document.getElementById('eventFramesModal').classList.add('active');
         }
 
@@ -8067,27 +8281,37 @@ function editFrame(frame) {
             if (cb) {
                 cb.checked = !cb.checked;
                 updateFrameCardStyle(frameId);
+                filterModalFrames();
             }
         }
 
         function selectAllFrames(state) {
-            document.querySelectorAll('.rental-frame-checkbox').forEach(cb => {
-                cb.checked = state;
-                updateFrameCardStyle(cb.value);
+            document.querySelectorAll('.frame-select-card').forEach(card => {
+                if (card.style.display !== 'none') {
+                    const cb = card.querySelector('.rental-frame-checkbox');
+                    if (cb) {
+                        cb.checked = state;
+                        updateFrameCardStyle(cb.value);
+                    }
+                }
             });
             updateSelectedFramesCount();
+            filterModalFrames();
         }
 
         // category: 'dynamic' or 'static'
         function selectCategoryFrames(category, state) {
             document.querySelectorAll(`.frame-select-card[data-category="${category}"]`).forEach(card => {
-                const cb = card.querySelector('.rental-frame-checkbox');
-                if (cb) {
-                    cb.checked = state;
-                    updateFrameCardStyle(cb.value);
+                if (card.style.display !== 'none') {
+                    const cb = card.querySelector('.rental-frame-checkbox');
+                    if (cb) {
+                        cb.checked = state;
+                        updateFrameCardStyle(cb.value);
+                    }
                 }
             });
             updateSelectedFramesCount();
+            filterModalFrames();
         }
 
         function updateSelectedFramesCount() {
@@ -8101,6 +8325,92 @@ function editFrame(frame) {
                     label.innerText = `Kelola Bingkai Sesi (Belum Ada Terpilih)`;
                 } else {
                     label.innerText = `Kelola Bingkai Sesi (${checked} Terpilih)`;
+                }
+            }
+        }
+
+        function filterModalFrames() {
+            const searchInput = document.getElementById('modalFrameSearch');
+            const typeSelect = document.getElementById('modalFrameTypeFilter');
+            const selectedOnlyCheckbox = document.getElementById('modalFrameSelectedOnly');
+            const categorySelect = document.getElementById('modalFrameCategoryFilter');
+            const dynamicOnlyCheckbox = document.getElementById('modalFrameDynamicOnly');
+            if (!searchInput || !typeSelect || !selectedOnlyCheckbox) return;
+
+            const searchVal = searchInput.value.toLowerCase().trim();
+            const typeVal = typeSelect.value;
+            const selectedOnlyVal = selectedOnlyCheckbox.checked;
+            const categoryVal = categorySelect ? categorySelect.value : 'all';
+            const dynamicOnlyVal = dynamicOnlyCheckbox ? dynamicOnlyCheckbox.checked : false;
+
+            const cards = document.querySelectorAll('.frame-select-card');
+            let visibleDynamic = 0;
+            let visibleStatic = 0;
+            let totalVisible = 0;
+
+            cards.forEach(card => {
+                const nameEl = card.querySelector('.frame-select-name');
+                const name = nameEl ? nameEl.innerText.toLowerCase() : '';
+                const type = card.getAttribute('data-type') || '';
+                const category = card.getAttribute('data-category') || '';
+                const categoryName = card.getAttribute('data-category-name') || 'Classic';
+                
+                const cb = card.querySelector('.rental-frame-checkbox');
+                const isChecked = cb ? cb.checked : false;
+
+                // Match Search Name
+                const matchSearch = !searchVal || name.includes(searchVal);
+
+                // Match Type
+                const matchType = typeVal === 'all' || type === typeVal;
+
+                // Match Checked
+                const matchChecked = !selectedOnlyVal || isChecked;
+
+                // Match Category Name
+                const matchCategoryName = categoryVal === 'all' || categoryName === categoryVal;
+
+                // Match Dynamic Only
+                const matchDynamicOnly = !dynamicOnlyVal || category === 'dynamic';
+
+                if (matchSearch && matchType && matchChecked && matchCategoryName && matchDynamicOnly) {
+                    card.style.display = 'flex';
+                    totalVisible++;
+                    if (category === 'dynamic') {
+                        visibleDynamic++;
+                    } else if (category === 'static') {
+                        visibleStatic++;
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Toggle category section wrappers
+            const dynSection = document.getElementById('dynamicCategorySection');
+            if (dynSection) {
+                dynSection.style.display = visibleDynamic > 0 ? 'block' : 'none';
+            }
+
+            const statSection = document.getElementById('staticCategorySection');
+            if (statSection) {
+                statSection.style.display = visibleStatic > 0 ? 'block' : 'none';
+            }
+
+            // Global placeholder if everything is hidden
+            const placeholder = document.getElementById('modalFramesEmptyPlaceholder');
+            if (placeholder) {
+                placeholder.style.display = totalVisible === 0 ? 'block' : 'none';
+            }
+
+            // Update label
+            const label = document.getElementById('modalFrameCountLabel');
+            if (label) {
+                const totalCards = cards.length;
+                if (totalVisible === totalCards) {
+                    label.innerText = `Menampilkan semua ${totalCards} bingkai`;
+                } else {
+                    label.innerText = `Menampilkan ${totalVisible} dari ${totalCards} bingkai`;
                 }
             }
         }

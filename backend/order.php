@@ -6,6 +6,10 @@ $packagesFile = __DIR__ . '/packages.json';
 $configPath = __DIR__ . '/frames/config.json';
 $settingsFile = __DIR__ . '/settings.json';
 
+// Resolve session ID and remote mode status
+$sessionId = $_GET['session_id'] ?? '';
+$isRemoteMode = !empty($sessionId);
+
 // Load settings to check active printer types
 $settings = [];
 if (file_exists($settingsFile)) {
@@ -254,30 +258,30 @@ if ($isRemoteMode) {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px;
+            padding: 24px 16px;
         }
 
         .header {
             width: 100%;
             max-width: 480px;
             text-align: center;
-            margin-bottom: 12px;
-            margin-top: 5px;
+            margin-bottom: 28px;
+            margin-top: 15px;
         }
 
         .logo {
             font-weight: 800;
-            font-size: 1.5rem;
+            font-size: 2.2rem;
             letter-spacing: -0.5px;
         }
         .logo span { color: var(--primary-red); }
 
         .subtitle {
-            font-size: 0.72rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 4px;
+            letter-spacing: 1.5px;
+            margin-top: 6px;
         }
 
         /* CATALOG SCREEN STYLES */
@@ -286,36 +290,42 @@ if ($isRemoteMode) {
             max-width: 480px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 20px;
+        }
+
+        .catalog-container form {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
         }
 
         .section-title {
-            font-size: 0.85rem;
+            font-size: 1.05rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             color: var(--text-muted);
         }
 
         /* ─── PACKAGE SELECTOR ROW ─── */
         .package-selector-row {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             width: 100%;
-            margin-top: 6px;
         }
 
         .package-select-card {
             flex: 1;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px 6px;
+            border-radius: 18px;
+            padding: 24px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 10px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
@@ -341,9 +351,9 @@ if ($isRemoteMode) {
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 0.72rem;
+            top: 10px;
+            right: 10px;
+            font-size: 0.95rem;
             color: var(--primary-accent);
             opacity: 0;
             transition: opacity 0.25s ease;
@@ -369,10 +379,10 @@ if ($isRemoteMode) {
         }
 
         .package-select-icon {
-            font-size: 1.4rem;
+            font-size: 2.2rem;
             color: var(--text-muted);
             opacity: 0.7;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -384,8 +394,8 @@ if ($isRemoteMode) {
         }
 
         .package-select-name {
-            font-size: 0.72rem;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 700;
             color: var(--text-muted);
             line-height: 1.2;
             transition: color 0.25s ease;
@@ -397,7 +407,7 @@ if ($isRemoteMode) {
         }
 
         .package-select-price {
-            font-size: 0.72rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: var(--text-muted);
             opacity: 0.8;
@@ -415,9 +425,9 @@ if ($isRemoteMode) {
             background: rgba(20, 20, 26, 0.7);
             backdrop-filter: blur(8px);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 14px;
-            min-height: 80px;
+            border-radius: 18px;
+            padding: 24px 20px;
+            min-height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -427,7 +437,7 @@ if ($isRemoteMode) {
         }
 
         .details-placeholder {
-            font-size: 0.75rem;
+            font-size: 0.9rem;
             color: var(--text-muted);
             text-align: center;
             font-style: italic;
@@ -437,7 +447,7 @@ if ($isRemoteMode) {
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 12px;
             animation: fadeInDetails 0.3s ease forwards;
         }
 
@@ -447,34 +457,37 @@ if ($isRemoteMode) {
         }
 
         .details-title {
-            font-size: 0.7rem;
+            font-size: 0.9rem;
             font-weight: 800;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 4px;
+            padding-bottom: 8px;
             text-align: left;
+            margin-bottom: 8px;
         }
 
         .details-grid {
             display: grid;
             grid-template-columns: repeat(1, 1fr);
-            gap: 4px;
+            gap: 8px;
         }
         
         @media(min-width: 380px) {
             .details-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 8px 16px;
             }
         }
 
         .detail-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
+            gap: 10px;
+            font-size: 0.95rem;
             font-weight: 600;
+            padding: 4px 0;
         }
 
         .detail-item.active {
@@ -487,7 +500,7 @@ if ($isRemoteMode) {
         }
 
         .detail-icon {
-            font-size: 0.8rem;
+            font-size: 1.15rem;
             font-weight: 800;
         }
 
@@ -495,10 +508,10 @@ if ($isRemoteMode) {
         .btn-order {
             background: linear-gradient(135deg, var(--primary-accent), var(--primary-red));
             color: white;
-            font-size: 0.9rem;
+            font-size: 1.2rem;
             font-weight: 800;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 18px;
+            border-radius: 16px;
             border: none;
             cursor: pointer;
             width: 100%;
@@ -506,8 +519,7 @@ if ($isRemoteMode) {
             transition: all 0.25s ease;
             box-shadow: 0 4px 15px rgba(255, 75, 75, 0.25);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 6px;
+            letter-spacing: 1px;
         }
 
         .btn-order:hover:not(:disabled) {
@@ -1019,6 +1031,13 @@ if ($isRemoteMode) {
                             $isAvailable = false;
                         }
                         
+                        // Filter by event allowed_packages
+                        if ($resolvedEvent && isset($resolvedEvent['allowed_packages']) && is_array($resolvedEvent['allowed_packages']) && !empty($resolvedEvent['allowed_packages'])) {
+                            if (!in_array($pkg['id'], $resolvedEvent['allowed_packages'])) {
+                                $isAvailable = false;
+                            }
+                        }
+                        
                         if (!$isAvailable) {
                             continue;
                         }
@@ -1056,6 +1075,13 @@ if ($isRemoteMode) {
                             $isAvailable = false;
                         } elseif ($flow === 'RECEIPT' && !$thermalActive) {
                             $isAvailable = false;
+                        }
+                        
+                        // Filter by event allowed_packages
+                        if ($resolvedEvent && isset($resolvedEvent['allowed_packages']) && is_array($resolvedEvent['allowed_packages']) && !empty($resolvedEvent['allowed_packages'])) {
+                            if (!in_array($pkg['id'], $resolvedEvent['allowed_packages'])) {
+                                $isAvailable = false;
+                            }
                         }
                         
                         if (!$isAvailable) {

@@ -541,3 +541,32 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
 * Menjalankan build Gradle clean release untuk memperbarui `backend/app-debug.apk` dan berkas manifest `backend/update.json`.
 * Mencadangkan salinan APK rilis ke root: `app-debug_v1.28.3.apk`.
 
+---
+
+## Update: Pengaturan Durasi Sewa (Jam/Menit) & Otomatisasi Keluar Event (v1.29.1)
+
+### 1. Perancangan & Pembaruan Form Pengaturan Event
+* **Penyederhanaan Kolom**: Menghapus kolom pilihan waktu mulai (*Waktu Mulai Sewa*) dan waktu selesai (*Waktu Selesai Sewa*) yang rumit pada form tambah/edit event di [admin.php](file:///c:/laragon/www/Photoboth/backend/admin.php).
+* **Durasi Menit & Jam**: Menambahkan select dropdown durasi sewa yang lebih praktis (pilihan **Jam** dan **Menit**).
+* **Reset Timer**: Menyediakan checkbox pilihan *"Reset / Mulai Ulang Timer Sewa"* agar admin dapat mengosongkan timer sewa dan memicunya berjalan dari awal saat kode di-unlock di Kiosk.
+* **Integrasi Status**: Menampilkan teks indikator status timer sewa yang sedang berjalan secara real-time pada formulir edit.
+
+### 2. Aktivasi Timer Sewa dan Sinkronisasi Server
+* **API Aktivasi (`start_event_rental`)**: Menambahkan endpoint action `start_event_rental` pada [kiosk_control.php](file:///c:/laragon/www/Photoboth/backend/kiosk_control.php) dan POST action di [admin.php](file:///c:/laragon/www/Photoboth/backend/admin.php) untuk memulai cap waktu timer di server secara dinamis ketika event di-unlock di Kiosk.
+* **Keamanan Timer**: Jika timer sewa sudah berjalan dan belum habis, request aktivasi tidak akan mereset timer yang sedang berjalan, sehingga menjamin durasi aman meskipun Kiosk mati atau memuat ulang halaman.
+
+### 3. Tampilan Timer & Otomatisasi Keluar Kiosk
+* **Kiosk Web Simulator ([kiosk_sim.php](file:///c:/laragon/www/Photoboth/backend/kiosk_sim.php))**:
+  * Menyematkan floating glassmorphic timer badge di sudut kanan atas tablet preview dengan ikon hourglass berputar (`fa-hourglass-half`).
+  * Mengecek sisa waktu sewa secara real-time (setiap detik). Jika waktu habis (remaining time <= 0), simulator akan memainkan suara asisten ("*Durasi sewa telah habis. Kiosk kembali ke mode normal.*"), memunculkan dialog peringatan, dan secara otomatis mengeluarkan Kiosk ke mode normal (*Multi-Event* dengan ID event *general*).
+  * Menambahkan indikasi visual kritis (border merah transparan) saat sisa waktu kurang dari 5 menit.
+* **Kiosk Android App ([HomeScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/home/HomeScreen.kt))**:
+  * Mengintegrasikan query start timer sewa ke backend saat verifikasi kode event sukses.
+  * Menjalankan monitoring background coroutine (`LaunchedEffect`) setiap detik untuk menghitung sisa waktu sewa.
+  * Jika waktu habis, aplikasi akan secara otomatis menghapus event yang aktif (`unlockedEventId = "general"`) dan mengembalikan mode Kiosk ke mode normal (*MULTI_EVENT*).
+  * Merender floating timer overlay cantik (`⏱️ Sewa Aktif: HH:MM:SS`) di bagian atas Home Screen untuk kenyamanan visual operator/tamu.
+
+### 4. Dukungan API & Model Data
+* **[Frame.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/data/Frame.kt)**: Menambahkan properti sewa baru (`billing_type`, `rental_start_time`, `rental_end_time`, `rental_duration_hours`, `rental_duration_minutes`) ke data class `EventInfo`.
+* **[PhotoboothApi.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/api/PhotoboothApi.kt)**: Mendaftarkan method endpoint GET `startEventRental` untuk memicu dimulainya hitung mundur sewa di server.
+

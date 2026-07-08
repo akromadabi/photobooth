@@ -114,6 +114,11 @@ interface PhotoboothApi {
     @GET("kiosk_control.php?action=get_command")
     suspend fun getKioskCommand(): Response<KioskCommandResponse>
 
+    @GET("kiosk_control.php?action=start_event_rental")
+    suspend fun startEventRental(
+        @retrofit2.http.Query("event_id") eventId: String
+    ): Response<GenericResponse>
+
     @FormUrlEncoded
     @POST("kiosk_control.php?action=complete_session")
     suspend fun completeSession(

@@ -16,7 +16,12 @@ data class EventInfo(
     @SerializedName("hashtag") val hashtag: String? = null,
     @SerializedName("logo_url") val logoUrl: String? = null,
     @SerializedName("primary_color") val primaryColor: String? = null,
-    @SerializedName("secondary_color") val secondaryColor: String? = null
+    @SerializedName("secondary_color") val secondaryColor: String? = null,
+    @SerializedName("billing_type") val billingType: String? = null,
+    @SerializedName("rental_start_time") val rentalStartTime: String? = null,
+    @SerializedName("rental_end_time") val rentalEndTime: String? = null,
+    @SerializedName("rental_duration_hours") val rentalDurationHours: Int? = null,
+    @SerializedName("rental_duration_minutes") val rentalDurationMinutes: Int? = null
 )
 
 data class Frame(
