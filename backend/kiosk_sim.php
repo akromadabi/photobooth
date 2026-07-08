@@ -729,7 +729,7 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
         /* Rental timer badge floating globally in the corner */
         .rental-timer-badge {
             position: absolute;
-            top: 32px;
+            bottom: 12px;
             right: 12px;
             z-index: 999;
             background: rgba(15, 15, 20, 0.75);

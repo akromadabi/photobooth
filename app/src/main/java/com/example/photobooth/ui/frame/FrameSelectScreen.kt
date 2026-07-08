@@ -39,6 +39,11 @@ import com.example.photobooth.theme.AppThemeType
 import com.example.photobooth.ui.character.CharacterCard
 import com.google.gson.Gson
 import java.io.File
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.FirstBaseline
+import com.example.photobooth.data.EventInfo
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,6 +111,27 @@ fun FrameSelectScreen(
     val allFrames = remember(eventId, syncedJsonState) {
         getAllEventFrames(context, configManager, eventId)
     }
+
+    val activeEvent = remember(eventId, syncedJsonState) {
+        val resolvedId = if (eventId.isNullOrEmpty() || eventId == "general") {
+            configManager.activeEventId
+        } else {
+            eventId
+        }
+        if (resolvedId.isEmpty() || resolvedId == "general") null
+        else {
+            try {
+                val json = syncedJsonState
+                if (json.isNotEmpty()) {
+                    val config = Gson().fromJson(json, FrameConfig::class.java)
+                    config?.events?.firstOrNull { it.id == resolvedId }
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
 
     // Filter frames that support printFlow and resolve category
     val resolvedFrames = remember(allFrames, printFlow) {
@@ -269,6 +295,7 @@ fun FrameSelectScreen(
                         items(filteredFrames) { frame ->
                             FrameCard(
                                 frame = frame,
+                                activeEvent = activeEvent,
                                 onClick = { onFrameSelected(frame.id, "") }
                             )
                         }
@@ -282,6 +309,7 @@ fun FrameSelectScreen(
 @Composable
 fun FrameCard(
     frame: Frame,
+    activeEvent: EventInfo? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -377,6 +405,94 @@ fun FrameCard(
                             contentDescription = frame.name,
                             modifier = Modifier.fillMaxSize()
                         )
+                    }
+
+                    // Dynamic branding elements
+                    if (frame.isDynamic == true) {
+                        val dyn = frame.dynamicElements
+                        val scaleX = previewWidth.value / frameWidth
+                        val scaleY = previewHeight.value / frameHeight
+                        
+                        // Draw Logo
+                        val logoRect = dyn?.logo
+                        if (logoRect != null && activeEvent != null) {
+                            val logoFile = File(context.cacheDir, "logos/logo_${activeEvent.id}.png")
+                            if (logoFile.exists()) {
+                                val logoLeft = (logoRect.x * scaleX).dp
+                                val logoTop = (logoRect.y * scaleY).dp
+                                val logoWidth = (logoRect.width * scaleX).dp
+                                val logoHeight = (logoRect.height * scaleY).dp
+                                
+                                AsyncImage(
+                                    model = logoFile,
+                                    contentDescription = "Event Logo",
+                                    modifier = Modifier
+                                        .offset(x = logoLeft, y = logoTop)
+                                        .size(logoWidth, logoHeight)
+                                )
+                            }
+                        }
+                        
+                        // Draw Texts
+                        dyn?.texts?.forEach { textConfig ->
+                            val textStr = when (textConfig.type) {
+                                "event_name" -> activeEvent?.name ?: "Creative Photo Studio"
+                                "event_subtitle" -> activeEvent?.subtitle ?: "Sweet Memories"
+                                "event_hashtag" -> activeEvent?.hashtag ?: "#photobooth"
+                                else -> ""
+                            }
+                            
+                            if (textStr.isNotEmpty()) {
+                                val textLeft = (textConfig.x * scaleX).dp
+                                val textTop = (textConfig.y * scaleY).dp
+                                
+                                val textColor = try {
+                                    Color(android.graphics.Color.parseColor(textConfig.color ?: "#ffffff"))
+                                } catch (e: Exception) {
+                                    Color.White
+                                }
+                                
+                                val textStyle = textConfig.fontStyle ?: "normal"
+                                val fontWeight = when (textStyle) {
+                                    "bold", "bold_italic" -> FontWeight.Bold
+                                    else -> FontWeight.Normal
+                                }
+                                val fontStyle = when (textStyle) {
+                                    "italic", "bold_italic" -> FontStyle.Italic
+                                    else -> FontStyle.Normal
+                                }
+                                
+                                Text(
+                                    text = textStr,
+                                    color = textColor,
+                                    fontSize = (textConfig.fontSize * (scaleX + scaleY) / 2f).sp,
+                                    fontWeight = fontWeight,
+                                    fontStyle = fontStyle,
+                                    textAlign = when (textConfig.align ?: "center") {
+                                        "left" -> TextAlign.Left
+                                        "right" -> TextAlign.Right
+                                        else -> TextAlign.Center
+                                    },
+                                    modifier = Modifier
+                                        .layout { measurable, constraints ->
+                                            val placeable = measurable.measure(constraints)
+                                            val halfWidth = when (textConfig.align ?: "center") {
+                                                "left" -> 0
+                                                "right" -> placeable.width
+                                                else -> placeable.width / 2
+                                            }
+                                            val baseline = placeable[FirstBaseline]
+                                            layout(placeable.width, placeable.height) {
+                                                placeable.placeRelative(
+                                                    x = -halfWidth,
+                                                    y = -baseline
+                                                )
+                                            }
+                                        }
+                                        .offset(x = textLeft, y = textTop)
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -73,6 +74,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.layout.layout
+
 
 enum class PhotoFilter {
     NORMAL, MONO, WARM, COOL, VINTAGE, VIVID, DREAMY, FILM
@@ -162,6 +166,26 @@ fun PreviewResultScreen(
             slots = emptyList()
         )
         mutableStateOf(initialFrame)
+    }
+
+    val activeEvent = remember(eventId, configManager.syncedFramesJson) {
+        val resolvedId = if (eventId.isNullOrEmpty() || eventId == "general") {
+            configManager.activeEventId
+        } else {
+            eventId
+        }
+        if (resolvedId.isEmpty() || resolvedId == "general") null
+        else {
+            try {
+                val json = configManager.syncedFramesJson
+                if (json.isNotEmpty()) {
+                    val config = Gson().fromJson(json, FrameConfig::class.java)
+                    config?.events?.firstOrNull { it.id == resolvedId }
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        }
     }
 
     val compatibleFrames = remember(activeFrame.type) {
@@ -289,7 +313,8 @@ fun PreviewResultScreen(
                         stickers = stickers,
                         selectedStickerId = selectedStickerId,
                         onStickerSelected = { selectedStickerId = it },
-                        isReceiptPackage = isReceiptPackage
+                        isReceiptPackage = isReceiptPackage,
+                        activeEvent = activeEvent
                     )
 
                     // Floating Swap Mode Button
@@ -523,7 +548,8 @@ fun PreviewResultScreen(
                         stickers = stickers,
                         selectedStickerId = selectedStickerId,
                         onStickerSelected = { selectedStickerId = it },
-                        isReceiptPackage = isReceiptPackage
+                        isReceiptPackage = isReceiptPackage,
+                        activeEvent = activeEvent
                     )
 
                     // Floating Swap Mode Button
@@ -856,12 +882,17 @@ private fun stitchPhotos(
 
     // Render dynamic text and logo if frame is marked as dynamic
     if (frame.isDynamic == true) {
-        val activeEvent = if (!eventId.isNullOrEmpty()) {
+        val resolvedId = if (eventId.isNullOrEmpty() || eventId == "general") {
+            configManager.activeEventId
+        } else {
+            eventId
+        }
+        val activeEvent = if (!resolvedId.isNullOrEmpty() && resolvedId != "general") {
             try {
                 val json = configManager.syncedFramesJson
                 if (json.isNotEmpty()) {
                     val config = Gson().fromJson(json, FrameConfig::class.java)
-                    config?.events?.firstOrNull { it.id == eventId }
+                    config?.events?.firstOrNull { it.id == resolvedId }
                 } else null
             } catch (e: Exception) {
                 null
@@ -1095,6 +1126,7 @@ fun PreviewPhotoContainer(
     selectedStickerId: String?,
     onStickerSelected: (String?) -> Unit,
     isReceiptPackage: Boolean = false,
+    activeEvent: EventInfo? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -1118,7 +1150,7 @@ fun PreviewPhotoContainer(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .aspectRatio(frameAspectRatio)
             .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
@@ -1150,6 +1182,10 @@ fun PreviewPhotoContainer(
             },
         contentAlignment = Alignment.Center
     ) {
+        val rootMaxWidth = maxWidth
+        val rootMaxHeight = maxHeight
+        val scaleX = rootMaxWidth.value / frame.width.toFloat()
+        val scaleY = rootMaxHeight.value / frame.height.toFloat()
         // 1. Photo Slots Container
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val containerWidth = maxWidth
@@ -1274,9 +1310,13 @@ fun PreviewPhotoContainer(
                     ) {
                         // Display photo
                         AsyncImage(
-                            model = File(photoState.path),
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(File(photoState.path))
+                                .memoryCacheKey("${photoState.path}_${File(photoState.path).lastModified()}")
+                                .diskCacheKey("${photoState.path}_${File(photoState.path).lastModified()}")
+                                .build(),
                             contentDescription = "Photo ${index + 1}",
-                            contentScale = ContentScale.FillBounds,
+                            contentScale = ContentScale.Crop,
                             colorFilter = getColorFilter(selectedFilter),
                             modifier = Modifier
                                 .offset(x = offsetX, y = offsetY)
@@ -1347,6 +1387,92 @@ fun PreviewPhotoContainer(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // 2.5. Dynamic branding overlay (logo & text)
+        if (frame.isDynamic == true) {
+            val dyn = frame.dynamicElements
+            
+            // Draw Logo
+            val logoRect = dyn?.logo
+            if (logoRect != null && activeEvent != null) {
+                val logoFile = File(context.cacheDir, "logos/logo_${activeEvent.id}.png")
+                if (logoFile.exists()) {
+                    val logoLeft = (logoRect.x * scaleX).dp
+                    val logoTop = (logoRect.y * scaleY).dp
+                    val logoWidth = (logoRect.width * scaleX).dp
+                    val logoHeight = (logoRect.height * scaleY).dp
+                    
+                    AsyncImage(
+                        model = logoFile,
+                        contentDescription = "Event Logo",
+                        modifier = Modifier
+                            .offset(x = logoLeft, y = logoTop)
+                            .size(logoWidth, logoHeight)
+                    )
+                }
+            }
+            
+            // Draw Texts
+            dyn?.texts?.forEach { textConfig ->
+                val textStr = when (textConfig.type) {
+                    "event_name" -> activeEvent?.name ?: "Creative Photo Studio"
+                    "event_subtitle" -> activeEvent?.subtitle ?: "Sweet Memories"
+                    "event_hashtag" -> activeEvent?.hashtag ?: "#photobooth"
+                    else -> ""
+                }
+                
+                if (textStr.isNotEmpty()) {
+                    val textLeft = (textConfig.x * scaleX).dp
+                    val textTop = (textConfig.y * scaleY).dp
+                    
+                    val textColor = try {
+                        Color(android.graphics.Color.parseColor(textConfig.color ?: "#ffffff"))
+                    } catch (e: Exception) {
+                        Color.White
+                    }
+                    
+                    val textStyle = textConfig.fontStyle ?: "normal"
+                    val fontWeight = when (textStyle) {
+                        "bold", "bold_italic" -> FontWeight.Bold
+                        else -> FontWeight.Normal
+                    }
+                    val fontStyle = when (textStyle) {
+                        "italic", "bold_italic" -> FontStyle.Italic
+                        else -> FontStyle.Normal
+                    }
+                    
+                    Text(
+                        text = textStr,
+                        color = textColor,
+                        fontSize = (textConfig.fontSize * (scaleX + scaleY) / 2f).sp,
+                        fontWeight = fontWeight,
+                        fontStyle = fontStyle,
+                        textAlign = when (textConfig.align ?: "center") {
+                            "left" -> TextAlign.Left
+                            "right" -> TextAlign.Right
+                            else -> TextAlign.Center
+                        },
+                        modifier = Modifier
+                            .layout { measurable, constraints ->
+                                val placeable = measurable.measure(constraints)
+                                val halfWidth = when (textConfig.align ?: "center") {
+                                    "left" -> 0
+                                    "right" -> placeable.width
+                                    else -> placeable.width / 2
+                                }
+                                val baseline = if (placeable[androidx.compose.ui.layout.FirstBaseline] == androidx.compose.ui.layout.AlignmentLine.Unspecified) 0 else placeable[androidx.compose.ui.layout.FirstBaseline]
+                                layout(placeable.width, placeable.height) {
+                                    placeable.placeRelative(
+                                        x = -halfWidth,
+                                        y = -baseline
+                                    )
+                                }
+                            }
+                            .offset(x = textLeft, y = textTop)
+                    )
                 }
             }
         }

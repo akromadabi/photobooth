@@ -43,6 +43,7 @@ fun PackageSelectScreen(
     
     var isLoading by remember { mutableStateOf(true) }
     var packagesList by remember { mutableStateOf<List<PackageDto>>(emptyList()) }
+    var hasRedirected by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     
     LaunchedEffect(configManager.backendUrl) {
         if (configManager.backendUrl.isNotEmpty()) {
@@ -67,7 +68,13 @@ fun PackageSelectScreen(
                     
                     // If only 1 package is available, auto-select it and skip this screen
                     if (filteredList.size == 1) {
-                        onPackageSelected(filteredList[0].id)
+                        if (!hasRedirected) {
+                            hasRedirected = true
+                            onPackageSelected(filteredList[0].id)
+                        } else {
+                            hasRedirected = false
+                            onBackClick()
+                        }
                     }
                 } else {
                     Toast.makeText(context, "Gagal memuat paket: ${response.code()}", Toast.LENGTH_SHORT).show()

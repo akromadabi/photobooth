@@ -570,3 +570,30 @@ Untuk memastikan keseimbangan fungsionalitas (tidak timpang), fitur-fitur baru i
 * **[Frame.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/data/Frame.kt)**: Menambahkan properti sewa baru (`billing_type`, `rental_start_time`, `rental_end_time`, `rental_duration_hours`, `rental_duration_minutes`) ke data class `EventInfo`.
 * **[PhotoboothApi.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/api/PhotoboothApi.kt)**: Mendaftarkan method endpoint GET `startEventRental` untuk memicu dimulainya hitung mundur sewa di server.
 
+---
+
+## Update: Pemindahan dan Penyederhanaan Tampilan Durasi Sewa Kiosk (v1.29.3)
+
+### 1. Perubahan Tata Letak & Teks Timer
+* **Penyederhanaan Teks**: Menghapus teks awalan `"Sewa Aktif: "` dari floating timer badge overlay di [HomeScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/home/HomeScreen.kt) agar hanya menampilkan durasi hitung mundur saja (contoh: `⏱️ 00:54:25`).
+* **Relokasi Posisi**: Memindahkan posisi floating timer badge overlay dari bagian atas tengah (`Alignment.TopCenter`) ke sudut kanan bawah layar (`Alignment.BottomEnd`) dengan padding luar sebesar `24.dp` (`bottom = 24.dp, end = 24.dp`).
+* **Penyelarasan Web Simulator**: Menyesuaikan letak elemen timer badge (`.rental-timer-badge`) pada simulator kiosk web di [kiosk_sim.php](file:///c:/laragon/www/Photoboth/backend/kiosk_sim.php) dari posisi kanan-atas (`top: 32px; right: 12px;`) menjadi kanan-bawah (`bottom: 12px; right: 12px;`) agar sejalan dengan tata letak Kiosk fisik.
+
+### 2. Bumping Versi Kiosk & Build (v1.29.3)
+* Mendaftarkan `versionName = "1.29.3"` dan `versionCode = 50` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle clean release untuk memperbarui berkas APK rilis utama di `backend/app-debug.apk` dan berkas manifest `backend/update.json`.
+
+---
+
+## Update: Perbaikan Bug Gambar Gepeng & Caching Preview (v1.29.4)
+
+### 1. Pencegahan Distorsi Foto (Gepeng) & Masalah Caching pada Pratinjau
+* **Bypass Cache Coil**: Mengubah model pemuatan gambar pratinjau `AsyncImage` di [PreviewResultScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/preview/PreviewResultScreen.kt) untuk menggunakan `ImageRequest.Builder` dengan kunci cache unik berbasis *timestamp* modifikasi berkas (`lastModified()`). Hal ini memecahkan bug di mana Coil memuat pratinjau foto dari sesi sebelumnya karena nama berkas cache yang statis (`temp_shot_X.jpg`).
+* **Penggunaan ContentScale.Crop**: Mengubah properti `contentScale` pada `AsyncImage` pratinjau dari `ContentScale.FillBounds` menjadi `ContentScale.Crop`. Perubahan ini memastikan bahwa foto jepretan pengguna tidak akan pernah mengalami distorsi (gepeng/stretching) jika terjadi ketidaksesuaian kecil dalam kalkulasi rasio aspek pratinjau.
+* **Perbaikan Kompilasi FrameSelect**: Memperbaiki pemanggilan properti `placeable.firstBaselinePosition` yang tidak dikenal (deprecated/unresolved) di [FrameSelectScreen.kt](file:///c:/laragon/www/Photoboth/app/src/main/java/com/example/photobooth/ui/frame/FrameSelectScreen.kt) menjadi `placeable[FirstBaseline]`.
+
+### 2. Bumping Versi Kiosk & Build (v1.29.4)
+* Mendaftarkan `versionName = "1.29.4"` dan `versionCode = 51` di [build.gradle.kts](file:///c:/laragon/www/Photoboth/app/build.gradle.kts).
+* Menjalankan build Gradle clean release tanpa cache (`--no-build-cache --no-configuration-cache`) untuk memperbarui berkas APK rilis utama di [app-debug.apk](file:///c:/laragon/www/Photoboth/backend/app-debug.apk) dan berkas manifest [update.json](file:///c:/laragon/www/Photoboth/backend/update.json).
+* Menyimpan salinan APK rilis cadangan di root: [app-debug_v1.29.4.apk](file:///c:/laragon/www/Photoboth/app-debug_v1.29.4.apk).
+

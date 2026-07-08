@@ -899,6 +899,31 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
             border: 1px solid rgba(255, 255, 255, 0.05);
             font-weight: 600;
         }
+
+        .btn-download-qris {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+
+        .btn-download-qris:hover {
+            background-color: var(--primary-red);
+            border-color: var(--primary-red);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
+            transform: translateY(-1px);
+        }
     </style>
     <script src="html5-qrcode.min.js"></script>
 </head>
@@ -965,6 +990,9 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
                             <img src="<?php echo htmlspecialchars($midtransQrUrl); ?>" alt="Midtrans QRIS">
                         </div>
                         <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
+                        <a href="download_qris.php?order_id=<?php echo urlencode($orderId); ?>" class="btn-download-qris" download>
+                            <i class="fa-solid fa-download"></i> Unduh QRIS
+                        </a>
                     </div>
                     
                     <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.8rem; padding: 10px; border-radius: 10px;">Cek Status Pembayaran Manual</button>
@@ -987,6 +1015,9 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
                             <img src="<?php echo htmlspecialchars($siappPayQrUrl); ?>" alt="SiappPay QRIS">
                         </div>
                         <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
+                        <a href="download_qris.php?order_id=<?php echo urlencode($orderId); ?>" class="btn-download-qris" download>
+                            <i class="fa-solid fa-download"></i> Unduh QRIS
+                        </a>
                     </div>
                     
                     <button class="btn-verify" id="btnCheckStatus" onclick="checkMidtransStatus(true)" style="background-color: transparent; border: 2px solid var(--border-color); color: #fff; box-shadow: none; font-size: 0.8rem; padding: 10px; border-radius: 10px;">Cek Status Pembayaran Manual</button>
@@ -1005,6 +1036,9 @@ if ($settings['payment_mode'] === 'siapp_pay' && $orderQueueItem['status'] === '
                         <div class="dummy-badge">DUMMY QRIS</div>
                     </div>
                     <div style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Scan QRIS di atas untuk membayar</div>
+                    <a href="download_qris.php?order_id=<?php echo urlencode($orderId); ?>" class="btn-download-qris" download>
+                        <i class="fa-solid fa-download"></i> Unduh QRIS
+                    </a>
                 </div>
 
                 <button class="btn-verify" onclick="simulatePaymentSuccess()">BAYAR SEKARANG (SIMULASI)</button>

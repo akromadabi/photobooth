@@ -57,6 +57,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import com.example.photobooth.theme.*
 import androidx.fragment.app.FragmentActivity
+import java.io.File
 import coil.compose.AsyncImage
 import com.example.photobooth.api.NetworkClient
 import com.example.photobooth.data.ConfigManager
@@ -447,7 +448,7 @@ fun HomeScreen(
             }
             when (theme) {
                 AppThemeType.CUTE_PASTEL -> CutePastelHomeLayout(
-                    resolvedEventName = resolvedEventName,
+                    activeEventInfo = activeEventInfo,
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
                     historyList = historyList,
@@ -461,7 +462,7 @@ fun HomeScreen(
                     onCameraClick = onCameraClickLambda
                 )
                 AppThemeType.CUTE_NARA -> CuteNaraHomeLayout(
-                    resolvedEventName = resolvedEventName,
+                    activeEventInfo = activeEventInfo,
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
                     historyList = historyList,
@@ -475,7 +476,7 @@ fun HomeScreen(
                     onCameraClick = onCameraClickLambda
                 )
                 AppThemeType.LUXURY_GOLD -> LuxuryGoldHomeLayout(
-                    resolvedEventName = resolvedEventName,
+                    activeEventInfo = activeEventInfo,
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
                     historyList = historyList,
@@ -488,7 +489,7 @@ fun HomeScreen(
                     onCameraClick = onCameraClickLambda
                 )
                 AppThemeType.MINIMAL_MODERN -> MinimalModernHomeLayout(
-                    resolvedEventName = resolvedEventName,
+                    activeEventInfo = activeEventInfo,
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
                     historyList = historyList,
@@ -501,7 +502,7 @@ fun HomeScreen(
                     onCameraClick = onCameraClickLambda
                 )
                 AppThemeType.CREATIVE_DYNAMIC -> CreativeDynamicHomeLayout(
-                    resolvedEventName = resolvedEventName,
+                    activeEventInfo = activeEventInfo,
                     onLogoClick = onLogoClick,
                     isLandscape = isLandscape,
                     historyList = historyList,
@@ -515,7 +516,7 @@ fun HomeScreen(
                     onCameraClick = onCameraClickLambda
                 )
                 else -> ModernHomeLayout(
-                    resolvedEventName = resolvedEventName,
+                    activeEventInfo = activeEventInfo,
                     logoTextPart1 = logoTextPart1,
                     logoTextPart2 = logoTextPart2,
                     onLogoClick = onLogoClick,
@@ -540,8 +541,8 @@ fun HomeScreen(
         if (remainingTimeText.isNotEmpty()) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 24.dp)
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 24.dp, end = 24.dp)
                     .background(Color(0xE61E1E24), RoundedCornerShape(20.dp))
                     .border(1.dp, Color(0xFFE63946), RoundedCornerShape(20.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -552,7 +553,7 @@ fun HomeScreen(
                 ) {
                     Text("⏱️", color = Color(0xFFE63946), fontSize = 16.sp)
                     Text(
-                        text = "Sewa Aktif: $remainingTimeText",
+                        text = remainingTimeText,
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
@@ -753,12 +754,11 @@ fun HomeScreen(
                         Button(
                             onClick = {
                                 showUnlockSuccessAnim = false
-                                onStartClick(unlockedEventId)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF7B801)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("MULAI SESI FOTO", color = Color(0xFF1E1E24), fontWeight = FontWeight.Bold)
+                            Text("OKE", color = Color(0xFF1E1E24), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1295,7 +1295,7 @@ fun KeypadButton(
 
 @Composable
 fun ModernHomeLayout(
-    resolvedEventName: String?,
+    activeEventInfo: com.example.photobooth.data.EventInfo?,
     logoTextPart1: String,
     logoTextPart2: String,
     onLogoClick: () -> Unit,
@@ -1310,11 +1310,21 @@ fun ModernHomeLayout(
     onTicketClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    val resolvedEventName = activeEventInfo?.name
+    val context = LocalContext.current
+    val logoFile = remember(activeEventInfo) {
+        if (activeEventInfo != null) {
+            val file = File(File(context.cacheDir, "logos"), "logo_${activeEventInfo.id}.png")
+            if (file.exists()) file else null
+        } else {
+            null
+        }
+    }
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
         // Top Left Logo
-        Column(
+        Box(
             modifier = Modifier
                 .statusBarsPadding()
                 .padding(top = 40.dp, start = if (isLandscape) 144.dp else 24.dp)
@@ -1325,23 +1335,36 @@ fun ModernHomeLayout(
                     onClick = onLogoClick
                 )
         ) {
-            Text(
-                text = logoTextPart1,
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                lineHeight = 32.sp,
-                modifier = Modifier.offset { IntOffset(creativeX.dp.roundToPx(), 0) }
-            )
-            if (logoTextPart2.isNotEmpty()) {
-                Text(
-                    text = logoTextPart2,
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Light,
-                    lineHeight = 32.sp,
-                    modifier = Modifier.offset { IntOffset(studioX.dp.roundToPx(), 0) }
+            if (logoFile != null) {
+                AsyncImage(
+                    model = logoFile,
+                    contentDescription = "Event Logo",
+                    modifier = Modifier
+                        .height(60.dp)
+                        .widthIn(max = 200.dp),
+                    contentScale = ContentScale.Fit
                 )
+            } else {
+                Column {
+                    Text(
+                        text = logoTextPart1,
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = 32.sp,
+                        modifier = Modifier.offset { IntOffset(creativeX.dp.roundToPx(), 0) }
+                    )
+                    if (logoTextPart2.isNotEmpty()) {
+                        Text(
+                            text = logoTextPart2,
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Light,
+                            lineHeight = 32.sp,
+                            modifier = Modifier.offset { IntOffset(studioX.dp.roundToPx(), 0) }
+                        )
+                    }
+                }
             }
         }
 
@@ -1377,7 +1400,7 @@ fun ModernHomeLayout(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "All You need\nis special",
+                text = resolvedEventName ?: "All You need\nis special",
                 color = Color.White,
                 fontSize = if (isLandscape) 56.sp else 46.sp,
                 fontWeight = FontWeight.ExtraBold,
@@ -1445,10 +1468,14 @@ fun ModernHomeLayout(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = "Our Creative Studio provides a\nprofessional place to capture some\nspecial moments. So that, You need\nto decide choosing us as your first option.",
+                    text = if (activeEventInfo != null) {
+                        listOfNotNull(activeEventInfo.subtitle, activeEventInfo.hashtag).joinToString("  |  ")
+                    } else {
+                        "Our Creative Studio provides a\nprofessional place to capture some\nspecial moments. So that, You need\nto decide choosing us as your first option."
+                    },
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     modifier = Modifier.weight(1f)
                 )
                 
@@ -1518,7 +1545,7 @@ fun ModernHomeLayout(
 
 @Composable
 fun CutePastelHomeLayout(
-    resolvedEventName: String?,
+    activeEventInfo: com.example.photobooth.data.EventInfo?,
     onLogoClick: () -> Unit,
     isLandscape: Boolean,
     historyList: List<String>,
@@ -1528,6 +1555,16 @@ fun CutePastelHomeLayout(
     onTicketClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    val resolvedEventName = activeEventInfo?.name
+    val context = LocalContext.current
+    val logoFile = remember(activeEventInfo) {
+        if (activeEventInfo != null) {
+            val file = File(File(context.cacheDir, "logos"), "logo_${activeEventInfo.id}.png")
+            if (file.exists()) file else null
+        } else {
+            null
+        }
+    }
     val themeColors = AppTheme.colors
     Box(
         modifier = Modifier.fillMaxSize()
@@ -1578,20 +1615,31 @@ fun CutePastelHomeLayout(
                         onClick = onLogoClick
                     )
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(themeColors.buttonBackground)
-                        .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = resolvedEventName ?: "Jeprat Jepret",
-                        color = themeColors.buttonContent,
-                        fontFamily = themeColors.fontFamily,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
+                if (logoFile != null) {
+                    AsyncImage(
+                        model = logoFile,
+                        contentDescription = "Event Logo",
+                        modifier = Modifier
+                            .height(50.dp)
+                            .widthIn(max = 200.dp),
+                        contentScale = ContentScale.Fit
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(themeColors.buttonBackground)
+                            .border(BorderStroke(3.dp, themeColors.border), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = resolvedEventName ?: "Jeprat Jepret",
+                            color = themeColors.buttonContent,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
@@ -1705,7 +1753,11 @@ fun CutePastelHomeLayout(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text = "Ambil foto seru bersama teman-teman!\nHasil cetak stiker bisa langsung ditempel.",
+                        text = if (activeEventInfo != null) {
+                            listOfNotNull(activeEventInfo.subtitle, activeEventInfo.hashtag).joinToString("  |  ")
+                        } else {
+                            "Ambil foto seru bersama teman-teman!\nHasil cetak stiker bisa langsung ditempel."
+                        },
                         color = themeColors.onBackground.copy(alpha = 0.7f),
                         fontSize = 11.sp,
                         lineHeight = 15.sp,
@@ -1893,7 +1945,7 @@ fun CartoonLeaf(
 
 @Composable
 fun CuteNaraHomeLayout(
-    resolvedEventName: String?,
+    activeEventInfo: com.example.photobooth.data.EventInfo?,
     onLogoClick: () -> Unit,
     isLandscape: Boolean,
     historyList: List<String>,
@@ -1903,6 +1955,16 @@ fun CuteNaraHomeLayout(
     onTicketClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    val resolvedEventName = activeEventInfo?.name
+    val context = LocalContext.current
+    val logoFile = remember(activeEventInfo) {
+        if (activeEventInfo != null) {
+            val file = File(File(context.cacheDir, "logos"), "logo_${activeEventInfo.id}.png")
+            if (file.exists()) file else null
+        } else {
+            null
+        }
+    }
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -2075,7 +2137,14 @@ fun CuteNaraHomeLayout(
                 .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (historyList.isNotEmpty()) {
+            if (logoFile != null) {
+                AsyncImage(
+                    model = logoFile,
+                    contentDescription = "Event Logo",
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else if (historyList.isNotEmpty()) {
                 AsyncImage(
                     model = historyList.first(),
                     contentDescription = "Latest Kiosk Photo",
@@ -2148,7 +2217,7 @@ fun CuteNaraHomeLayout(
                     .padding(horizontal = 20.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "Mini Studio Foto",
+                    text = activeEventInfo?.subtitle ?: "Mini Studio Foto",
                     color = Color(0xFF2D6A4F),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -2196,38 +2265,55 @@ fun CuteNaraHomeLayout(
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Instagram badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .background(Color.White, RoundedCornerShape(20.dp))
-                    .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(text = "📸", fontSize = 14.sp)
-                Text(
-                    text = "@nara.klik",
-                    color = Color(0xFF4A1525),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
+            if (activeEventInfo != null && !activeEventInfo.hashtag.isNullOrEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF95D5B2), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(1.5.dp, Color(0xFF2D6A4F)), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = activeEventInfo.hashtag,
+                        color = Color(0xFF2D6A4F),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            } else {
+                // Instagram badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .background(Color.White, RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color(0xFF4A1525)), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(text = "📸", fontSize = 14.sp)
+                    Text(
+                        text = "@nara.klik",
+                        color = Color(0xFF4A1525),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
 
-            // WhatsApp phone number badge
-            Box(
-                modifier = Modifier
-                    .background(Color(0xFFFF7597), RoundedCornerShape(20.dp))
-                    .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
-                    .border(BorderStroke(1.5.dp, Color(0xFF4A1525)), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "08963000888",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black
-                )
+                // WhatsApp phone number badge
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFFF7597), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(1.5.dp, Color(0xFF4A1525)), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "08963000888",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
         }
 
@@ -2307,7 +2393,7 @@ fun CuteNaraHomeLayout(
 
 @Composable
 fun LuxuryGoldHomeLayout(
-    resolvedEventName: String?,
+    activeEventInfo: com.example.photobooth.data.EventInfo?,
     onLogoClick: () -> Unit,
     isLandscape: Boolean,
     historyList: List<String>,
@@ -2316,6 +2402,16 @@ fun LuxuryGoldHomeLayout(
     onTicketClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    val resolvedEventName = activeEventInfo?.name
+    val context = LocalContext.current
+    val logoFile = remember(activeEventInfo) {
+        if (activeEventInfo != null) {
+            val file = File(File(context.cacheDir, "logos"), "logo_${activeEventInfo.id}.png")
+            if (file.exists()) file else null
+        } else {
+            null
+        }
+    }
     val themeColors = AppTheme.colors
     Box(
         modifier = Modifier.fillMaxSize()
@@ -2370,31 +2466,42 @@ fun LuxuryGoldHomeLayout(
                         onClick = onLogoClick
                     )
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
-                        .padding(4.dp)
-                        .border(BorderStroke(0.5.dp, themeColors.onBackground), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
+                if (logoFile != null) {
+                    AsyncImage(
+                        model = logoFile,
+                        contentDescription = "Event Logo",
+                        modifier = Modifier
+                            .height(60.dp)
+                            .widthIn(max = 200.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .border(BorderStroke(1.5.dp, themeColors.accentColor), CircleShape)
+                            .padding(4.dp)
+                            .border(BorderStroke(0.5.dp, themeColors.onBackground), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (resolvedEventName.isNullOrEmpty()) "J" else resolvedEventName.take(1),
+                            color = themeColors.accentColor,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (resolvedEventName.isNullOrEmpty()) "J" else resolvedEventName.take(1),
-                        color = themeColors.accentColor,
+                        text = resolvedEventName ?: "WEDDING KIOSK",
+                        color = themeColors.onBackground,
                         fontFamily = themeColors.fontFamily,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = resolvedEventName ?: "WEDDING KIOSK",
-                    color = themeColors.onBackground,
-                    fontFamily = themeColors.fontFamily,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                )
             }
 
             // Center Content
@@ -2428,7 +2535,11 @@ fun LuxuryGoldHomeLayout(
                         .background(themeColors.accentColor)
                 )
                 Text(
-                    text = "Capture your special moments in our exclusive luxury photo kiosk.",
+                    text = if (activeEventInfo != null) {
+                        listOfNotNull(activeEventInfo.subtitle, activeEventInfo.hashtag).joinToString("  |  ")
+                    } else {
+                        "Capture your special moments in our exclusive luxury photo kiosk."
+                    },
                     color = themeColors.onBackground.copy(alpha = 0.6f),
                     fontSize = 12.sp,
                     lineHeight = 18.sp,
@@ -2558,7 +2669,7 @@ fun LuxuryGoldHomeLayout(
 
 @Composable
 fun MinimalModernHomeLayout(
-    resolvedEventName: String?,
+    activeEventInfo: com.example.photobooth.data.EventInfo?,
     onLogoClick: () -> Unit,
     isLandscape: Boolean,
     historyList: List<String>,
@@ -2567,6 +2678,16 @@ fun MinimalModernHomeLayout(
     onTicketClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    val resolvedEventName = activeEventInfo?.name
+    val context = LocalContext.current
+    val logoFile = remember(activeEventInfo) {
+        if (activeEventInfo != null) {
+            val file = File(File(context.cacheDir, "logos"), "logo_${activeEventInfo.id}.png")
+            if (file.exists()) file else null
+        } else {
+            null
+        }
+    }
     val themeColors = AppTheme.colors
     val infiniteTransition = rememberInfiniteTransition(label = "MinimalModernBackground")
     
@@ -2685,22 +2806,33 @@ fun MinimalModernHomeLayout(
                                 onClick = onLogoClick
                             )
                     ) {
-                        Text(
-                            text = "CREATIVE // STUDIO",
-                            color = Color.White,
-                            fontFamily = themeColors.fontFamily,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 2.sp
-                        )
-                        Text(
-                            text = resolvedEventName ?: "CLEAN EXPERIENCE",
-                            color = themeColors.accentColor,
-                            fontFamily = themeColors.fontFamily,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 4.sp
-                        )
+                        if (logoFile != null) {
+                            AsyncImage(
+                                model = logoFile,
+                                contentDescription = "Event Logo",
+                                modifier = Modifier
+                                    .height(55.dp)
+                                    .widthIn(max = 200.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else {
+                            Text(
+                                text = "CREATIVE // STUDIO",
+                                color = Color.White,
+                                fontFamily = themeColors.fontFamily,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 2.sp
+                            )
+                            Text(
+                                text = resolvedEventName ?: "CLEAN EXPERIENCE",
+                                color = themeColors.accentColor,
+                                fontFamily = themeColors.fontFamily,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 4.sp
+                            )
+                        }
                     }
 
                     // Main copy
@@ -2718,7 +2850,11 @@ fun MinimalModernHomeLayout(
                             letterSpacing = (-1).sp
                         )
                         Text(
-                            text = "Step inside, strike a pose, and let the magic begin. Your memories are printing instantly.",
+                            text = if (activeEventInfo != null) {
+                                listOfNotNull(activeEventInfo.subtitle, activeEventInfo.hashtag).joinToString("  |  ")
+                            } else {
+                                "Step inside, strike a pose, and let the magic begin. Your memories are printing instantly."
+                            },
                             color = Color.White.copy(alpha = 0.6f),
                             fontFamily = themeColors.fontFamily,
                             fontSize = 14.sp,
@@ -2817,22 +2953,33 @@ fun MinimalModernHomeLayout(
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "CREATIVE // STUDIO",
-                        color = Color.White,
-                        fontFamily = themeColors.fontFamily,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp
-                    )
-                    Text(
-                        text = resolvedEventName ?: "CLEAN EXPERIENCE",
-                        color = themeColors.accentColor,
-                        fontFamily = themeColors.fontFamily,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 4.sp
-                    )
+                    if (logoFile != null) {
+                        AsyncImage(
+                            model = logoFile,
+                            contentDescription = "Event Logo",
+                            modifier = Modifier
+                                .height(55.dp)
+                                .widthIn(max = 200.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text(
+                            text = "CREATIVE // STUDIO",
+                            color = Color.White,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 2.sp
+                        )
+                        Text(
+                            text = resolvedEventName ?: "CLEAN EXPERIENCE",
+                            color = themeColors.accentColor,
+                            fontFamily = themeColors.fontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 4.sp
+                        )
+                    }
                 }
 
                 // Floating Photostrip (Middle top)
@@ -2885,7 +3032,11 @@ fun MinimalModernHomeLayout(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Text(
-                        text = "Step inside, strike a pose, and let the magic begin. Your memories are printing instantly.",
+                        text = if (activeEventInfo != null) {
+                            listOfNotNull(activeEventInfo.subtitle, activeEventInfo.hashtag).joinToString("  |  ")
+                        } else {
+                            "Step inside, strike a pose, and let the magic begin. Your memories are printing instantly."
+                        },
                         color = Color.White.copy(alpha = 0.6f),
                         fontFamily = themeColors.fontFamily,
                         fontSize = 13.sp,
@@ -3032,7 +3183,7 @@ fun FloatingParticle(
 
 @Composable
 fun CreativeDynamicHomeLayout(
-    resolvedEventName: String?,
+    activeEventInfo: com.example.photobooth.data.EventInfo?,
     onLogoClick: () -> Unit,
     isLandscape: Boolean,
     historyList: List<String>,
@@ -3042,6 +3193,16 @@ fun CreativeDynamicHomeLayout(
     onTicketClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    val resolvedEventName = activeEventInfo?.name
+    val context = LocalContext.current
+    val logoFile = remember(activeEventInfo) {
+        if (activeEventInfo != null) {
+            val file = File(File(context.cacheDir, "logos"), "logo_${activeEventInfo.id}.png")
+            if (file.exists()) file else null
+        } else {
+            null
+        }
+    }
     val themeColors = AppTheme.colors
     val infiniteTransition = rememberInfiniteTransition(label = "bg_anim")
     val animatedOffset by infiniteTransition.animateFloat(
@@ -3141,7 +3302,14 @@ fun CreativeDynamicHomeLayout(
                 .border(BorderStroke(3.dp, Color(0xFFD946EF)), RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (historyList.isNotEmpty()) {
+            if (logoFile != null) {
+                AsyncImage(
+                    model = logoFile,
+                    contentDescription = "Event Logo",
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else if (historyList.isNotEmpty()) {
                 AsyncImage(
                     model = historyList.first(),
                     contentDescription = "Latest Kiosk Photo",
@@ -3231,7 +3399,7 @@ fun CreativeDynamicHomeLayout(
                     .padding(horizontal = 20.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "🌟 Creative Studio 🌟",
+                    text = activeEventInfo?.subtitle ?: "🌟 Creative Studio 🌟",
                     color = Color(0xFFE9D5FF),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -3325,35 +3493,51 @@ fun CreativeDynamicHomeLayout(
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .background(Color(0xFF1E1538), RoundedCornerShape(20.dp))
-                    .border(BorderStroke(2.dp, Color(0xFFA855F7)), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(text = "📸", fontSize = 14.sp)
-                Text(
-                    text = "@photobooth.creative",
-                    color = Color(0xFFF1E9FF),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
+            if (activeEventInfo != null && !activeEventInfo.hashtag.isNullOrEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFEC4899), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = activeEventInfo.hashtag,
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .background(Color(0xFF1E1538), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color(0xFFA855F7)), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(text = "📸", fontSize = 14.sp)
+                    Text(
+                        text = "@photobooth.creative",
+                        color = Color(0xFFF1E9FF),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
 
-            Box(
-                modifier = Modifier
-                    .background(Color(0xFFEC4899), RoundedCornerShape(20.dp))
-                    .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "Tap Screen to Play ⚡",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black
-                )
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFEC4899), RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Tap Screen to Play ⚡",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
         }
 
