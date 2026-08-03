@@ -101,6 +101,7 @@ class MainActivity : FragmentActivity() {
                             serverConfig.thermalBrightness?.let { configManager.thermalBrightness = it }
                             serverConfig.thermalSharpness?.let { configManager.thermalSharpness = it }
                             serverConfig.thermalDenoise?.let { configManager.thermalDenoise = it }
+                            serverConfig.cameraZoomRatio?.let { configManager.cameraZoomRatio = it }
                         }
                     }
                 } catch (e: Exception) {

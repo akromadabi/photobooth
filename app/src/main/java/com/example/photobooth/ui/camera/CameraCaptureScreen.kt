@@ -308,13 +308,19 @@ fun CameraCaptureLayout(
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA // Front camera for photobooth
 
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
+            val camera = cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
                 preview,
                 imageCapture,
                 if (detector != null) imageAnalysis else null
             )
+
+            // Terapkan zoom ratio dari pengaturan admin untuk memotong tepi kotakan kiosk
+            val savedZoom = configManager.cameraZoomRatio
+            if (savedZoom > 1.0f) {
+                camera.cameraControl.setZoomRatio(savedZoom)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             // If binding fails, try to fallback without image analysis
@@ -327,12 +333,18 @@ fun CameraCaptureLayout(
                     }
                 val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
+                val fallbackCamera = cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     cameraSelector,
                     preview,
                     imageCapture
                 )
+
+                // Terapkan zoom ratio di jalur fallback juga
+                val savedZoom = configManager.cameraZoomRatio
+                if (savedZoom > 1.0f) {
+                    fallbackCamera.cameraControl.setZoomRatio(savedZoom)
+                }
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }

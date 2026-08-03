@@ -27,6 +27,7 @@ class ConfigManager(context: Context) {
         private const val KEY_THERMAL_BRIGHTNESS = "thermal_brightness"
         private const val KEY_THERMAL_SHARPNESS = "thermal_sharpness"
         private const val KEY_THERMAL_DENOISE = "thermal_denoise"
+        private const val KEY_CAMERA_ZOOM_RATIO = "camera_zoom_ratio" // Zoom kamera untuk memotong tepi kotakan kiosk
     }
 
     var thermalContrast: Float
@@ -44,6 +45,16 @@ class ConfigManager(context: Context) {
     var thermalDenoise: Boolean
         get() = prefs.getBoolean(KEY_THERMAL_DENOISE, true)
         set(value) = prefs.edit().putBoolean(KEY_THERMAL_DENOISE, value).apply()
+
+    /**
+     * Zoom ratio kamera untuk menyesuaikan field-of-view.
+     * Berguna untuk memotong tepi kotakan kiosk yang masuk ke frame.
+     * Range: 1.0 (normal/tanpa zoom) hingga 3.0 (zoom 3x).
+     * Default: 1.0
+     */
+    var cameraZoomRatio: Float
+        get() = prefs.getFloat(KEY_CAMERA_ZOOM_RATIO, 1.0f)
+        set(value) = prefs.edit().putFloat(KEY_CAMERA_ZOOM_RATIO, value.coerceIn(1.0f, 3.0f)).apply()
 
     var printerPaperWidth: Int
         get() = prefs.getInt(KEY_PAPER_WIDTH, 80)

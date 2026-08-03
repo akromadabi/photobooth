@@ -185,7 +185,22 @@ class ColorPrinterDriver : PrinterManager {
                     }
                 }
                 
-                printManager.print(jobName, object : PrintDocumentAdapter() {
+                // Hitung dimensi halaman PDF dalam PostScript points (1 pt = 1/72 inci).
+                // Target 300 DPI: setiap piksel bitmap = 72/300 pt → halaman berukuran fisik
+                // sesuai paper size, dan printer merender bitmap pada 300 DPI — tajam & jernih.
+                val TARGET_PRINT_DPI = 300
+                val pageWidthPt = (bitmapToPrint.width * 72f / TARGET_PRINT_DPI).toInt().coerceAtLeast(72)
+                val pageHeightPt = (bitmapToPrint.height * 72f / TARGET_PRINT_DPI).toInt().coerceAtLeast(72)
+
+                // Paint berkualitas tinggi: aktifkan filtering bilinear (isFilterBitmap) dan
+                // anti-alias agar bitmap tidak buram/piksel saat di-scale ke canvas PDF.
+                // PERBAIKAN UTAMA: Paint null sebelumnya menyebabkan nearest-neighbor rendering.
+                val bitmapPrintPaint = android.graphics.Paint().apply {
+                    isFilterBitmap = true
+                    isAntiAlias = true
+                }
+
+                val printAdapter = object : PrintDocumentAdapter() {
                     override fun onLayout(
                         oldAttributes: PrintAttributes?,
                         newAttributes: PrintAttributes,
@@ -199,10 +214,11 @@ class ColorPrinterDriver : PrinterManager {
                         }
                         
                         val info = PrintDocumentInfo.Builder("photobooth_strip.pdf")
-                            .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                            .setContentType(PrintDocumentInfo.CONTENT_TYPE_PHOTO)
                             .setPageCount(1)
                             .build()
-                        callback.onLayoutFinished(info, true)
+                        // Hanya trigger re-layout jika atribut benar-benar berubah
+                        callback.onLayoutFinished(info, newAttributes != oldAttributes)
                     }
 
                     override fun onWrite(
@@ -212,11 +228,18 @@ class ColorPrinterDriver : PrinterManager {
                         callback: WriteResultCallback
                     ) {
                         val pdfDocument = PdfDocument()
-                        val pageInfo = PdfDocument.PageInfo.Builder(bitmapToPrint.width, bitmapToPrint.height, 1).create()
+                        val pageInfo = PdfDocument.PageInfo.Builder(pageWidthPt, pageHeightPt, 1).create()
                         val page = pdfDocument.startPage(pageInfo)
-                        
-                        val canvas: Canvas = page.canvas
-                        canvas.drawBitmap(bitmapToPrint, 0f, 0f, null)
+
+                        // Scale bitmap ke dimensi halaman PDF menggunakan Paint berkualitas tinggi
+                        // (bilinear filtering), bukan nearest-neighbor yang menghasilkan gambar buram
+                        val scaleX = pageWidthPt.toFloat() / bitmapToPrint.width
+                        val scaleY = pageHeightPt.toFloat() / bitmapToPrint.height
+                        page.canvas.save()
+                        page.canvas.scale(scaleX, scaleY)
+                        page.canvas.drawBitmap(bitmapToPrint, 0f, 0f, bitmapPrintPaint)
+                        page.canvas.restore()
+
                         pdfDocument.finishPage(page)
                         
                         try {
@@ -235,7 +258,17 @@ class ColorPrinterDriver : PrinterManager {
                             bitmapToPrint.recycle()
                         }
                     }
-                }, null)
+                }
+
+                // PrintAttributes: resolusi 300 DPI tanpa margin untuk cetak foto berkualitas tinggi.
+                // Memberi tahu print spooler OS bahwa ini adalah cetakan foto presisi tinggi.
+                val printAttributes = PrintAttributes.Builder()
+                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                    .setResolution(PrintAttributes.Resolution("res_300dpi", "300 DPI", 300, 300))
+                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                    .build()
+
+                printManager.print(jobName, printAdapter, printAttributes)
                 
                 PrintResult.Success
             } catch (e: Exception) {

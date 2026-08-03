@@ -185,6 +185,7 @@ fun AdminScreen(
     var thermalBrightness by remember { mutableStateOf(configManager.thermalBrightness) }
     var thermalSharpness by remember { mutableStateOf(configManager.thermalSharpness) }
     var thermalDenoise by remember { mutableStateOf(configManager.thermalDenoise) }
+    var cameraZoomRatio by remember { mutableStateOf(configManager.cameraZoomRatio) }
     var useBiometric by remember { mutableStateOf(configManager.useBiometric) }
     var wifiIpAddress by remember { mutableStateOf("") }
     var wifiPort by remember { mutableStateOf("9100") }
@@ -1543,6 +1544,56 @@ fun AdminScreen(
                                                 uncheckedTrackColor = BorderColor
                                             )
                                         )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    // ── Camera Zoom Slider ──────────────────────────────────────────────
+                                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 2.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = "📷  Zoom Kamera Kiosk",
+                                        color = Color(0xFFE63946),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Perbesar FOV kamera untuk memotong tepi kotakan kiosk yang masuk ke frame foto. Restart kamera setelah mengubah nilai ini.",
+                                        color = Gray,
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("Zoom Ratio:", color = White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text(
+                                                text = if (cameraZoomRatio <= 1.01f) "1.0× (Normal)" else String.format("%.2f×", cameraZoomRatio),
+                                                color = Color(0xFFE63946),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Slider(
+                                            value = cameraZoomRatio,
+                                            onValueChange = {
+                                                cameraZoomRatio = it
+                                                configManager.cameraZoomRatio = it
+                                            },
+                                            valueRange = 1.0f..2.5f,
+                                            steps = 29, // setiap step = 0.05x
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFFE63946),
+                                                activeTrackColor = Color(0xFFE63946)
+                                            )
+                                        )
+                                        Text("Nilai: 1.0 = tidak ada zoom (default). Naikkan ke 1.1–1.3 untuk memotong tepi kotakan. Aktif saat membuka kamera.", color = Gray, fontSize = 10.sp)
                                     }
 
                                     Spacer(modifier = Modifier.height(12.dp))

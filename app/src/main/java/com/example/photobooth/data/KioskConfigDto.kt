@@ -14,5 +14,6 @@ data class KioskConfigDto(
     @SerializedName("thermal_contrast") val thermalContrast: Float?,
     @SerializedName("thermal_brightness") val thermalBrightness: Float?,
     @SerializedName("thermal_sharpness") val thermalSharpness: Float?,
-    @SerializedName("thermal_denoise") val thermalDenoise: Boolean?
+    @SerializedName("thermal_denoise") val thermalDenoise: Boolean?,
+    @SerializedName("camera_zoom_ratio") val cameraZoomRatio: Float?
 )

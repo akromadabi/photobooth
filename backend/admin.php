@@ -521,6 +521,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $thermalBrightness = isset($_POST['thermal_brightness']) ? floatval($_POST['thermal_brightness']) : 10.0;
     $thermalSharpness = isset($_POST['thermal_sharpness']) ? floatval($_POST['thermal_sharpness']) : 0.4;
     $thermalDenoise = isset($_POST['thermal_denoise']) && $_POST['thermal_denoise'] == '1';
+    $cameraZoomRatio = isset($_POST['camera_zoom_ratio']) ? max(1.0, min(3.0, floatval($_POST['camera_zoom_ratio']))) : 1.0;
 
     $falKey = isset($_POST['fal_key']) ? trim($_POST['fal_key']) : '';
     $appTheme = isset($_POST['app_theme']) ? $_POST['app_theme'] : 'NEON_RED';
@@ -551,7 +552,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
         "thermal_contrast" => $thermalContrast,
         "thermal_brightness" => $thermalBrightness,
         "thermal_sharpness" => $thermalSharpness,
-        "thermal_denoise" => $thermalDenoise
+        "thermal_denoise" => $thermalDenoise,
+        "camera_zoom_ratio" => $cameraZoomRatio
     ];
     
     file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT));
@@ -3676,6 +3678,31 @@ foreach ($weeklyStats as $date => $cnt) {
                                     <label for="countdown_seconds">Durasi Hitung Mundur (Detik)</label>
                                     <input type="number" id="countdown_seconds" name="countdown_seconds" class="form-input" value="<?php echo intval($settings['countdown_seconds']); ?>" min="2" max="15" required>
                                 </div>
+
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label for="camera_zoom_ratio" style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                        Zoom Kamera Kiosk
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">(untuk memotong tepi kotakan yang masuk ke frame)</span>
+                                    </label>
+                                    <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
+                                        <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">1.0× (Normal)</span>
+                                        <input type="range" id="camera_zoom_ratio" name="camera_zoom_ratio"
+                                            min="1.0" max="2.5" step="0.05"
+                                            value="<?php echo number_format(floatval($settings['camera_zoom_ratio'] ?? 1.0), 2); ?>"
+                                            oninput="document.getElementById('zoom_ratio_display').innerText = parseFloat(this.value).toFixed(2) + '×'"
+                                            style="flex: 1; accent-color: var(--primary);">
+                                        <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">2.5× (Max)</span>
+                                        <span id="zoom_ratio_display" style="min-width: 52px; text-align: center; font-weight: 700; font-size: 1rem; color: var(--primary); background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 10px;">
+                                            <?php echo number_format(floatval($settings['camera_zoom_ratio'] ?? 1.0), 2); ?>×
+                                        </span>
+                                    </div>
+                                    <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 6px;">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        &nbsp;Nilai 1.0 = tidak ada zoom (default). Naikkan perlahan (misalnya 1.1–1.3) hingga tepi kotakan tidak lagi terlihat di hasil foto. Perubahan aktif setelah aplikasi di-restart.
+                                    </small>
+                                </div>
+
 
 
 

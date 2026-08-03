@@ -6270,9 +6270,12 @@ $dagoText2 = implode(' ', array_slice($brandNameWords, 1));
                                 let printHeight = activePackage ? activePackage.print_height_mm : 200;
                                 
                                 const printCanvas = document.createElement('canvas');
-                                printCanvas.width = printWidth * 4;
-                                printCanvas.height = printHeight * 4;
+                                printCanvas.width = Math.round(printWidth * 8);   // ~8px/mm ≈ 203 DPI — lebih tajam dari sebelumnya (4px/mm)
+                                printCanvas.height = Math.round(printHeight * 8);
                                 const printCtx = printCanvas.getContext('2d');
+                                // Aktifkan interpolasi bicubic agar foto tidak buram saat di-scale ke canvas
+                                printCtx.imageSmoothingEnabled = true;
+                                printCtx.imageSmoothingQuality = 'high';
                                 
                                 const photoImg = new Image();
                                 photoImg.src = dataUrl;

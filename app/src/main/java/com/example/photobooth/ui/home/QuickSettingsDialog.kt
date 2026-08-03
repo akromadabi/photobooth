@@ -121,6 +121,7 @@ fun QuickSettingsDialog(
     var thermalBrightness by remember { mutableStateOf(configManager.thermalBrightness) }
     var thermalSharpness by remember { mutableStateOf(configManager.thermalSharpness) }
     var thermalDenoise by remember { mutableStateOf(configManager.thermalDenoise) }
+    var cameraZoomRatio by remember { mutableStateOf(configManager.cameraZoomRatio) }
     var wifiIpAddress by remember { mutableStateOf("") }
     var wifiPort by remember { mutableStateOf("9100") }
     
@@ -733,6 +734,42 @@ fun QuickSettingsDialog(
                             }
 
                             Spacer(modifier = Modifier.height(6.dp))
+
+                            // Zoom Kamera Slider
+                            HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("📷 Zoom Kamera Kiosk", color = White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    Text("Potong tepi kotakan yang masuk ke frame", color = Gray, fontSize = 9.sp)
+                                }
+                                Text(
+                                    text = if (cameraZoomRatio <= 1.01f) "1.0×" else String.format("%.2f×", cameraZoomRatio),
+                                    color = Color(0xFFE63946),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Slider(
+                                value = cameraZoomRatio,
+                                onValueChange = {
+                                    cameraZoomRatio = it
+                                    configManager.cameraZoomRatio = it
+                                },
+                                valueRange = 1.0f..2.5f,
+                                steps = 29,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Color(0xFFE63946),
+                                    activeTrackColor = Color(0xFFE63946)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text("1.0 = normal. Naikkan ke 1.1–1.3 jika tepi kotakan masuk frame.", color = Gray, fontSize = 9.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             // Test print button
                             Button(
